@@ -11,6 +11,7 @@
     "dev": "bun run --watch src/index.ts"
   },
   "dependencies": {
+    "elysia": "^1.3.6",
     "mongoose": "^8.16.5",
     "validator": "^13.15.15"
   },
