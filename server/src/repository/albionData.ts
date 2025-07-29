@@ -1,1 +1,1 @@
-const Url_East_Abion = "https://east.albion-online-data.com"
+export const Url_East_Abion = "https://east.albion-online-data.com"
