@@ -1,5 +1,7 @@
 // Common API interfaces and error handling
 
+import type { Region } from "../types/itemBase"
+
 // API response wrapper (some endpoints may wrap responses)
 export interface ApiResponse<T> {
     data: T
@@ -20,10 +22,11 @@ export interface RateLimitInfo {
     limit: number
 }
 
-// API configuration interface
 export interface ApiConfig {
-    baseUrl: string
-    timeout?: number
-    retryAttempts?: number
-    useCompression?: boolean
+    baseUrls: Record<Region, string>
+    rateLimits: {
+        perMinute: number
+        perFiveMinutes: number
+    }
+    urlMaxLength: number
 }
