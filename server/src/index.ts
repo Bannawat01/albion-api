@@ -15,5 +15,3 @@ if ('cert' in tlsConfig) {
     protocol = 'https'
 }
 console.log(`${protocol}://${app.server?.hostname}:${app.server?.port}`)
-
-
