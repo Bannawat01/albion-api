@@ -1,7 +1,7 @@
 // Base types and enums for Albion Online Data API
 
 // Server regions available
-export type AlbionServer = 'west' | 'east' | 'europe'
+export type Region = 'americas' | 'asia' | 'europe'
 
 // Quality levels for items (1-5, where 1 is normal, 5 is masterpiece)
 export type ItemQuality = 1 | 2 | 3 | 4 | 5
