@@ -8,10 +8,8 @@ export class ItemRepository {
     }
 
     // Fetch items and locations metadata
-    async fetchMetadata(): Promise<{ items: string[], locations: string[] }> {
+    async fetchMetadata(): Promise<{ items: any[], locations: string[], itemsData: any }> {
         try {
-            console.log("Fetching metadata...")
-
             const itemsResponse = await fetch(
                 "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json",
                 { headers: { "Accept-Encoding": "gzip" } }
@@ -27,9 +25,7 @@ export class ItemRepository {
             const items = Object.keys(itemsData)
             const locations = Object.keys(locationsData)
 
-            console.log(`Found ${items.length} items and ${locations.length} locations`)
-
-            return { items, locations }
+            return { items, locations, itemsData }
         } catch (error) {
             console.error("Error fetching metadata:", error)
             throw error

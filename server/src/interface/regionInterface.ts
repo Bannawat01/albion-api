@@ -8,18 +8,32 @@ export interface ApiResponse<T> {
     timestamp?: string
 }
 
+export interface RegionRequest {
+    region: Region
+}
+
+export interface ApiRequestOptions {
+    timeout?: number
+    retries?: number
+    headers?: Record<string, string>
+}
+
+export interface FilterRequest {
+    startDate?: string
+    endDate?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+}
+
+export interface NameFilterRequest extends FilterRequest {
+    name?: string
+}
+
 // Error response from API
 export interface ApiError {
     error: string
     message?: string
     statusCode?: number
-}
-
-// Rate limit information
-export interface RateLimitInfo {
-    remaining: number
-    reset: number
-    limit: number
 }
 
 export interface ApiConfig {
@@ -29,4 +43,11 @@ export interface ApiConfig {
         perFiveMinutes: number
     }
     urlMaxLength: number
+}
+
+// Rate limit information
+export interface RateLimitInfo {
+    remaining: number
+    reset: number
+    limit: number
 }

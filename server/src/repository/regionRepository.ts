@@ -1,5 +1,5 @@
 import { Db } from "mongodb"
-import type { ApiConfig } from "../interface/apiInterface"
+import type { ApiConfig } from "../interface/regionInterface"
 
 export class AlbionDataExtractor {
     private db: Db
