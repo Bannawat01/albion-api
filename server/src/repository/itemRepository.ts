@@ -2,15 +2,27 @@ import { Db } from "mongodb"
 import type { ItemId } from "../types/itemBase"
 import type { Price } from "../interface/priceInterface"
 import { ExternalApiError } from "../middleware/customError"
+import { mapPriceData } from "../service/filterPriceService"
 export class ItemRepository {
     private db: Db
+    private metadataCache: { items: any[], locations: string[], itemsData: any } | null = null
 
     constructor(db: Db) {
         this.db = db
     }
 
+    // Clear metadata cache to force refresh
+    clearMetadataCache(): void {
+        this.metadataCache = null
+    }
+
     // Fetch items and locations metadata
     async fetchMetadata(): Promise<{ items: any[], locations: string[], itemsData: any }> {
+        // Return cached data if available
+        if (this.metadataCache) {
+            return this.metadataCache
+        }
+
         try {
 
             const itemsResponse = await fetch(
@@ -40,10 +52,13 @@ export class ItemRepository {
 
             const locations = Object.keys(locationsData)
 
-            return { items, locations, itemsData: itemsDataMap }
+            // Cache the result
+            this.metadataCache = { items, locations, itemsData: itemsDataMap }
+
+            return this.metadataCache
         } catch (error) {
             console.error("Error fetching metadata:", error)
-            throw error
+            throw new ExternalApiError("Unable to fetch game metadata")
         }
     }
     async fetchItemPrice(itemId: ItemId): Promise<Price[] | string> {
@@ -63,22 +78,7 @@ export class ItemRepository {
             if (data.length === 0) {
                 return "Price not available"
             }
-
-            const mappedData: Price[] = data.map((item: any) => ({
-                itemName: itemInfo?.LocalizedNames?.['EN-US'] || itemInfo?.UniqueName || itemId,
-                item_id: itemId,
-                city: item.city,
-                quantity: item.quality,
-                sell_Price_Min: item.sell_price_min,
-                sell_Price_Min_Date: item.sell_price_min_date,
-                sell_Price_Max: item.sell_price_max,
-                sell_Price_Max_Date: item.sell_price_max_date,
-                buy_Price_max: item.buy_price_max,
-                buy_Price_Max_Date: item.buy_price_max_date,
-                buy_Price_Min: item.buy_price_min,
-                buy_Price_Min_Date: item.buy_price_min_date,
-            } as Price))
-
+            const mappedData = mapPriceData(data, itemInfo, itemId)
             return mappedData
 
         } catch (error) {
@@ -100,17 +100,7 @@ export class ItemRepository {
                 return "Price not available"
             }
 
-
-            const mappedData = data.map((item: any) => ({
-                itemName: itemInfo?.LocalizedNames?.['EN-US'] || itemInfo?.UniqueName || itemId,
-                city: city,
-                quality: item.quality,
-                Sell_Price_Min: item.sell_price_min,
-                Sell_Price_Max: item.sell_price_max,
-                Buy_Price_min: item.buy_price_min,
-                Buy_Price_max: item.buy_price_max,
-            }))
-
+            const mappedData = mapPriceData(data, itemInfo, itemId)
             return mappedData
 
         } catch (error) {
