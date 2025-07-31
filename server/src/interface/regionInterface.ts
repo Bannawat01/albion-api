@@ -1,5 +1,3 @@
-// Common API interfaces and error handling
-
 import type { Region } from "../types/itemBase"
 
 // API response wrapper (some endpoints may wrap responses)
@@ -27,13 +25,6 @@ export interface FilterRequest {
 
 export interface NameFilterRequest extends FilterRequest {
     name?: string
-}
-
-// Error response from API
-export interface ApiError {
-    error: string
-    message?: string
-    statusCode?: number
 }
 
 export interface ApiConfig {
