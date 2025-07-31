@@ -11,6 +11,8 @@ export class AlbionService {
             totalLocations: metadata.locations.length,
             items: metadata.items,
             locations: metadata.locations
+
         }
     }
+   
 }
