@@ -1,12 +1,11 @@
 import { Elysia } from "elysia"
-import { connectToDatabase } from "../configs/database"
 import { GoldRepository } from "../repository/goldRepository"
 import type { GoldPriceOptions } from "../interface/goldInterface"
 
 export const goldController = new Elysia({ prefix: "/api" })
     .get("/gold", async ({ query }) => {
         try {
-            const goldRepository = new GoldRepository(connectToDatabase.getDb())
+            const goldRepository = new GoldRepository()
             const options: GoldPriceOptions = {
                 count: query.count ? parseInt(query.count as string) : 2
             }

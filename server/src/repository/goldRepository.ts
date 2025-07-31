@@ -1,13 +1,7 @@
-import type { Db } from "mongodb"
 import type { GoldPrice, GoldPriceOptions } from "../interface/goldInterface"
 import { BadRequestError, ExternalApiError } from "../middleware/customError"
 
 export class GoldRepository {
-    private db: Db
-
-    constructor(db: Db) {
-        this.db = db
-    }
 
     async fetchGoldPrices(options: GoldPriceOptions = {}): Promise<GoldPrice[] | string> {
         try {

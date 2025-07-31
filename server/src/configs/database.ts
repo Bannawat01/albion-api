@@ -24,7 +24,7 @@ export const connectToDatabase = {
             database = mongoClient.db("albion-api-project")
 
             // Initialize ItemRepository with native MongoDB Db
-            itemRepo = new ItemRepository(database)
+            itemRepo = new ItemRepository()
             // console.log("MongoDB native client connected")
 
         } catch (error) {
