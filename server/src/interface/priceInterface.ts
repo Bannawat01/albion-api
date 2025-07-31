@@ -2,6 +2,7 @@ import type { ISODateString, ItemId, ItemQuality, LocationIdentifier } from "../
 
 
 export interface Price {
+    itemName: any
     item_id: ItemId
     city: LocationIdentifier
     quantity: ItemQuality

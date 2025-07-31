@@ -27,13 +27,11 @@ export class AlbionDataExtractor {
         const now = Date.now()
         const timeSinceReset = now - this.lastResetTime
 
-        // Reset counter every minute
         if (timeSinceReset >= 60000) {
             this.requestCount = 0
             this.lastResetTime = now
         }
 
-        // If approaching rate limit, wait
         if (this.requestCount >= this.config.rateLimits.perMinute - 10) {
             const waitTime = 60000 - timeSinceReset + 1000 // Wait until next minute + buffer
             console.log(`Rate limit approaching, waiting ${waitTime}ms`)

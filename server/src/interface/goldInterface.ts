@@ -2,7 +2,7 @@ import type { ApiDateString, ISODateString } from "../types/itemBase"
 
 export interface GoldPrice {
     price: number
-    timeStamp: ISODateString
+    timestamp: string
 }
 
 export interface GoldPriceOptions {

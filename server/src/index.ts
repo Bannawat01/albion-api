@@ -4,6 +4,8 @@ import { connectToAlbion } from "./configs/albionbase"
 import { tlsConfig } from "./configs/tls"
 import type { CityName, CityLocationId } from "./types/itemBase"
 import { itemController } from "./controller/itemController"
+import { goldController } from "./controller/goldController"
+import { errorHandler } from "./middleware/errorHandler"
 
 console.log("Hello via Bun suiiii!")
 
@@ -19,7 +21,9 @@ await connectToDatabase.connect()
 // }
 
 const app = new Elysia()
-        .use(itemController)
+    .onError(errorHandler)
+    .use(itemController)
+    .use(goldController)
     .listen({
         port: Bun.env.PORT || 8800,
         tls: tlsConfig
@@ -28,7 +32,7 @@ const app = new Elysia()
 
 
 let protocol = 'http'
-if ('cert' in tlsConfig ) {  
+if ('cert' in tlsConfig) {
     protocol = 'https'
 }
 console.log(`${protocol}://${app.server?.hostname}:${app.server?.port}`)
