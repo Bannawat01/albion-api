@@ -1,23 +1,15 @@
-// import { Db } from "mongodb"
 import type { ItemId } from "../types/itemBase"
 import type { Price } from "../interface/priceInterface"
 import { ExternalApiError } from "../middleware/customError"
 import { mapPriceData } from "../service/filterPriceService"
 export class ItemRepository {
-    // private db: Db
     private metadataCache: { items: any[], locations: string[], itemsData: any } | null = null
-
-    // constructor(db: Db) {
-    //     this.db = db
-    // }
 
     clearMetadataCache(): void {
         this.metadataCache = null
     }
 
-    // Fetch items and locations metadata
     async fetchMetadata(): Promise<{ items: any[], locations: string[], itemsData: any }> {
-        // Return cached data if available
         if (this.metadataCache) {
             return this.metadataCache
         }
@@ -93,9 +85,9 @@ export class ItemRepository {
             if (!response.ok) {
                 throw new ExternalApiError("Unable to fetch price data from Albion Online API")
             }
+
             const data = await response.json()
             const itemInfo = (await this.fetchMetadata()).itemsData[itemId]
-
             if (data.length === 0) {
                 throw new ExternalApiError("No price data available for this item in the specified location")
             }
