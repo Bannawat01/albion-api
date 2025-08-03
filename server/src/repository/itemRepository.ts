@@ -2,16 +2,39 @@ import type { ItemId } from "../types/itemBase"
 import type { Price } from "../interface/priceInterface"
 import { ExternalApiError } from "../middleware/customError"
 import { mapPriceData } from "../service/filterPriceService"
+import { TTLCache, TTL_CONSTANTS } from '../service/timeToLive'
+
 export class ItemRepository {
-    private metadataCache: { items: any[], locations: string[], itemsData: any } | null = null
+    private metadataCache = new TTLCache<{ items: any[], locations: string[], itemsData: any }>()
+    private priceCache = new TTLCache<Price[]>()
 
     clearMetadataCache(): void {
-        this.metadataCache = null
+        this.metadataCache.clear()
+        this.priceCache.clear()
+        console.log('clear cache')
     }
 
+    // เมธอดสำหรับดู cache statistics
+    getCacheStats() {
+        return {
+            metadata: {
+                size: this.metadataCache.size(),
+                entries: this.metadataCache.entries().length
+            },
+            prices: {
+                size: this.priceCache.size(),
+                entries: this.priceCache.entries().length
+            }
+        }
+    }
+
+
     async fetchMetadata(): Promise<{ items: any[], locations: string[], itemsData: any }> {
-        if (this.metadataCache) {
-            return this.metadataCache
+        const cacheKey = 'metadata'
+        const cachedData = this.metadataCache.get(cacheKey)
+        if (cachedData) {
+            console.log('metadata form cache')
+            return cachedData
         }
 
         try {
@@ -44,9 +67,11 @@ export class ItemRepository {
 
             const locations = () => Object.keys(locationsData)
 
+            const result = { items, locations: locations(), itemsData: itemsDataMap }
+
             // Cache the result
-            this.metadataCache = { items, locations: locations(), itemsData: itemsDataMap }
-            return this.metadataCache
+            this.metadataCache.set(cacheKey, result, TTL_CONSTANTS.ONE_HOUR)
+            return result
 
         } catch (error) {
             console.error("Error fetching metadata:", error)
@@ -54,6 +79,15 @@ export class ItemRepository {
         }
     }
     async fetchItemPrice(itemId: ItemId): Promise<Price[] | string> {
+        const cacheKey = `price_${itemId}`
+
+        // ตรวจสอบ price cache ก่อน
+        const cachedPrice = this.priceCache.get(cacheKey)
+        if (cachedPrice) {
+            console.log(`get price from cache`)
+            return cachedPrice
+        }
+
         try {
             const itemInfo = (await this.fetchMetadata()).itemsData[itemId]
             if (!itemInfo) {
@@ -66,11 +100,14 @@ export class ItemRepository {
             }
             const data = await response.json()
 
-
             if (data.length === 0) {
                 throw new ExternalApiError("No price data available for this item")
             }
+
             const mappedData = mapPriceData(data, itemInfo, itemId)
+
+            // เก็บข้อมูลลง price cache
+            this.priceCache.set(cacheKey, mappedData, TTL_CONSTANTS.FIVE_MINUTES)
             return mappedData
 
         } catch (error) {
@@ -81,7 +118,7 @@ export class ItemRepository {
     async fetchItemPriceAndLocation(itemId: ItemId, city: string): Promise<
         Price[] | string> {
         try {
-            const response = await fetch(`https://east.albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${city}`)
+            const response = await fetch(`https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${city}`)
             if (!response.ok) {
                 throw new ExternalApiError("Unable to fetch price data from Albion Online API")
             }
