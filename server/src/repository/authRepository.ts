@@ -8,17 +8,23 @@ export class DatabaseService {
   private oauthStates: Collection<OAuthState>
   private indexesCreated = false
   private static indexCreationPromise: Promise<void> | null = null
+  private async ensureCollectionExists(collectionName: string) {
+    const collections = await this.db.listCollections({ name: collectionName }).toArray()
+    if (collections.length === 0) {
+      await this.db.createCollection(collectionName)
+    }
+  }
 
   constructor(client: MongoClient, db: Db) {
     if (!client || !db) {
       throw new Error('MongoClient and Database are required')
     }
-    
+
     this.client = client
     this.db = db
     this.users = this.db.collection<User>('users')
     this.oauthStates = this.db.collection<OAuthState>('oauth_states')
-    
+
     // สร้าง indexes แบบ async
     this.setupIndexes()
   }
@@ -39,10 +45,10 @@ export class DatabaseService {
   private async createIndexes() {
     try {
       // console.log('Creating database indexes...'); // ลบออก
-      
+
       const userIndexes = await this.users.listIndexes().toArray()
       const oauthIndexes = await this.oauthStates.listIndexes().toArray()
-      
+
       const existingUserIndexes = userIndexes.map(idx => Object.keys(idx.key)[0])
       const existingOAuthIndexes = oauthIndexes.map(idx => Object.keys(idx.key)[0])
 
@@ -53,7 +59,7 @@ export class DatabaseService {
           this.users.createIndex({ googleId: 1 }, { unique: true, background: true })
         )
       }
-      
+
       if (!existingUserIndexes.includes('email')) {
         indexPromises.push(
           this.users.createIndex({ email: 1 }, { unique: true, background: true })
@@ -65,7 +71,7 @@ export class DatabaseService {
           this.oauthStates.createIndex({ state: 1 }, { unique: true, background: true })
         )
       }
-      
+
       if (!existingOAuthIndexes.includes('expiresAt')) {
         indexPromises.push(
           this.oauthStates.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, background: true })
@@ -78,7 +84,7 @@ export class DatabaseService {
       } else {
         // console.log('All database indexes already exist') // ลบออก
       }
-      
+
       this.indexesCreated = true
     } catch (error) {
       console.error('Error creating indexes:', error)
@@ -101,11 +107,11 @@ export class DatabaseService {
         createdAt: new Date(),
         updatedAt: new Date()
       }
-      
+
       const result = await this.users.insertOne(userWithTimestamps)
-      return { 
-        _id: result.insertedId.toString(), 
-        ...userWithTimestamps 
+      return {
+        _id: result.insertedId.toString(),
+        ...userWithTimestamps
       }
     } catch (error) {
       console.error('Error creating user:', error)
@@ -117,15 +123,15 @@ export class DatabaseService {
     try {
       const result = await this.users.findOneAndUpdate(
         { googleId },
-        { 
-          $set: { 
-            ...userData, 
-            updatedAt: new Date() 
-          } 
+        {
+          $set: {
+            ...userData,
+            updatedAt: new Date()
+          }
         },
         { returnDocument: 'after' }
       )
-      
+
       return result || null
     } catch (error) {
       console.error('Error updating user:', error)

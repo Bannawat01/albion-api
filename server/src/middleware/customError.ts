@@ -48,6 +48,19 @@ export class ValidationError extends Error {
         this.name = 'ValidationError'
         this.errors = errors
         Object.setPrototypeOf(this, ValidationError.prototype)
+
+
+
+    }
+}
+
+export class ConnectionError extends Error {
+    statusCode: number = 85
+
+    constructor(message: string = "Connection Error") {
+        super(message)
+        this.name = 'ConnectionError'
+        Object.setPrototypeOf(this, ConnectionError.prototype)
     }
 }
 
@@ -58,5 +71,15 @@ export class ExternalApiError extends Error {
         super(message)
         this.name = 'ExternalApiError'
         Object.setPrototypeOf(this, ExternalApiError.prototype)
+    }
+}
+
+import { DatabaseManager } from '../configs/databaseManager'
+
+export const databaseHealthMiddleware = async ({ set }: any) => {
+    const health = await DatabaseManager.getInstance().healthCheck()
+    if (health.status !== 'healthy') {
+        set.status = 503
+        return { error: 'Database unavailable' }
     }
 }

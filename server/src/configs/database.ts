@@ -17,16 +17,29 @@ let isConnecting = false
 
 export const connectToDatabase = {
     connect: async () => {
+        // ป้องกันการ connect ซ้ำ
+        if (isConnected) {
+            console.log("Already connected to MongoDB, skipping...")
+            return
+        }
+        
+        if (isConnecting) {
+            console.log("Connection in progress, waiting...")
+            return
+        }
+        
+        isConnecting = true
+        
         try {
             // Connect with mongoose for schema-based operations
             await mongoose.connect(url)
-            console.log("Connected to MongoDB with Mongoose")
+            console.log("Connected to MongoDB with Mongoose in Config")
 
             // Also connect with native MongoDB driver for repository pattern
             mongoClient = new MongoClient(url)
             await mongoClient.connect()
             database = mongoClient.db("albion-api-project")
-        isConnected = true // ✅ สำคัญ!
+            isConnected = true // ✅ สำคัญ!
 
             // Initialize ItemRepository with native MongoDB Db
             itemRepo = new ItemRepository()
@@ -39,11 +52,12 @@ export const connectToDatabase = {
             isConnecting = false
         }
     },
-      getClient() {
-    return mongoClient;
-  },
+    getClient() {
+        return mongoClient
+    },
     getDb: () => database,
     getItemRepo: () => itemRepo,
+    isConnected: () => isConnected,
     close: async () => {
         try {
             await mongoose.disconnect()

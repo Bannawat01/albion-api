@@ -1,41 +1,52 @@
-import cors from "@elysiajs/cors";
-import jwt from "@elysiajs/jwt";
-import Elysia from "elysia";
-import { OAuthService } from "../service/oauthService";
-import { connectToDatabase } from "../configs/database";
-import { DatabaseService } from "../repository/authRepository";
+import cors from "@elysiajs/cors"
+import jwt from "@elysiajs/jwt"
+import Elysia from "elysia"
+import { OAuthService } from "../service/oauthService"
+import { connectToDatabase } from "../configs/database"
+import { DatabaseService } from "../repository/authRepository"
+import { DatabaseManager } from "../configs/databaseManager"
+import { ConnectionError } from "../middleware/customError"
 
-let dbService: any;
-let oauthService: OAuthService;
+let dbService: any
+let oauthService: OAuthService
 
 const initializeServices = async () => {
   try {
- await connectToDatabase.connect();
+    // ตรวจสอบว่าฐานข้อมูลเชื่อมต่อแล้วหรือยัง
+    if (!connectToDatabase.isConnected()) {
+      await connectToDatabase.connect()
+    }
 
-const client = connectToDatabase.getClient();
-const db = connectToDatabase.getDb();
+    const healthCheck = await DatabaseManager.getInstance().healthCheck()
+    if (healthCheck.status !== 'healthy') {
+      throw new ConnectionError('Database is not healthy')
+    }
 
-if (!client || !db) {
-  throw new Error('MongoClient or Db is undefined!');
+    const client = connectToDatabase.getClient()
+    const db = connectToDatabase.getDb()
+
+    if (!client || !db) {
+      throw new Error('MongoClient or Db is undefined!')
+    }
+
+    const databaseInstance = new DatabaseService(client, db) // ✅
+    dbService = databaseInstance
+    oauthService = new OAuthService(databaseInstance)
+
+    if (!dbService) {
+      throw new Error('Database service is null after connection')
+    }
+
+    oauthService = new OAuthService(dbService)
+  } catch (error) {
+    console.error('Service initialization error:', error)
+    throw error
+  }
 }
 
-const databaseInstance = new DatabaseService(client, db); // ✅
-dbService = databaseInstance;
-oauthService = new OAuthService(databaseInstance);
-    
-    if (!dbService) {
-      throw new Error('Database service is null after connection');
-    }
-    
-    oauthService = new OAuthService(dbService);
-  } catch (error) {
-    console.error('Service initialization error:', error);
-    throw error;
-  }
-};
 
 // Initialize services
-await initializeServices();
+await initializeServices()
 
 export const OauthController = new Elysia({ prefix: "/api" })
   .use(cors())
@@ -43,39 +54,37 @@ export const OauthController = new Elysia({ prefix: "/api" })
     name: 'jwt',
     secret: Bun.env.JWT_SECRET || 'fallback-secret-for-dev'
   }))
-  
- 
-  
+
   // Start OAuth flow
   .get('/auth/:provider', async ({ params, set }) => {
     try {
-     
-      
+
+
       if (params.provider !== 'google') {
         set.status = 400
         return { error: 'Unsupported provider' }
       }
 
       if (!oauthService) {
-        throw new Error('OAuth service is not initialized');
+        throw new Error('OAuth service is not initialized')
       }
 
 
       const { url, state } = await oauthService.getAuthorizationUrl('google')
       // console.log('Generated URL:', url); // ลบออก
-      return{
+      return {
         success: true,
         message: 'Redirecting to OAuth provider',
         url,
         state
       }
     } catch (error) {
-      console.error('OAuth error:', error); // เก็บเฉพาะ error สำคัญ
+      console.error('OAuth error:', error) // เก็บเฉพาะ error สำคัญ
       set.status = 500
       return { error: 'Failed to initialize OAuth flow' }
     }
   })
-  
+
   // OAuth callback
   .get('/auth/:provider/callback', async ({ params, query, set, jwt }) => {
     try {
@@ -84,10 +93,10 @@ export const OauthController = new Elysia({ prefix: "/api" })
         return { error: 'Unsupported provider' }
       }
 
-      const { code, state, error } = query as { 
+      const { code, state, error } = query as {
         code?: string
         state?: string
-        error?: string 
+        error?: string
       }
 
       if (error) {
@@ -102,7 +111,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
 
       // Handle OAuth callback
       const user = await oauthService.handleCallback(code, state)
-      
+
 
       const token = await jwt.sign({
         googleId: user.googleId,
@@ -121,7 +130,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
         }
       }
 
-   
+
       return {
         success: true,
         message: 'Authentication successful',
@@ -134,16 +143,16 @@ export const OauthController = new Elysia({ prefix: "/api" })
           picture: user.picture
         }
       }
-      
+
     } catch (error) {
       console.error('OAuth callback error:', error)
       set.status = 500
-      return { 
+      return {
         error: 'Authentication failed',
       }
     }
   })
-  
+
   // Get current user
   .get('/auth/me', async ({ headers, jwt, set }) => {
     try {
@@ -155,7 +164,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
 
       const token = authHeader.slice(7)
       const payload = await jwt.verify(token)
-      
+
       if (!payload) {
         set.status = 401
         return { error: 'Invalid token' }
@@ -179,7 +188,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
       return { error: 'Token verification failed' }
     }
   })
-  
+
   // Logout
   .post('/auth/logout', ({ set }) => {
     set.cookie = {

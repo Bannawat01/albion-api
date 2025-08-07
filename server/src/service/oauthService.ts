@@ -2,7 +2,14 @@ import crypto from "crypto"
 import type { GoogleTokenResponse, GoogleUserInfo, User } from "../types/UserType"
 import type { DatabaseService } from "../repository/authRepository"
 import { OAUTH_CONFIG } from "../configs/Oauth"
+import { DatabaseManager } from '../configs/databaseManager'
 
+class SomeService {
+  async initialize() {
+    // ตรวจสอบว่า indexes ถูกสร้างแล้วหรือยัง
+    await DatabaseManager.getInstance().initializeIndexes()
+  }
+}
 export class OAuthService {
   private db: DatabaseService
   // ลดขนาด Sets และ Maps
@@ -14,7 +21,7 @@ export class OAuthService {
       throw new Error('DatabaseService is required')
     }
     this.db = db
-    
+
     // เพิ่มความถี่ในการ cleanup (ทุก 2 นาที แทน 5 นาที)
     setInterval(() => {
       this.db.cleanupExpiredStates().catch(console.error)
@@ -49,7 +56,7 @@ export class OAuthService {
     const config = OAUTH_CONFIG[provider]
     let state: string
     let attempts = 0
-    
+
     // สร้าง unique state
     do {
       state = this.generateState()
@@ -58,16 +65,16 @@ export class OAuthService {
         throw new Error('Failed to generate unique state after 10 attempts')
       }
     } while (this.pendingStates.has(state))
-    
+
     this.pendingStates.add(state)
-    
+
     try {
       const codeVerifier = this.generateCodeVerifier()
       const codeChallenge = this.generateCodeChallenge(codeVerifier)
 
       // Save state to database
       await this.db.saveOAuthState(state, codeVerifier, config.redirectUri)
-      
+
       const params = new URLSearchParams({
         client_id: config.clientId,
         redirect_uri: config.redirectUri,
@@ -95,14 +102,15 @@ export class OAuthService {
     }
   }
 
+
   async exchangeCodeForToken(code: string, state: string): Promise<GoogleTokenResponse> {
     const config = OAUTH_CONFIG.google
-    
+
     // เพิ่ม validation
     if (!this.db || typeof this.db.getOAuthState !== 'function') {
       throw new Error('Database service not properly initialized or getOAuthState method not found')
     }
-    
+
     // Verify state and get code verifier
     const stateData = await this.db.getOAuthState(state)
     if (!stateData) {
@@ -187,9 +195,9 @@ export class OAuthService {
     try {
       const tokenResponse = await this.exchangeCodeForToken(code, state)
       const userInfo = await this.getUserInfo(tokenResponse.access_token)
-      
+
       let user = await this.db.findUserByGoogleId(userInfo.id)
-      
+
       if (user) {
         user = await this.db.updateUser(userInfo.id, {
           email: userInfo.email,
@@ -217,6 +225,8 @@ export class OAuthService {
       throw error
     }
   }
+
+
 
   // Cleanup method สำหรับการปิด service
   cleanup() {

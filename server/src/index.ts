@@ -5,17 +5,18 @@ import { itemController } from "./controller/itemController"
 import { goldController } from "./controller/goldController"
 import { errorHandler } from "./middleware/errorHandler"
 import { OauthController } from "./controller/authcontroller"
+import { DatabaseManager } from "./configs/databaseManager"
 
 
 await connectToDatabase.connect()
 
-// Test Albion metadata fetching
-// try {
-//     const metadata = await connectToAlbion.connect()
-//     console.log(`Successfully loaded ${metadata.items.length} items and ${metadata.locations.length} locations`)
-// } catch (error) {
-//     console.error("Failed to load Albion metadata:", error)
-// }
+try {
+    await DatabaseManager.getInstance().initializeIndexes()
+    console.log('Database indexes initialized successfully')
+} catch (error) {
+    console.error('Failed to initialize database indexes:', error)
+}
+
 
 const app = new Elysia()
     .onError(errorHandler)
@@ -26,6 +27,10 @@ const app = new Elysia()
         port: Bun.env.PORT || 8800,
         tls: tlsConfig
     })
+app.get('/health/database', async () => {
+    const healthStatus = await DatabaseManager.getInstance().healthCheck()
+    return healthStatus
+})
 
 
 
