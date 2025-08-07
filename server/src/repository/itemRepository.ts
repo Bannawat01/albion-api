@@ -89,7 +89,7 @@ export class ItemRepository {
     async fetchItemPriceAndLocation(itemId: ItemId, city: string): Promise<
         Price[] | string> {
         try {
-            const response = await fetch(`https://east.albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${city}`)
+            const response = await fetch(`https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${city}`)
             if (!response.ok) {
                 throw new ExternalApiError("Unable to fetch price data from Albion Online API")
             }

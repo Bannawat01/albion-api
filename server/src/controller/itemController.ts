@@ -36,31 +36,6 @@ export const itemController = new Elysia({
 
     })
 
-    .get("/item/:id", async ({ params: { id } }) => {
-        try {
-            const metadata = await connectToAlbion.connect()
-
-            const itemInfo = metadata.itemsData[id]
-
-            if (!itemInfo) {
-                throw new BadRequestError(`Item with ID '${id}' not found or invalid`)
-            }
-
-            const itemName = itemInfo?.LocalizedNames?.['EN-US'] || itemInfo?.UniqueName || id
-
-            return {
-                id: id,
-                name: itemName,
-                uniqueName: itemInfo?.UniqueName || id,
-                locations: itemInfo?.Locations || [],
-            }
-        } catch (error) {
-            if (error instanceof NotFoundError || error instanceof BadRequestError) {
-                throw error
-            }
-            throw new Error(error instanceof Error ? error.message : "Failed to fetch item details")
-        }
-    })
 
     .get("/item", async ({ query }) => {
         const itemId = query.id
