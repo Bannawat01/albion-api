@@ -3,15 +3,25 @@ import jwt from "@elysiajs/jwt";
 import Elysia from "elysia";
 import { OAuthService } from "../service/oauthService";
 import { connectToDatabase } from "../configs/database";
+import { DatabaseService } from "../repository/authRepository";
 
 let dbService: any;
 let oauthService: OAuthService;
 
 const initializeServices = async () => {
   try {
-    await connectToDatabase.connect();
-    dbService = connectToDatabase.getDatabaseService();
-  
+ await connectToDatabase.connect();
+
+const client = connectToDatabase.getClient();
+const db = connectToDatabase.getDb();
+
+if (!client || !db) {
+  throw new Error('MongoClient or Db is undefined!');
+}
+
+const databaseInstance = new DatabaseService(client, db); // ✅
+dbService = databaseInstance;
+oauthService = new OAuthService(databaseInstance);
     
     if (!dbService) {
       throw new Error('Database service is null after connection');

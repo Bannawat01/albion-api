@@ -43,7 +43,7 @@ export const itemController = new Elysia({
 
     .get("/item/:id", async ({ params: { id } }) => {
         try {
-            const metadata = await connectToAlbion.connect()
+            const metadata = await itemRepository.fetchMetadata()
 
             const itemInfo = metadata.itemsData[id]
 

@@ -23,7 +23,7 @@ export class ItemRepository {
         cacheMisses: [] // เวลาที่ใช้เมื่อ miss cache
     }
 
-    private constructor() {
+    public constructor() {
         this.initializePreloading()
     }
 

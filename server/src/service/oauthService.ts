@@ -1,7 +1,7 @@
 import crypto from "crypto"
-import { OAUTH_CONFIG } from "../configs/Oauth"
 import type { GoogleTokenResponse, GoogleUserInfo, User } from "../types/UserType"
 import type { DatabaseService } from "../repository/authRepository"
+import { OAUTH_CONFIG } from "../configs/Oauth"
 
 export class OAuthService {
   private db: DatabaseService
@@ -66,8 +66,8 @@ export class OAuthService {
       const codeChallenge = this.generateCodeChallenge(codeVerifier)
 
       // Save state to database
-      await this.db.saveOAuthState(state, codeVerifier)
-
+      await this.db.saveOAuthState(state, codeVerifier, config.redirectUri)
+      
       const params = new URLSearchParams({
         client_id: config.clientId,
         redirect_uri: config.redirectUri,
@@ -97,6 +97,11 @@ export class OAuthService {
 
   async exchangeCodeForToken(code: string, state: string): Promise<GoogleTokenResponse> {
     const config = OAUTH_CONFIG.google
+    
+    // เพิ่ม validation
+    if (!this.db || typeof this.db.getOAuthState !== 'function') {
+      throw new Error('Database service not properly initialized or getOAuthState method not found')
+    }
     
     // Verify state and get code verifier
     const stateData = await this.db.getOAuthState(state)

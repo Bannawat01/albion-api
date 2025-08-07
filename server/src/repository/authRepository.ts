@@ -133,7 +133,7 @@ export class DatabaseService {
     }
   }
 
-  async saveOAuthState(state: string, codeVerifier: string): Promise<void> {
+  async saveOAuthState(state: string, codeVerifier: string, redirectUri: string): Promise<void> {
     try {
       await this.oauthStates.insertOne({
         state,

@@ -26,6 +26,7 @@ export const connectToDatabase = {
             mongoClient = new MongoClient(url)
             await mongoClient.connect()
             database = mongoClient.db("albion-api-project")
+        isConnected = true // ✅ สำคัญ!
 
             // Initialize ItemRepository with native MongoDB Db
             itemRepo = new ItemRepository()
@@ -38,6 +39,9 @@ export const connectToDatabase = {
             isConnecting = false
         }
     },
+      getClient() {
+    return mongoClient;
+  },
     getDb: () => database,
     getItemRepo: () => itemRepo,
     close: async () => {
