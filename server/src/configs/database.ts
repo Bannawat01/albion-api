@@ -25,31 +25,16 @@ let itemRepo: ItemRepository
 export const connectToDatabase = {
     connect: async () => {
         try {
-            mongoClient = new MongoClient(url)
+            mongoClient = new MongoClient(url, mongoOptions)
             await mongoClient.connect()
             database = mongoClient.db("albion-api-project")
             console.log("Connected to MongoDB with Mongoose")
-
-            mongoClient.on('connectionPoolCreated', (event) => {
-                console.log('connection pool created', event.address)
-            })
-            mongoClient.on('connectionCreated', (event) => {
-                console.log('connection created', event.connectionId)
-            })
-            mongoClient.on('connectionReady', (event) => {
-                console.log('connection ready', event.connectionId)
-            })
-            mongoClient.on('connectionClosed', (event) => {
-                console.log('connection closed', event.connectionId)
-            })
-            console.log('✅ Connected to MongoDB with Connection Pool')
         } catch (error) {
             console.error('❌ MongoDB Connection Pool Error:', error)
             throw error
         }
     },
-    getItemRepo: () => itemRepo,
-    getCkient: () => mongoClient,
+    getClient: () => mongoClient,
     getPoolStats: () => {
         if (!mongoClient) return null
         return {

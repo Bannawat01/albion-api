@@ -1,12 +1,12 @@
 import Elysia from "elysia"
-import { connectToAlbion } from "../configs/albionbase"
 import { BadRequestError, ExternalApiError, NotFoundError } from "../middleware/customError"
 import { ItemRepository } from "../repository/itemRepository"
 import type { Price } from "../interface/priceInterface"
+import type { PaginationQuery } from "../interface/paginationInterface"
+import { connectToDatabase } from "../configs/database"
 
 // สร้าง instance ของ ItemRepository
-const itemRepository = new ItemRepository()
-
+const itemRepository = ItemRepository.getInstance()
 export const itemController = new Elysia({
     prefix: "/api"
 })
@@ -159,5 +159,80 @@ export const itemController = new Elysia({
             }
         } catch (error) {
             throw new Error(error instanceof Error ? error.message : "Failed to clear cache")
+        }
+    })
+
+    // Pagination endpoints
+    .get("/items/paginated", async ({ query }) => {
+        try {
+            const paginationQuery: PaginationQuery = {
+                page: query.page ? parseInt(query.page as string) : 1,
+                limit: query.limit ? parseInt(query.limit as string) : 10
+            }
+
+            const searchTerm = query.search as string | undefined
+            const result = await itemRepository.fetchItemsPaginated(paginationQuery, searchTerm)
+
+            return {
+                success: true,
+                data: result.data,
+            }
+        } catch (error) {
+            if (error instanceof BadRequestError) {
+                throw error
+            }
+            throw new Error(error instanceof Error ? error.message : "Failed to fetch paginated items")
+        }
+    })
+
+    .get("/item/:id/prices/paginated", async ({ params: { id }, query }) => {
+        try {
+            // ตรวจสอบว่า item ID มีอยู่จริง
+            const metadata = await itemRepository.fetchMetadata()
+            const itemInfo = metadata.itemsData[id]
+
+            if (!itemInfo) {
+                throw new BadRequestError(`Item ID '${id}' does not exist in game data`)
+            }
+
+            const paginationQuery: PaginationQuery = {
+                page: query.page ? parseInt(query.page as string) : 1,
+                limit: query.limit ? parseInt(query.limit as string) : 10
+            }
+
+            const result = await itemRepository.fetchItemPricesPaginated(id, paginationQuery)
+
+            return {
+                success: true,
+                itemId: id,
+                itemName: itemInfo?.LocalizedNames?.['EN-US'] || itemInfo?.UniqueName || id,
+                data: result.data,
+            }
+        } catch (error) {
+            if (error instanceof BadRequestError || error instanceof NotFoundError) {
+                throw error
+            }
+            throw new Error(error instanceof Error ? error.message : "Failed to fetch paginated item prices")
+        }
+    })
+
+    .get("/items/popular/paginated", async ({ query }) => {
+        try {
+            const paginationQuery: PaginationQuery = {
+                page: query.page ? parseInt(query.page as string) : 1,
+                limit: query.limit ? parseInt(query.limit as string) : 5
+            }
+
+            const result = await itemRepository.fetchPopularItemsPaginated(paginationQuery)
+
+            return {
+                success: true,
+                data: result.data,
+            }
+        } catch (error) {
+            if (error instanceof BadRequestError) {
+                throw error
+            }
+            throw new Error(error instanceof Error ? error.message : "Failed to fetch popular items")
         }
     })
