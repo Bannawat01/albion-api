@@ -3,7 +3,8 @@ import { BadRequestError, ExternalApiError, NotFoundError } from "../middleware/
 import { ItemRepository } from "../repository/itemRepository"
 import type { Price } from "../interface/priceInterface"
 import type { PaginationQuery } from "../interface/paginationInterface"
-import { connectToDatabase } from "../configs/database"
+import { HttpClient } from "../service/httpClient"
+const httpClient = HttpClient.getInstance()
 
 // สร้าง instance ของ ItemRepository
 const itemRepository = ItemRepository.getInstance()
@@ -234,5 +235,36 @@ export const itemController = new Elysia({
                 throw error
             }
             throw new Error(error instanceof Error ? error.message : "Failed to fetch popular items")
+        }
+    })
+
+    .get("/item/:id/image", async ({ params: { id }, query, set }) => {
+        try {
+            const { quality = 1, size = 217 } = query
+            const imageUrl = `https://render.albiononline.com/v1/item/${id}.png?quality=${quality}&size=${size}`
+
+            // Cache และ proxy ภาพผ่าน server
+            const response = await httpClient.get(imageUrl)
+
+            if (!response.ok) {
+                throw new NotFoundError(`Image not found for item: ${id}`)
+            }
+
+            // Set proper headers for image response
+            set.headers['Content-Type'] = 'image/png'
+            set.headers['Cache-Control'] = 'public, max-age=86400'
+
+            // Return the image data as ArrayBuffer
+            return new Response(await response.arrayBuffer(), {
+                headers: {
+                    'Content-Type': 'image/png',
+                    'Cache-Control': 'public, max-age=86400'
+                }
+            })
+        } catch (error) {
+            if (error instanceof NotFoundError) {
+                throw error
+            }
+            throw new Error(error instanceof Error ? error.message : "Failed to fetch item image")
         }
     })
