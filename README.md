@@ -26,21 +26,31 @@
 ## ✨ Features
 
 🔥 **High Performance**
+
 - Built with [Bun](https://bun.sh) - Ultra-fast JavaScript runtime
 - [Elysia](https://elysiajs.com) framework for optimal performance
 - Connection pooling and optimized database queries
 
 📊 **Market Data**
+
 - Real-time Albion Online item prices
 - Historical price data and trends
 - Gold price tracking
 - Advanced filtering and pagination
 
+🔐 **Authentication & Security**
+
+- Google OAuth 2.0 integration
+- JWT token-based authentication
+- Secure session management
+- HTTPS/TLS support
+
 🛡️ **Enterprise Ready**
+
 - TypeScript for type safety
 - Comprehensive error handling
 - Request validation and sanitization
-- HTTPS/TLS support
+- Database connection pooling with health checks
 
 ## 🚀 Quick Start
 
@@ -57,7 +67,7 @@ cp .env.example .env
 # Edit .env with your configuration
 
 # Start development server
-bun dev
+bun run dev
 ```
 
 🎉 **Server will be running at `https://localhost:8800`**
@@ -68,16 +78,19 @@ bun dev
 
 - [Bun](https://bun.sh) v1.2.1 or higher
 - [MongoDB](https://www.mongodb.com) (local or cloud)
+- Google OAuth 2.0 credentials (for authentication)
 - Node.js v18+ (for compatibility)
 
 ### Step-by-step Installation
 
 1. **Install Bun** (if not already installed)
+
    ```bash
    curl -fsSL https://bun.sh/install | bash
    ```
 
 2. **Clone and Setup**
+
    ```bash
    git clone <repository-url>
    cd albion-api/server
@@ -85,34 +98,52 @@ bun dev
    ```
 
 3. **Environment Configuration**
+
    ```bash
    # Create environment file
    touch .env
    ```
-   
+
    Add the following variables:
+
    ```env
+   PORT=8800
    MONGO_USERNAME=your_username
    MONGO_PASSWORD=your_password
-   PORT=8800
-   NODE_ENV=development
+   MODE=development
+   JWT_SECRET=your_jwt_secret_key
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   GOOGLE_REDIRECT_URI=https://localhost:8800/api/auth/google/callback
    ```
 
-4. **Start Development Server**
+4. **Google OAuth Setup**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Enable Google+ API
+   - Create OAuth 2.0 credentials
+   - Set authorized redirect URI to: `https://localhost:8800/api/auth/google/callback`
+   - Copy Client ID and Client Secret to your `.env` file
+
+5. **Start Development Server**
    ```bash
-   bun dev
+   bun run dev
    ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `MONGO_USERNAME` | MongoDB username | - | ✅ |
-| `MONGO_PASSWORD` | MongoDB password | - | ✅ |
-| `PORT` | Server port | 8800 | ❌ |
-| `NODE_ENV` | Environment | development | ❌ |
+| Variable               | Description                      | Default     | Required |
+| ---------------------- | -------------------------------- | ----------- | -------- |
+| `PORT`                 | Server port                      | 8800        | ❌       |
+| `MONGO_USERNAME`       | MongoDB username                 | -           | ✅       |
+| `MONGO_PASSWORD`       | MongoDB password                 | -           | ✅       |
+| `MODE`                 | Environment mode                 | development | ❌       |
+| `JWT_SECRET`           | JWT secret key for token signing | -           | ✅       |
+| `GOOGLE_CLIENT_ID`     | Google OAuth client ID           | -           | ✅       |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret       | -           | ✅       |
+| `GOOGLE_REDIRECT_URI`  | Google OAuth redirect URI        | -           | ✅       |
 
 ### Database Configuration
 
@@ -126,20 +157,64 @@ const mongoOptions = {
   connectTimeoutMS: 10000,
   socketTimeoutMS: 45000,
   retryWrites: true,
-  retryReads: true
-}
+  retryReads: true,
+};
 ```
 
 ## 📡 API Endpoints
+
+### 🔐 Authentication API
+
+```http
+GET /api/auth/google
+```
+**Description**: Initiate Google OAuth authentication flow
+
+**Response**: Redirects to Google OAuth consent screen
+
+```http
+GET /api/auth/google/callback
+```
+**Description**: Handle Google OAuth callback and create user session
+
+**Response Example**:
+```json
+{
+  "message": "Authentication successful",
+  "user": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "name": "User Name"
+  },
+  "token": "jwt_token_here"
+}
+```
+
+### 🏥 Health Check API
+
+```http
+GET /health/database
+```
+**Description**: Check database connection health
+
+**Response Example**:
+```json
+{
+  "status": "healthy",
+  "message": "Database connection is healthy"
+}
+```
 
 ### 🏷️ Items API
 
 ```http
 GET /api/items
 ```
+
 **Description**: Get paginated list of items with filtering options
 
 **Query Parameters**:
+
 - `page` (number): Page number (default: 1)
 - `limit` (number): Items per page (default: 10)
 - `search` (string): Search by item name
@@ -148,6 +223,7 @@ GET /api/items
 - `maxPrice` (number): Maximum price filter
 
 **Response Example**:
+
 ```json
 {
   "data": [
@@ -174,9 +250,11 @@ GET /api/items
 ```http
 GET /api/gold
 ```
+
 **Description**: Get current gold prices and historical data
 
 **Response Example**:
+
 ```json
 {
   "currentPrice": 1850,
@@ -196,10 +274,15 @@ GET /api/gold
 ```
 src/
 ├── 📁 configs/          # Configuration files
-│   ├── database.ts       # MongoDB connection
-│   ├── albionbase.ts     # Albion API config
-│   └── tls.ts           # HTTPS/TLS config
+│   ├── database.ts       # MongoDB connection with Mongoose & native driver
+│   ├── databaseManager.ts # Database manager with health checks
+│   ├── indexs.ts        # Database index definitions
+│   ├── Oauth.ts         # Google OAuth configuration
+│   ├── albionbase.ts    # Albion API config
+│   ├── tls.ts           # HTTPS/TLS config
+│   └── dbMigration.ts   # Database migration utilities
 ├── 📁 controller/        # Route controllers
+│   ├── authcontroller.ts # Authentication & OAuth routes
 │   ├── itemController.ts # Items API routes
 │   └── goldController.ts # Gold API routes
 ├── 📁 interface/         # TypeScript interfaces
@@ -244,9 +327,10 @@ bun test src/service/paginationService.test.ts
 ### Optimization Features
 
 - ⚡ **Bun Runtime**: 3x faster than Node.js
-- 🔄 **Connection Pooling**: Efficient database connections
+- 🔄 **Dual Database Connections**: Mongoose for schemas + native MongoDB driver
+- 🏥 **Health Monitoring**: Database connection health checks
+- 🔐 **JWT Authentication**: Secure token-based authentication
 - 📦 **Response Caching**: TTL-based caching system
-- 🗜️ **Data Compression**: Automatic response compression
 
 ## 🤝 Contributing
 
