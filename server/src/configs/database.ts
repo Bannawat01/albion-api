@@ -1,54 +1,56 @@
-import { MongoClient, Db, type MongoClientOptions } from "mongodb"
+import mongoose from "mongoose"
+import { MongoClient, Db } from "mongodb"
 import { ItemRepository } from "../repository/itemRepository"
+import { DatabaseService } from "../repository/authRepository"
 
 const username = Bun.env.MONGO_USERNAME
 const password = Bun.env.MONGO_PASSWORD
 
-const url = `mongodb+srv://${username}:${password}@albion-api-project.gg0vlg9.mongodb.net/?retryWrites=true&
-w=majority&appName=albion-api-project`
-
-const mongoOptions: MongoClientOptions = {
-    minPoolSize: 5,
-    maxPoolSize: 20,
-    maxIdleTimeMS: 30000,
-    connectTimeoutMS: 10000,
-    socketTimeoutMS: 45000,
-    retryWrites: true,
-    retryReads: true,
-    monitorCommands: true,
-}
+const url = `mongodb+srv://${username}:${password}@albion-api-project.gg0vlg9.mongodb.net/?retryWrites=true&w=majority&appName=albion-api-project`
 
 let mongoClient: MongoClient
 let database: Db
 let itemRepo: ItemRepository
+let databaseService: DatabaseService
+let isConnected = false
+let isConnecting = false
 
 export const connectToDatabase = {
     connect: async () => {
         try {
-            mongoClient = new MongoClient(url, mongoOptions)
+            // Connect with mongoose for schema-based operations
+            await mongoose.connect(url)
+            console.log("Connected to MongoDB with Mongoose")
+
+            // Also connect with native MongoDB driver for repository pattern
+            mongoClient = new MongoClient(url)
             await mongoClient.connect()
             database = mongoClient.db("albion-api-project")
-            console.log("Connected to MongoDB with Mongoose")
+        isConnected = true // ✅ สำคัญ!
+
+            // Initialize ItemRepository with native MongoDB Db
+            itemRepo = new ItemRepository()
+            // console.log("MongoDB native client connected")
+
         } catch (error) {
-            console.error('❌ MongoDB Connection Pool Error:', error)
+            console.error("Error connecting to MongoDB:", error)
             throw error
+        } finally {
+            isConnecting = false
         }
     },
-    getClient: () => mongoClient,
-    getPoolStats: () => {
-        if (!mongoClient) return null
-        return {
-            totalConnections: mongoClient.connect.length || 0,
-            availableConnections: 'Available in pool',
-            checkedOutConnections: 'Currently in use'
-        }
-    },
-    disconnect: async () => {
-        if (mongoClient) {
-            await mongoClient.close()
-            console.log('✅ Disconnected from MongoDB')
+      getClient() {
+    return mongoClient;
+  },
+    getDb: () => database,
+    getItemRepo: () => itemRepo,
+    close: async () => {
+        try {
+            await mongoose.disconnect()
+            await mongoClient?.close()
+            console.log("Disconnected from MongoDB")
+        } catch (error) {
+            console.error("Error disconnecting from MongoDB:", error)
         }
     }
-
 }
-

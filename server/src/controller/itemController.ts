@@ -44,7 +44,7 @@ export const itemController = new Elysia({
 
     .get("/item/:id", async ({ params: { id } }) => {
         try {
-            const metadata = await await itemRepository.fetchMetadata()
+            const metadata = await itemRepository.fetchMetadata()
 
             const itemInfo = metadata.itemsData[id]
 
