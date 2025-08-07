@@ -23,7 +23,6 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/bun": "latest",
-    "@types/jsonwebtoken": "^9.0.10",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {

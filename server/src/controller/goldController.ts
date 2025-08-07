@@ -2,10 +2,15 @@ import { Elysia } from "elysia"
 import { GoldRepository } from "../repository/goldRepository"
 import type { GoldPriceOptions } from "../interface/goldInterface"
 
+// สร้าง singleton instance ของ GoldRepository
+const goldRepository = new GoldRepository()
+
 export const goldController = new Elysia({ prefix: "/api" })
-    .get("/gold", async ({ query }) => {
+    .get("/gold", async ({ query, set }) => {
         try {
-            const goldRepository = new GoldRepository()
+            // เพิ่ม HTTP cache headers
+            set.headers['Cache-Control'] = 'public, max-age=300' // 5 minutes
+            set.headers['ETag'] = `gold-${Date.now()}`
             const options: GoldPriceOptions = {
                 count: query.count ? parseInt(query.count as string) : 2
             }

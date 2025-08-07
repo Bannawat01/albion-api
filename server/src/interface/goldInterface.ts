@@ -1,4 +1,4 @@
-import type { ApiDateString, ISODateString } from "../types/itemBase"
+import type { ApiDateString } from "../types/itemBase"
 
 export interface GoldPrice {
     price: number
