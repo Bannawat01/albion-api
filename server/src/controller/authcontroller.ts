@@ -6,6 +6,7 @@ import { connectToDatabase } from "../configs/database"
 import { DatabaseService } from "../repository/authRepository"
 import { DatabaseManager } from "../configs/databaseManager"
 import { ConnectionError } from "../middleware/customError"
+import { handleOAuthError } from "../middleware/oauthErrorHandler"
 
 let dbService: any
 let oauthService: OAuthService
@@ -99,9 +100,9 @@ export const OauthController = new Elysia({ prefix: "/api" })
         error?: string
       }
 
+      // Handle OAuth errors
       if (error) {
-        set.status = 400
-        return { error: `OAuth error: ${error}` }
+        return handleOAuthError(error)
       }
 
       if (!code || !state) {
