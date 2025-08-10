@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js'
-
+import { itemApi } from '@/api/item'
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 export default function GoldChartPage() {
@@ -21,11 +21,10 @@ export default function GoldChartPage() {
   useEffect(() => {
     const fetchGold = async () => {
       try {
-        const res = await fetch('https://localhost:8800/api/gold?count=10')
-        const data = await res.json()
+        // เปลี่ยนจาก fetch เป็น axios
+        const data = await itemApi.getGoldPrice()
 
         if (data.success) {
-          // Sort data by timestamp in ascending order (oldest to newest)
           const sortedData = data.data.sort((a: GoldPrice, b: GoldPrice) =>
             new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
           )

@@ -1,81 +1,130 @@
-import { apiClient } from "./config";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { axiosInstance } from './config'
 
-// TypeScript types matching your server responses
+// Types
 export type ItemSummary = {
-  id: string;
-  name: string;
-  uniqueName: string;
-};
+  id: string
+  name: string
+  uniqueName: string
+}
 
 export type ItemsResponse = {
-  total: number;
-  showing: number;
-  items: ItemSummary[];
-};
-
-export type ItemDetail = {
-  id: string;
-  name: string;
-  uniqueName: string;
-  locations?: string[];
-};
+  total: number
+  showing: number
+  items: ItemSummary[]
+}
 
 export type PaginatedResponse<T> = {
-  success: true;
-  data: T[];
-};
+  success: true
+  data: T[]
+}
 
 export type Price = {
-  itemId: string;
-  itemName: string;
-  city: string;
-  sellPriceMin: number;
-  buyPriceMax: number;
-  quality: number;
-  timestamp: string;
-};
+  itemId: string
+  itemName: string
+  city: string
+  sellPriceMin: number
+  buyPriceMax: number
+  quality: number
+  timestamp: string
+}
 
-// Item API functions
-export const itemApi = {
+// API Functions
+const itemApi = {
   // Get all items
-  async getAllItems(): Promise<ItemsResponse> {
-    return apiClient.get<ItemsResponse>("/items");
+  getItemImageUrl: (itemId: string, quality: number = 1, size: number = 64): string => {
+    return `https://render.albiononline.com/v1/item/${encodeURIComponent(itemId)}.png?quality=${quality}&size=${size}`
+  },
+  getAllItems: async (): Promise<ItemsResponse> => {
+    const { data } = await axiosInstance.get('/items')
+    return data
   },
 
   // Search items with pagination
-  async searchItems(searchTerm?: string, page = 1, limit = 20): Promise<PaginatedResponse<ItemSummary>> {
+  searchItems: async (searchTerm?: string, page = 1, limit = 20): Promise<PaginatedResponse<ItemSummary>> => {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-    });
-    
+    })
+
     if (searchTerm) {
-      params.append("search", searchTerm);
+      params.append('search', searchTerm)
     }
 
-    return apiClient.get<PaginatedResponse<ItemSummary>>(`/items/paginated?${params}`);
+    const { data } = await axiosInstance.get(`/items/paginated?${params}`)
+    return data
   },
 
   // Get single item details
-  async getItem(itemId: string): Promise<ItemDetail> {
-    return apiClient.get<ItemDetail>(`/item/${encodeURIComponent(itemId)}`);
+  getItem: async (itemId: string) => {
+    const { data } = await axiosInstance.get(`/item/${encodeURIComponent(itemId)}`)
+    return data
   },
 
   // Get item prices
-  async getItemPrices(itemId: string, city?: string): Promise<{ success: true; data: Price[] }> {
-    const params = new URLSearchParams({ id: itemId });
+  getItemPrices: async (itemId: string, city?: string) => {
+    const params = new URLSearchParams({ id: itemId })
     if (city) {
-      params.append("city", city);
+      params.append('city', city)
     }
-    return apiClient.get<{ success: true; data: Price[] }>(`/item/price?${params}`);
+    const { data } = await axiosInstance.get(`/item/price?${params}`)
+    return data
   },
+  getGoldPrice: async () => {
+    const { data } = await axiosInstance.get('/gold?count=50')
+    return data
+  }
+}
 
-  // Get item image URL
-  getItemImageUrl(itemId: string, quality = 1, size = 217): string {
-    const params = new URLSearchParams({
-      quality: quality.toString(),
-      size: size.toString(),
-    });
-    return `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:8800"}/api/item/${encodeURIComponent(itemId)}/image?${params}`;
-  },
-};
+// React Query Hooks
+export const useItems = () => {
+  return useQuery({
+    queryKey: ['items'],
+    queryFn: itemApi.getAllItems,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export const useSearchItems = (searchTerm?: string, page = 1, limit = 20) => {
+  return useQuery({
+    queryKey: ['items', 'search', searchTerm, page, limit],
+    queryFn: () => itemApi.searchItems(searchTerm, page, limit),
+    enabled: true, // Always enabled, will search all items if no searchTerm
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  })
+}
+
+export const useItem = (itemId: string) => {
+  return useQuery({
+    queryKey: ['item', itemId],
+    queryFn: () => itemApi.getItem(itemId),
+    enabled: !!itemId,
+  })
+}
+
+export const useItemPrices = (itemId: string, city?: string) => {
+  return useQuery({
+    queryKey: ['item', 'prices', itemId, city],
+    queryFn: () => itemApi.getItemPrices(itemId, city),
+    enabled: !!itemId,
+    refetchInterval: 30 * 1000, // Refetch every 30 seconds for live prices
+  })
+}
+
+// Mutations for creating/updating data
+export const useCreateItem = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (newItem: Partial<ItemSummary>) => {
+      const { data } = await axiosInstance.post('/items', newItem)
+      return data
+    },
+    onSuccess: () => {
+      // Invalidate and refetch items list
+      queryClient.invalidateQueries({ queryKey: ['items'] })
+    },
+  })
+}
+
+export { itemApi }
