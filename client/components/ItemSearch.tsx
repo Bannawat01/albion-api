@@ -175,9 +175,9 @@ export default function ItemSearch() {
                 <div>
                     <h2 className="text-xl font-semibold text-foreground">
                         {searchTerm ? (
-                            <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></>
+                            <>ผลการค้นหา <span className=" text-white">"{searchTerm}"</span></>
                         ) : (
-                            "ไอเทมทั้งหมด"
+                            <span className="text-white">ไอเทมทั้งหมด</span>
                         )}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -237,7 +237,7 @@ export default function ItemSearch() {
                             <CardContent className="pt-6">
                                 <div className="flex items-center gap-4">
                                     <div className="relative">
-                                        <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
+                                        <div className="bg-slate-100 w-16 h-16 rounded-xl flex items-center justify-center overflow-hidden">
                                             <img
                                                 src={itemApi.getItemImageUrl(item.id, 1, 64)}
                                                 alt={item.name}
@@ -266,10 +266,10 @@ export default function ItemSearch() {
                                         </h3>
                                         <div className="flex flex-col gap-1 mt-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
-                                                    ID: {item.id}
+                                                <span className="bg-gradient-to-r from-green-600 via-green-400 to-blue-400 text-white text-xs font-bold px-2 py-1 rounded shadow-sm animate-pulse">
+                                                    {item.id}
                                                 </span>
-                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                <span className="bg-gradient-to-r from-green-600 via-green-400 to-blue-400 text-white text-xs font-bold px-2 py-1 rounded shadow-sm animate-pulse">
                                                     {item.uniqueName}
                                                 </span>
                                             </div>
@@ -284,6 +284,28 @@ export default function ItemSearch() {
                             </CardContent>
                         </Card>
                     ))}
+                    {/* Load More Button */}
+                    {hasNextPage && (
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loading}
+                            className={cn(
+                                "bg-slate-500  mt-4 px-6 py-3 text-white rounded-xl font-medium",
+                                "hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                                "disabled:opacity-50 disabled:cursor-not-allowed",
+                                "transition-all duration-200"
+                            )}
+                        >
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                    กำลังโหลด...
+                                </div>
+                            ) : (
+                                "โหลดเพิ่มเติม"
+                            )}
+                        </button>
+                    )}
                 </div>
             )}
 
