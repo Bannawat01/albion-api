@@ -1,4 +1,5 @@
 "use client"
+import { getLoginErrorMessage } from "@/lib/errorMessage"
 import { useAuth } from "../../contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 import React, { useEffect } from "react"
@@ -7,6 +8,7 @@ const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const error = searchParams.get('error')
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -18,22 +20,8 @@ const LoginPage: React.FC = () => {
     login()
   }
 
-  // ตรวจสอบ error parameters
-  const error = searchParams.get('error')
-  const getErrorMessage = () => {
-    switch (error) {
-      case 'user_cancelled':
-        return 'คุณได้ยกเลิกการเข้าสู่ระบบ'
-      case 'auth_failed':
-        return 'การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง'
-      case 'oauth_error':
-        return 'เกิดข้อผิดพลาดจาก Google OAuth'
-      case 'invalid_callback':
-        return 'ข้อมูล callback ไม่ถูกต้อง'
-      default:
-        return null
-    }
-  }
+  const errorMessage = getLoginErrorMessage(error)
+
 
   if (isLoading) {
     return (
@@ -48,14 +36,13 @@ const LoginPage: React.FC = () => {
   }
 
 
-  const errorMessage = getErrorMessage()
 
   return (
     <div className="flex flex-col items-center justify-center min-h-20 bg-gradient-to-br from-slate-900 to-slate-700 p-6 rounded-3xl shadow-xl w-full max-w-sm mx-auto mt-20">
 
       {/* แสดง Error Message */}
       {errorMessage && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg w-full text-center">
+        <div className="error-message">
           {errorMessage}
         </div>
       )}
