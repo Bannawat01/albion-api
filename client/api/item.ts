@@ -78,4 +78,5 @@ export const itemApi = {
     });
     return `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:8800"}/api/item/${encodeURIComponent(itemId)}/image?${params}`;
   },
+  
 };
