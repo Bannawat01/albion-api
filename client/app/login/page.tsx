@@ -1,3 +1,66 @@
+<<<<<<< HEAD
+"use client"
+import { useAuth } from "../../contexts/AuthContext"
+import { useRouter, useSearchParams } from "next/navigation"
+import React, { useEffect } from "react"
+
+const LoginPage: React.FC = () => {
+  const { login, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/')
+    }
+  }, [isAuthenticated, router])
+
+  const handleGoogleLogin = () => {
+    login()
+  }
+
+  // ตรวจสอบ error parameters
+  const error = searchParams.get('error')
+  const getErrorMessage = () => {
+    switch (error) {
+      case 'user_cancelled':
+        return 'คุณได้ยกเลิกการเข้าสู่ระบบ'
+      case 'auth_failed':
+        return 'การเข้าสู่ระบบล้มเหลว กรุณาลองใหม่อีกครั้ง'
+      case 'oauth_error':
+        return 'เกิดข้อผิดพลาดจาก Google OAuth'
+      case 'invalid_callback':
+        return 'ข้อมูล callback ไม่ถูกต้อง'
+      default:
+        return null
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-lg">กำลังโหลด...</div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return null
+  }
+
+
+  const errorMessage = getErrorMessage()
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-20 bg-gradient-to-br from-slate-900 to-slate-700 p-6 rounded-3xl shadow-xl w-full max-w-sm mx-auto mt-20">
+
+      {/* แสดง Error Message */}
+      {errorMessage && (
+        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg w-full text-center">
+          {errorMessage}
+        </div>
+      )}
+=======
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -80,6 +143,7 @@ const LoginPage: React.FC = () => {
             />
           </div>
         </div>
+<<<<<<< Updated upstream
 
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-2">
@@ -184,5 +248,133 @@ const LoginPage: React.FC = () => {
     </div>
   );
 };
+=======
+>>>>>>> Stashed changes
 
-export default LoginPage;
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            เข้าสู่ระบบ Albo Search
+          </h1>
+          <p className="text-gray-600">
+            ใช้บัญชี Google ของคุณเพื่อเข้าสู่ระบบ
+          </p>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    เกิดข้อผิดพลาด
+                  </h3>
+                  <p className="mt-1 text-sm text-red-700">
+                    {decodeURIComponent(error)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {!error && isAutoRedirecting && (
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-gray-600">กำลังเปลี่ยนเส้นทางไปยัง Google...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="space-y-3">
+          {error ? (
+            // Show retry and home buttons when there's an error
+            <>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold shadow-md hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>ลองใหม่อีกครั้ง</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className="w-full px-6 py-3 rounded-lg border-2 border-gray-300 text-gray-700 font-semibold hover:border-gray-400 hover:text-gray-800 transition-all duration-200"
+              >
+                กลับหน้าหลัก
+              </button>
+            </>
+          ) : (
+            // Show manual login button as fallback
+            <button
+              type="button"
+              onClick={startGoogleLogin}
+              className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 to-blue-500 text-gray-900 font-semibold shadow-md hover:from-yellow-500 hover:via-green-500 hover:to-blue-700 hover:text-white transition-all duration-200"
+            >
+              <img 
+                src="/images/google.webp" 
+                alt="Google" 
+                className="h-5 w-5" 
+              />
+              <span>เข้าสู่ระบบด้วย Google</span>
+            </button>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-gray-500">
+            โดยการเข้าสู่ระบบ คุณยอมรับ{' '}
+            <a href="#" className="text-blue-600 hover:text-blue-700">
+              ข้อกำหนดการใช้งาน
+            </a>{' '}
+            และ{' '}
+            <a href="#" className="text-blue-600 hover:text-blue-700">
+              นโยบายความเป็นส่วนตัว
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+>>>>>>> fadec286f0f974f08a94b7adc4de1c4482d6e99e
+
+      <div className="mb-8 h-32 w-32 shadow-lg rounded-full bg-white flex items-center justify-center">
+        <img
+          src="/images/google.webp"
+          alt="Google Logo"
+          width="128"
+          height="128"
+          className="h-full w-full object-contain"
+        />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 to-blue-500 text-gray-900 font-semibold shadow-md hover:from-yellow-500 hover:via-green-500 hover:to-blue-700 hover:text-white transition-all duration-200"
+      >
+        <span>เข้าสู่ระบบด้วย Google</span>
+      </button>
+    </div>
+  )
+}
+
+export default LoginPage

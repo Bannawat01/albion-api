@@ -6,6 +6,7 @@ import { connectToDatabase } from "../configs/database"
 import { DatabaseService } from "../repository/authRepository"
 import { DatabaseManager } from "../configs/databaseManager"
 import { ConnectionError } from "../middleware/customError"
+import { handleOAuthError } from "../middleware/oauthErrorHandler"
 
 let dbService: any
 let oauthService: OAuthService
@@ -99,6 +100,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
       state?: string
       error?: string
     }
+<<<<<<< Updated upstream
 
     // Handle OAuth errors (including user cancellation)
     if (error) {
@@ -131,6 +133,45 @@ export const OauthController = new Elysia({ prefix: "/api" })
       return
     }
 
+=======
+
+    // Handle OAuth errors (including user cancellation)
+    if (error) {
+      console.log('OAuth error received:', error) // For debugging
+      
+      // Different error types
+      let errorMessage = 'Authentication failed'
+      switch (error) {
+        case 'access_denied':
+          errorMessage = 'การเข้าสู่ระบบถูกยกเลิกโดยผู้ใช้'
+          break
+        case 'invalid_request':
+          errorMessage = 'คำขอไม่ถูกต้อง'
+          break
+        case 'unauthorized_client':
+          errorMessage = 'ไคลเอนต์ไม่ได้รับอนุญาต'
+          break
+        default:
+          errorMessage = `เกิดข้อผิดพลาด: ${error}`
+      }
+      
+      // Use 302 redirect with proper headers
+      set.status = 302
+      set.headers = {
+        'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+      return
+    }
+
+<<<<<<< HEAD
+      // Handle OAuth errors
+      if (error) {
+        return handleOAuthError(error)
+=======
+>>>>>>> Stashed changes
     // Check for missing parameters
     if (!code || !state) {
       const missingParams = []
@@ -144,6 +185,10 @@ export const OauthController = new Elysia({ prefix: "/api" })
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
+<<<<<<< Updated upstream
+=======
+>>>>>>> fadec286f0f974f08a94b7adc4de1c4482d6e99e
+>>>>>>> Stashed changes
       }
       return
     }
