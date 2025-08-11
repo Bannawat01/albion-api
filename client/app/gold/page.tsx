@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Line } from 'react-chartjs-2'
 import type { GoldPrice } from '@server/interface/goldInterface'
+import { API_BASE_URL } from '../../api/config';
 import {
   Chart as ChartJS,
   LineElement,
@@ -17,12 +18,13 @@ ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip,
 export default function GoldChartPage() {
   const [goldData, setGoldData] = useState<GoldPrice[]>([])
   const [loading, setLoading] = useState(true)
+  
 
   useEffect(() => {
     const fetchGold = async () => {
       try {
-        // เปลี่ยนจาก fetch เป็น axios
-        const data = await itemApi.getGoldPrice()
+        const res = await fetch('https://localhost:8800/api/gold?count=10')
+        const data = await res.json()
 
         if (data.success) {
           const sortedData = data.data.sort((a: GoldPrice, b: GoldPrice) =>

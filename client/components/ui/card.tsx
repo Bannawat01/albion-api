@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { cn } from "@/lib/utils"
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
@@ -6,20 +7,12 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        // โทนเข้ม ไล่เฉด + กระจกหมอก
-        "relative flex flex-col gap-6 rounded-2xl border border-slate-700/60",
-        "bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-indigo-900/40",
-        "backdrop-blur-xl text-slate-200 shadow-sm",
-        // เส้นเรืองแสงเบา ๆ + โฮเวอร์
-        "ring-1 ring-indigo-400/10 hover:ring-indigo-400/20",
-        "transition-colors duration-300",
-        // internal padding
-        "py-6",
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
         className
       )}
       {...props}
     />
-  )
+  );
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -35,7 +28,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
@@ -45,17 +38,17 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("font-semibold leading-none text-slate-100", className)}
       {...props}
     />
-  )
+  );
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-slate-400", className)}
+      className={cn("text-muted-foreground text-sm", className)}
       {...props}
     />
-  )
+  );
 }
 
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
@@ -68,7 +61,7 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
@@ -78,7 +71,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("px-6", className)}
       {...props}
     />
-  )
+  );
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
@@ -94,7 +87,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -105,4 +98,4 @@ export {
   CardAction,
   CardDescription,
   CardContent,
-}
+};

@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 import React, { useEffect } from "react"
 
+
 const LoginPage: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()

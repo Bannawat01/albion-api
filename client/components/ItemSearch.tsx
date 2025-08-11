@@ -118,70 +118,133 @@ export default function ItemSearch() {
         </div>
       </form>
 
-      {error && (<Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm"><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-red-300 font-medium">เกิดข้อผิดพลาด: {error}</p></div></CardContent></Card>)}
-
-      <div id="search-results" className="flex justify-between items-center">
-        <div>
-          <h2 className="text-xl font-semibold text-white">{searchTerm ? <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></> : "ไอเทมทั้งหมด"}</h2>
-          <p className="text-sm text-slate-300 mt-1">แสดง {items.length} รายการ {totalItems>0 && `จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}{totalPages>1 && <span className="ml-2">(หน้า {currentPage} จาก {totalPages})</span>}</p>
-        </div>
-        <div className="text-sm text-slate-300">แสดง {itemsPerPage} รายการต่อหน้า</div>
-
-      </div>
-
-      {loading && items.length===0 && (<div className="flex items-center justify-center py-12"><div className="flex items-center gap-3 text-slate-300"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div><span>กำลังโหลดข้อมูล...</span></div></div>)}
-
-      {!loading && items.length===0 && !error && (<Card className="border-slate-700/50 bg-slate-800/50 backdrop-blur-sm border-dashed"><CardContent className="pt-6"><div className="text-center py-8"><div className="w-16 h-16 mx-auto mb-4 text-slate-600"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-3-8a8 8 0 018 8 8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8z" /></svg></div><h3 className="text-lg font-medium text-white mb-2">ไม่พบไอเทมที่ค้นหา</h3><p className="text-slate-400">ลองค้นหาด้วยคำอื่น หรือใช้คำค้นหาที่สั้นกว่า</p></div></CardContent></Card>)}
-
-      {items.length>0 && (
-        <div className="grid gap-4">
-          {items.map((item, index) => {
-            const pMap = cityPricesByItem[item.uniqueName]
-            const noData = !pMap || CITY_ORDER.every(c => !pMap[c]?.sellMin && !pMap[c]?.sellMax && !pMap[c]?.buyMin && !pMap[c]?.buyMax)
-            return (
-              <Card key={`${item.id}-${index}`} className={cn("hover:shadow-lg transition-all duration-200 cursor-pointer group","hover:border-primary/20")}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start gap-4">
-                    <div className="relative">
-                      <div className="w-16 h-16 bg-slate-700/30 rounded-xl flex items-center justify-center overflow-hidden">
-                        <img src={itemApi.getItemImageUrl(item.id, 1, 64)} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">{((currentPage-1)*itemsPerPage)+index+1}</div>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg text-white">{item.name}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-medium text-white bg-white/10 px-2 py-1 rounded">ID: {item.id}</span>
-                        <span className="text-xs font-medium text-white bg-white/10 px-2 py-1 rounded">{item.uniqueName}</span>
-                      </div>
-
-                      <div className="mt-3 space-y-1">
-                        {noData ? (
-                          <span className="text-sm text-slate-400">ไม่มีข้อมูลราคา</span>
+            {/* Error Display */}
+            {/* Error Display */}
+            {error && (
+                <Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 text-red-400">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p className="text-red-300 font-medium">เกิดข้อผิดพลาด: {error}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}            {/* Results Header */}
+            <div id="search-results" className="flex justify-between items-center">
+                <div>
+                    <h2 className="text-xl font-semibold text-foreground">
+                        {searchTerm ? (
+                            <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></>
                         ) : (
-                          <>
-                            <ChipsRow label="Sell Min" metric="sellMin" map={pMap} />
-                            <ChipsRow label="Sell Max" metric="sellMax" map={pMap} />
-                            <ChipsRow label="Buy Min"  metric="buyMin"  map={pMap} />
-                            <ChipsRow label="Buy Max"  metric="buyMax"  map={pMap} />
-{items.length > 0 && (
-  <div className="mt-2"><Legend /></div>
-)}                          </>
+                            "ไอเทมทั้งหมด"
                         )}
-                      </div>
-                    </div>
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        แสดง {items.length} รายการ {totalItems > 0 && `จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}
+                        {totalPages > 1 && (
+                            <span className="ml-2">
+                                (หน้า {currentPage} จาก {totalPages})
+                            </span>
+                        )}
+                    </p>
+                </div>
+
+                {/* Items per page selector */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>แสดง {itemsPerPage} รายการต่อหน้า</span>
+                </div>
+            </div>
 
                     <div className="text-slate-400 group-hover:text-primary transition-colors">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
+                </div>
+            )}
+
+            {/* No Results */}
+            {!loading && items.length === 0 && !error && (
+                <Card className="border-slate-700/50 bg-slate-800/50 backdrop-blur-sm border-dashed">
+                    <CardContent className="pt-6">
+                        <div className="text-center py-8">
+                            <div className="w-16 h-16 mx-auto mb-4 text-slate-600">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-3-8a8 8 0 018 8 8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-white mb-2">ไม่พบไอเทมที่ค้นหา</h3>
+                            <p className="text-slate-400">
+                                ลองค้นหาด้วยคำอื่น หรือใช้คำค้นหาที่สั้นกว่า
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}            {/* Items Grid */}
+            {items.length > 0 && (
+                <div className="grid gap-4">
+                    {items.map((item, index) => (
+                        <Card
+                            key={`${item.id}-${index}`}
+                            className={cn(
+                                "hover:shadow-lg transition-all duration-200 cursor-pointer group",
+                                "hover:border-primary/20"
+                            )}
+                        >
+                            <CardContent className="pt-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="relative">
+                                        <div className="w-16 h-16 bg-muted rounded-xl flex items-center justify-center overflow-hidden">
+                                            <img
+                                                src={itemApi.getItemImageUrl(item.id, 1, 64)}
+                                                alt={item.name}
+                                                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement
+                                                    target.style.display = "none"
+                                                    const parent = target.parentElement
+                                                    if (parent) {
+                                                        parent.innerHTML = `
+                                                            <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                                            </svg>
+                                                        `
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">
+                                            {((currentPage - 1) * itemsPerPage) + index + 1}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                                            {item.name}
+                                        </h3>
+                                        <div className="flex flex-col gap-1 mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                    ID: {item.id}
+                                                </span>
+                                                <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded">
+                                                    {item.uniqueName}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            )}
 
       {totalPages>1 && (
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
