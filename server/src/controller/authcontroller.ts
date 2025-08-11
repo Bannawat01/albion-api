@@ -100,7 +100,6 @@ export const OauthController = new Elysia({ prefix: "/api" })
         state?: string
         error?: string
       }
-<<<<<<< Updated upstream
 
       // Handle OAuth errors
       if (error) {
