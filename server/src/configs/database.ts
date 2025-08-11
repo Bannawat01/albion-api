@@ -8,12 +8,24 @@ const password = Bun.env.MONGO_PASSWORD
 
 const url = `mongodb+srv://${username}:${password}@albion-api-project.gg0vlg9.mongodb.net/?retryWrites=true&w=majority&appName=albion-api-project`
 
-let mongoClient: MongoClient
+
 let database: Db
 let itemRepo: ItemRepository
 let databaseService: DatabaseService
 let isConnected = false
 let isConnecting = false
+
+const mongoClient = new MongoClient(url, {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    minPoolSize: 2,
+    maxIdleTimeMS: 30000, // ปิด idle connections หลัง 30 วินาที
+    connectTimeoutMS: 10000, // timeout สำหรับการเชื่อมต่อครั้งแรก
+    heartbeatFrequencyMS: 10000, // ตรวจสอบ server ทุก 10 วินาที
+})
+
+
 
 export const connectToDatabase = {
     connect: async () => {
@@ -22,21 +34,21 @@ export const connectToDatabase = {
             console.log("Already connected to MongoDB, skipping...")
             return
         }
-        
+
         if (isConnecting) {
             console.log("Connection in progress, waiting...")
             return
         }
-        
+
         isConnecting = true
-        
+
         try {
             // Connect with mongoose for schema-based operations
             await mongoose.connect(url)
             console.log("Connected to MongoDB with Mongoose in Config")
 
             // Also connect with native MongoDB driver for repository pattern
-            mongoClient = new MongoClient(url)
+
             await mongoClient.connect()
             database = mongoClient.db("albion-api-project")
             isConnected = true // ✅ สำคัญ!

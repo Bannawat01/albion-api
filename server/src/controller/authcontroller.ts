@@ -87,168 +87,88 @@ export const OauthController = new Elysia({ prefix: "/api" })
   })
 
   // OAuth callback
-// OAuth callback - Updated error handling
-.get('/auth/:provider/callback', async ({ params, query, set, jwt }) => {
-  try {
-    if (params.provider !== 'google') {
-      set.status = 400
-      return { error: 'Unsupported provider' }
-    }
+  // OAuth callback - Updated error handling
+  .get('/auth/:provider/callback', async ({ params, query, set, jwt }) => {
+    try {
+      if (params.provider !== 'google') {
+        set.status = 400
+        return { error: 'Unsupported provider' }
+      }
 
-    const { code, state, error } = query as {
-      code?: string
-      state?: string
-      error?: string
-    }
+      const { code, state, error } = query as {
+        code?: string
+        state?: string
+        error?: string
+      }
 <<<<<<< Updated upstream
 
-    // Handle OAuth errors (including user cancellation)
-    if (error) {
-      console.log('OAuth error received:', error) // For debugging
-      
-      // Different error types
-      let errorMessage = 'Authentication failed'
-      switch (error) {
-        case 'access_denied':
-          errorMessage = 'การเข้าสู่ระบบถูกยกเลิกโดยผู้ใช้'
-          break
-        case 'invalid_request':
-          errorMessage = 'คำขอไม่ถูกต้อง'
-          break
-        case 'unauthorized_client':
-          errorMessage = 'ไคลเอนต์ไม่ได้รับอนุญาต'
-          break
-        default:
-          errorMessage = `เกิดข้อผิดพลาด: ${error}`
-      }
-      
-      // Use 302 redirect with proper headers
-      set.status = 302
-      set.headers = {
-        'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-      return
-    }
-
-=======
-
-    // Handle OAuth errors (including user cancellation)
-    if (error) {
-      console.log('OAuth error received:', error) // For debugging
-      
-      // Different error types
-      let errorMessage = 'Authentication failed'
-      switch (error) {
-        case 'access_denied':
-          errorMessage = 'การเข้าสู่ระบบถูกยกเลิกโดยผู้ใช้'
-          break
-        case 'invalid_request':
-          errorMessage = 'คำขอไม่ถูกต้อง'
-          break
-        case 'unauthorized_client':
-          errorMessage = 'ไคลเอนต์ไม่ได้รับอนุญาต'
-          break
-        default:
-          errorMessage = `เกิดข้อผิดพลาด: ${error}`
-      }
-      
-      // Use 302 redirect with proper headers
-      set.status = 302
-      set.headers = {
-        'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-      return
-    }
-
-<<<<<<< HEAD
       // Handle OAuth errors
       if (error) {
         return handleOAuthError(error)
-=======
->>>>>>> Stashed changes
-    // Check for missing parameters
-    if (!code || !state) {
-      const missingParams = []
-      if (!code) missingParams.push('code')
-      if (!state) missingParams.push('state')
-      
-      console.log('Missing OAuth parameters:', missingParams)
+      }
+
+      if (!code || !state) {
+        set.status = 400
+        return { error: 'Missing code or state parameter' }
+      }
+
+      // Handle OAuth callback
+      const user = await oauthService.handleCallback(code, state)
+
+
+      const token = await jwt.sign({
+        googleId: user.googleId,
+        email: user.email,
+        name: user.name
+      })
+
+      // Set cookie
+      set.cookie = {
+        'auth-token': {
+          value: token,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 // 7 days
+        }
+      }
+
+      // Redirect to frontend with success
       set.status = 302
       set.headers = {
-        'Location': `http://localhost:3000/login?error=${encodeURIComponent('ข้อมูลการตรวจสอบไม่ครบถ้วน')}`,
+        'Location': `http://localhost:3000/?token=${token}&success=true`,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
-<<<<<<< Updated upstream
-=======
->>>>>>> fadec286f0f974f08a94b7adc4de1c4482d6e99e
->>>>>>> Stashed changes
+      }
+      return
+
+    } catch (error) {
+      console.error('OAuth callback error:', error)
+
+      // More specific error handling
+      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+
+      if (error instanceof Error) {
+        // You can add specific error type checking here
+        if (error.message.includes('invalid_grant')) {
+          errorMessage = 'รหัสการตรวจสอบหมดอายุ กรุณาลองใหม่อีกครั้ง'
+        } else if (error.message.includes('network')) {
+          errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อ'
+        }
+      }
+
+      // Redirect to frontend with error
+      set.status = 302
+      set.headers = {
+        'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
       }
       return
     }
-
-    // Handle successful OAuth callback
-    const user = await oauthService.handleCallback(code, state)
-
-    const token = await jwt.sign({
-      googleId: user.googleId,
-      email: user.email,
-      name: user.name
-    })
-
-    // Set cookie
-    set.cookie = {
-      'auth-token': {
-        value: token,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 // 7 days
-      }
-    }
-
-    // Redirect to frontend with success
-    set.status = 302
-    set.headers = {
-      'Location': `http://localhost:3000/?token=${token}&success=true`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-    return
-
-  } catch (error) {
-    console.error('OAuth callback error:', error)
-    
-    // More specific error handling
-    let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
-    
-    if (error instanceof Error) {
-      // You can add specific error type checking here
-      if (error.message.includes('invalid_grant')) {
-        errorMessage = 'รหัสการตรวจสอบหมดอายุ กรุณาลองใหม่อีกครั้ง'
-      } else if (error.message.includes('network')) {
-        errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อ'
-      }
-    }
-    
-    // Redirect to frontend with error
-    set.status = 302
-    set.headers = {
-      'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    }
-    return
-  }
-})
+  })
 
   // Get current user
   .get('/auth/me', async ({ headers, jwt, set }) => {

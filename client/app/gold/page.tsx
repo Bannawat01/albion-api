@@ -25,11 +25,7 @@ export default function GoldChartPage() {
         const data = await res.json()
 
         if (data.success) {
-          // Sort data by timestamp in ascending order (oldest to newest)
-          const sortedData = data.data.sort((a: GoldPrice, b: GoldPrice) =>
-            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-          )
-          setGoldData(sortedData)
+          setGoldData(data.data)
         } else {
           console.error('Error:', data.message)
         }

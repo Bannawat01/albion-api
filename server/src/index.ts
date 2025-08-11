@@ -6,6 +6,8 @@ import { goldController } from "./controller/goldController"
 import { errorHandler } from "./middleware/errorHandler"
 import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
+import { securityHeaders } from "./middleware/security"
+import { requestLogger } from "./middleware/logger"
 
 
 await connectToDatabase.connect()
@@ -20,9 +22,21 @@ try {
 
 const app = new Elysia()
     .onError(errorHandler)
+    .use(requestLogger())
+    .use(securityHeaders())
+    .get('/', () => ({
+        message: 'Albion API Server',
+        version: '1.0.0',
+        status: 'running'
+    }))
+    .get('/favicon.ico', ({ set }) => {
+        set.status = 204
+        return
+    })
     .use(itemController)
     .use(goldController)
     .use(OauthController)
+
     .listen({
         port: Bun.env.PORT || 8800,
         tls: tlsConfig
