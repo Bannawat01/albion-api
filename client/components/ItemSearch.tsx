@@ -10,11 +10,11 @@ type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: 
 type CityMap = Record<string, CityMetrics>
 type CityPricesByItem = Record<string, CityMap>
 
-const CITY_ORDER = ["Brecilien","Caerleon","Thetford","Fort Sterling","Lymhurst","Bridgewatch","Martlock","Black Market"] as const
-const CITY_COLOR: Record<string,string> = {
-  Brecilien:"bg-violet-500 text-white", Caerleon:"bg-black text-white", Thetford:"bg-rose-600 text-white",
-  "Fort Sterling":"bg-slate-100 text-slate-900", Lymhurst:"bg-lime-700 text-white", Bridgewatch:"bg-orange-600 text-white",
-  Martlock:"bg-sky-600 text-white", "Black Market":"bg-gray-800 text-white",
+const CITY_ORDER = ["Brecilien", "Caerleon", "Thetford", "Fort Sterling", "Lymhurst", "Bridgewatch", "Martlock", "Black Market"] as const
+const CITY_COLOR: Record<string, string> = {
+  Brecilien: "bg-violet-500 text-white", Caerleon: "bg-black text-white", Thetford: "bg-rose-600 text-white",
+  "Fort Sterling": "bg-slate-100 text-slate-900", Lymhurst: "bg-lime-700 text-white", Bridgewatch: "bg-orange-600 text-white",
+  Martlock: "bg-sky-600 text-white", "Black Market": "bg-gray-800 text-white",
 }
 const CITIES_PARAM = CITY_ORDER.join(",")
 
@@ -26,24 +26,24 @@ export default function ItemSearch() {
   const hasNextPage = currentPage < totalPages
   const hasPrevPage = currentPage > 1
   const getPageNumbers = () => {
-    const delta = 2, pages:(number|"...")[] = [1]
+    const delta = 2, pages: (number | "...")[] = [1]
     const s = Math.max(2, currentPage - delta), e = Math.min(totalPages - 1, currentPage + delta)
-    if (s > 2) pages.push("..."); for (let i=s;i<=e;i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
+    if (s > 2) pages.push("..."); for (let i = s; i <= e; i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
     return pages
   }
 
   // helpers
   const isMarketItem = (u: string) => /^T[2-8]_/.test(u)
-  const n = (v:any) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null }
-  const minDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.min(a,b)
-  const maxDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.max(a,b)
-  const rowsFrom = (res:any) => Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : []
+  const n = (v: any) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null }
+  const minDef = (a?: number | null, b?: number | null) => a == null ? b ?? null : b == null ? a : Math.min(a, b)
+  const maxDef = (a?: number | null, b?: number | null) => a == null ? b ?? null : b == null ? a : Math.max(a, b)
+  const rowsFrom = (res: any) => Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : []
 
   async function fetchCityPrices(uniqueName: string): Promise<CityMap> {
     if (!isMarketItem(uniqueName)) return {}
     try {
       let res = await itemApi.getItemPrices(uniqueName, CITIES_PARAM)
-      let rows:any[] = rowsFrom(res)
+      let rows: any[] = rowsFrom(res)
       if (!rows.length) { res = await itemApi.getItemPrices(uniqueName); rows = rowsFrom(res) }
 
       const map: CityMap = {}
@@ -52,8 +52,8 @@ export default function ItemSearch() {
         const cm = (map[city] ??= {})
         cm.sellMin = minDef(cm.sellMin, n(r.sell_Price_Min))
         cm.sellMax = maxDef(cm.sellMax, n(r.sell_Price_Max))
-        cm.buyMin  = minDef(cm.buyMin,  n(r.buy_Price_Min))
-        cm.buyMax  = maxDef(cm.buyMax,  n(r.buy_Price_Max))
+        cm.buyMin = minDef(cm.buyMin, n(r.buy_Price_Min))
+        cm.buyMax = maxDef(cm.buyMax, n(r.buy_Price_Max))
       }
       return map
     } catch { return {} }
@@ -73,14 +73,14 @@ export default function ItemSearch() {
 
       setItems(reset ? res.data : [...items, ...res.data])
       setTotalItems(res.data.length < itemsPerPage ? (pageNum - 1) * itemsPerPage + res.data.length : pageNum * itemsPerPage + 1)
-    } catch (e:any) {
+    } catch (e: any) {
       setError(e?.message || "Failed to search items"); setItems([]); setTotalItems(0); setCityPricesByItem({})
     } finally { setLoading(false) }
   }
 
   useEffect(() => { searchItems("", 1) /* eslint-disable-next-line */ }, [])
   const handleSearch = async (e: React.FormEvent) => { e.preventDefault(); setCurrentPage(1); await searchItems(searchTerm, 1, true) }
-  const handlePageChange = async (p:number) => { if (p===currentPage||p<1||p>totalPages) return; setCurrentPage(p); await searchItems(searchTerm, p, true); document.getElementById("search-results")?.scrollIntoView({behavior:"smooth"}) }
+  const handlePageChange = async (p: number) => { if (p === currentPage || p < 1 || p > totalPages) return; setCurrentPage(p); await searchItems(searchTerm, p, true); document.getElementById("search-results")?.scrollIntoView({ behavior: "smooth" }) }
 
   // UI helpers
   const ChipsRow = ({ label, metric, map }:{
