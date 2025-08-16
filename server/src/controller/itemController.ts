@@ -177,6 +177,8 @@ export const itemController = new Elysia({
             return {
                 success: true,
                 data: result.data,
+                pagination: result.pagination,
+                message: result.message
             }
         } catch (error) {
             if (error instanceof BadRequestError) {

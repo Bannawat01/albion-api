@@ -14,9 +14,22 @@ export type ItemsResponse = {
   items: ItemSummary[]
 }
 
+export type PaginationMeta = {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
+  nextPage: number | null
+  previousPage: number | null
+}
+
 export type PaginatedResponse<T> = {
   success: true
   data: T[]
+  pagination: PaginationMeta
+  message?: string
 }
 
 export type Price = {
@@ -52,7 +65,14 @@ const itemApi = {
     }
 
     const { data } = await axiosInstance.get(`/items/paginated?${params}`)
-    return data
+    
+    // Return server response directly (server now includes pagination metadata)
+    return {
+      success: data.success,
+      data: data.data,
+      pagination: data.pagination,
+      message: data.message
+    }
   },
 
   // Get single item details
@@ -91,6 +111,7 @@ export const useSearchItems = (searchTerm?: string, page = 1, limit = 20) => {
     queryFn: () => itemApi.searchItems(searchTerm, page, limit),
     enabled: true, // Always enabled, will search all items if no searchTerm
     staleTime: 2 * 60 * 1000, // 2 minutes
+    select: data => data,
   })
 }
 
