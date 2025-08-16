@@ -14,7 +14,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
         "ring-1 ring-indigo-400/10 hover:ring-indigo-400/20",
         "transition-colors duration-300",
         // internal padding
-        "py-6",
+        "py-4 sm:py-6",
         className
       )}
       {...props}
@@ -75,7 +75,7 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-6", className)}
+      className={cn("px-4 sm:px-6", className)}
       {...props}
     />
   )

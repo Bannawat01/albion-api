@@ -50,7 +50,12 @@ const initializeServices = async () => {
 await initializeServices()
 
 export const OauthController = new Elysia({ prefix: "/api" })
-  .use(cors())
+.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: false, // ใช้ header ไม่พึ่งคุกกี้แล้ว
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'OPTIONS']
+}))
   .use(jwt({
     name: 'jwt',
     secret: Bun.env.JWT_SECRET || 'fallback-secret-for-dev'
@@ -119,32 +124,34 @@ export const OauthController = new Elysia({ prefix: "/api" })
         email: user.email,
         name: user.name
       })
+      
 
-      // Set cookie
-      set.cookie = {
-        'auth-token': {
-          value: token,
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 // 7 days
-        }
-      }
+        set.cookie = {
+  'auth-token': {
+    value: token,
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60
+  },
+  // 👇 เพิ่มคุกกี้สถานะให้ middleware ใช้ gate หน้า
+  'logged_in': {
+    value: '1',
+    httpOnly: false,       // ให้ Next/middleware อ่านได้
+    secure: false,         // dev: false; prod ควร true
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60
+  }
+}
 
-
-      return {
-        success: true,
-        message: 'Authentication successful',
-        token: token,
-        user: {
-          id: user._id,
-          googleId: user.googleId,
-          email: user.email,
-          name: user.name,
-          picture: user.picture
-        }
-      }
-
+return new Response(null, {
+  status: 303,
+  headers: {
+    Location: `http://localhost:3000/auth/callback?token=${encodeURIComponent(token)}`
+  }
+})
     } catch (error) {
       console.error('OAuth callback error:', error)
       set.status = 500
@@ -155,51 +162,29 @@ export const OauthController = new Elysia({ prefix: "/api" })
   })
 
   // Get current user
-  .get('/auth/me', async ({ headers, jwt, set }) => {
-    try {
-      const authHeader = headers.authorization
-      if (!authHeader?.startsWith('Bearer ')) {
-        set.status = 401
-        return { error: 'Missing or invalid token' }
-      }
+.get('/auth/me', async ({ headers, jwt, set }) => {
+  try {
+    const auth = headers.authorization
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
+    if (!token) { set.status = 401; return { error: 'Missing token' } }
 
-      const token = authHeader.slice(7)
-      const payload = await jwt.verify(token)
+    const payload = await jwt.verify(token)
+    if (!payload) { set.status = 401; return { error: 'Invalid token' } }
 
-      if (!payload) {
-        set.status = 401
-        return { error: 'Invalid token' }
-      }
+    const user = await dbService.findUserByGoogleId(String(payload.googleId))
+    if (!user) { set.status = 404; return { error: 'User not found' } }
 
-      // ใช้ dbService ที่ initialize แล้ว
-      const user = await dbService.findUserByGoogleId(String(payload.googleId))
-      if (!user) {
-        set.status = 404
-        return { error: 'User not found' }
-      }
+    return { id: user._id, email: user.email, name: user.name, picture: user.picture }
+  } catch {
+    set.status = 401
+    return { error: 'Token verification failed' }
+  }
+})
 
-      return {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        picture: user.picture
-      }
-    } catch (error) {
-      set.status = 401
-      return { error: 'Token verification failed' }
-    }
-  })
-
-  // Logout
-  .post('/auth/logout', ({ set }) => {
-    set.cookie = {
-      'auth-token': {
-        value: '',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0
-      }
-    }
-    return { message: 'Logged out successfully' }
-  })
+.post('/auth/logout', ({ set }) => {
+  set.cookie = {
+    'auth-token': { value: '', httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 },
+    'logged_in':  { value: '', httpOnly: false, sameSite: 'lax', path: '/', maxAge: 0 } // 👈 เพิ่ม
+  }
+  return { message: 'Logged out successfully' }
+})
