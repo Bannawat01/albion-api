@@ -21,6 +21,8 @@ export default function GoldChartPage() {
   useEffect(() => {
     const fetchGold = async () => {
       try {
+        const res = await fetch('https://localhost:8800/api/gold?count=50')
+
         const data = await res.json()
 
         if (data.success) {
