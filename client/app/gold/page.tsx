@@ -1,19 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Line } from 'react-chartjs-2'
 import type { GoldPrice } from '@server/interface/goldInterface'
-import {
-  Chart as ChartJS,
-  LineElement,
-  PointElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-} from 'chart.js'
-
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
-
+import dynamic from 'next/dynamic'
+const GoldLineChart = dynamic(() => import('./GoldLineChart'), {
+  ssr: false,
+  loading: () => <div className="h-96" />, // skeleton ชั่วคราว
+})
 export default function GoldChartPage() {
   const [goldData, setGoldData] = useState<GoldPrice[]>([])
   const [loading, setLoading] = useState(true)
@@ -295,7 +287,7 @@ export default function GoldChartPage() {
               <div className="bg-slate-900/50 rounded-2xl p-6 backdrop-blur-sm border border-slate-700">
                 <div className="h-96 relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/5 to-amber-600/5 rounded-2xl"></div>
-                  <Line data={chartData} options={chartOptions} />
+                  <GoldLineChart data={chartData} options={chartOptions} />
                 </div>
               </div>
 

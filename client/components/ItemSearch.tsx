@@ -1,15 +1,16 @@
 "use client"
 
-import { useState, useMemo, useCallback, memo } from "react"
+import { useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useState, useCallback, memo, useEffect } from "react"
 import { useSearchItems, itemApi } from "../api"
 import { Card, CardContent } from "./ui/card"
 import { cn } from "@/lib/utils"
 import { useDebounce } from "../hooks/useDebounce"
+import Image from "next/image"
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
 type CityMap = Record<string, CityMetrics>
-type CityPricesByItem = Record<string, CityMap>
-
 const CITY_ORDER = ["Brecilien","Caerleon","Thetford","Fort Sterling","Lymhurst","Bridgewatch","Martlock","Black Market"] as const
 const CITY_COLOR: Record<string,string> = {
   Brecilien:"bg-violet-500 text-white", Caerleon:"bg-black text-white", Thetford:"bg-rose-600 text-white",
@@ -58,11 +59,13 @@ const PriceDisplaySection = memo(({ priceMap }: { priceMap?: CityMap }) => {
 
 // CityPriceCard component - Individual city price display
 const CityPriceCard = memo(({ city, prices }: { city: string, prices: CityMetrics }) => {
-  // แสดงราคาขายเป็นหลัก หากไม่มีให้แสดงราคาซื้อ
-  const displayPrice = prices.sellMin || prices.buyMax
-  
-  if (!displayPrice) return null
-  
+  const sell = typeof prices.sellMin === 'number' && prices.sellMin > 0 ? prices.sellMin : null
+  const buy = typeof prices.buyMax === 'number' && prices.buyMax > 0 ? prices.buyMax : null
+  const usedType: 'sell' | 'buy' | null = sell != null ? 'sell' : buy != null ? 'buy' : null
+  const displayPrice = usedType === 'sell' ? sell : usedType === 'buy' ? buy : null
+
+  if (displayPrice == null) return null
+
   return (
     <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-800/95 via-slate-800/90 to-slate-900/95 border border-slate-600/40 hover:border-slate-500/60 transition-all duration-300 hover:shadow-lg hover:shadow-slate-900/40 hover:scale-[1.02] backdrop-blur-sm">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -77,11 +80,11 @@ const CityPriceCard = memo(({ city, prices }: { city: string, prices: CityMetric
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="text-xs text-slate-400 font-medium">ขาย</div>
-          <span className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent tabular-nums drop-shadow-sm">
+          <div className={cn("text-xs font-medium", usedType === 'sell' ? "text-red-400" : "text-green-400")}>{usedType === 'sell' ? 'ขาย' : 'ซื้อ'}</div>
+          <span className={cn("text-xl font-bold bg-clip-text text-transparent tabular-nums drop-shadow-sm", usedType === 'sell' ? "bg-gradient-to-r from-red-400 to-orange-400" : "bg-gradient-to-r from-emerald-400 to-green-400") }>
             {displayPrice.toLocaleString()}
           </span>
-          <div className="w-1 h-6 bg-gradient-to-b from-red-400/60 to-orange-400/60 rounded-full ml-1"></div>
+          <div className={cn("w-1 h-6 rounded-full ml-1", usedType === 'sell' ? "bg-gradient-to-b from-red-400/60 to-orange-400/60" : "bg-gradient-to-b from-emerald-400/60 to-green-400/60")} />
         </div>
       </div>
       
@@ -128,7 +131,12 @@ const ItemCard = memo(({ item, index, currentPage, priceMap }: {
         <div className="flex items-start gap-4">
           <div className="relative flex-shrink-0 group">
             <div className="w-16 h-16 bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/30 group-hover:border-primary/30 transition-colors">
-              <img src={itemApi.getItemImageUrl(item.id, 1, 64)} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
+              <Image src={itemApi.getItemImageUrl(item.id, 1, 64)} 
+              alt={item.name} 
+              width={64}
+              height={64}
+              priority={index < 4}
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">{((currentPage-1)*20)+index+1}</div>
           </div>
@@ -155,6 +163,8 @@ export default function ItemSearch() {
   const [searchInput, setSearchInput] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [priceData, setPriceData] = useState<Record<string, CityMap>>({})
+  // tick state used to re-render when virtualizer range changes without flushSync
+  const [vTick, setVTick] = useState(0)
   
   // Debounce search term
   const debouncedSearchTerm = useDebounce(searchInput, 300)
@@ -172,6 +182,23 @@ export default function ItemSearch() {
   const totalPages = pagination?.totalPages || 1
   const hasNextPage = pagination?.hasNextPage || false
   const hasPreviousPage = pagination?.hasPreviousPage || false
+
+  // Virtualization setup (must be inside component and after items are known)
+  const scrollParentRef = useRef<HTMLDivElement | null>(null)
+  // Schedule re-render outside of lifecycle to avoid flushSync during layout effects
+  const handleVirtualChange = useCallback(() => {
+    // Use a microtask/task to re-render after commit
+    // setTimeout avoids flush during render phase in React 19
+    setTimeout(() => setVTick((t) => t + 1), 0)
+  }, [])
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => scrollParentRef.current,
+    estimateSize: () => 180, // adjust per row height
+    overscan: 8,
+  getItemKey: (index) => items[index]?.uniqueName ?? index,
+  onChange: handleVirtualChange,
+  })
   
   const getPageNumbers = () => {
     const delta = 2, pages:(number|"...")[] = [1]
@@ -244,10 +271,17 @@ export default function ItemSearch() {
     }
   }, [])
 
-  // Fetch prices when items change
-  useMemo(() => {
+  // Fetch prices when items change (side-effect)
+  useEffect(() => {
     if (items.length > 0) {
-      fetchPricesForItems(items)
+      // fire and forget; ignore if unmounted
+      let cancelled = false
+      ;(async () => {
+        if (!cancelled) await fetchPricesForItems(items)
+      })()
+      return () => {
+        cancelled = true
+      }
     }
   }, [items, fetchPricesForItems])
 
@@ -381,24 +415,35 @@ export default function ItemSearch() {
         </Card>
       )}
 
-      {/* Results Grid */}
+      {/* Results (Virtualized) */}
       {items.length > 0 && (
         <div className="space-y-4">
-          <div className="grid gap-4 animate-in fade-in duration-500">
-            {items.map((item, index) => (
-              <div 
-                key={item.uniqueName} 
-                className="animate-in slide-in-from-bottom-4 duration-300"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <ItemCard
-                  item={item}
-                  index={index}
-                  currentPage={currentPage}
-                  priceMap={priceData[item.uniqueName]}
-                />
-              </div>
-            ))}
+          <div
+            ref={scrollParentRef}
+            className="relative h-[70vh] overflow-auto rounded-2xl border border-slate-700/40 bg-gradient-to-b from-slate-800/60 via-slate-900/40 to-slate-900/60 backdrop-blur-sm [--fade:16px] [--mask:linear-gradient(to_bottom,transparent,black_var(--fade),black_calc(100%-var(--fade)),transparent)] [mask-image:var(--mask)] [-webkit-mask-image:var(--mask)] [mask-mode:match-source] [mask-repeat:no-repeat] [mask-size:100%_100%]"
+          >
+
+            <div style={{ height: rowVirtualizer.getTotalSize() }} className="relative">
+      {rowVirtualizer.getVirtualItems().map((vRow) => {
+                const item = items[vRow.index]
+                return (
+                  <div
+        key={vRow.key}
+                    ref={rowVirtualizer.measureElement}
+        data-index={vRow.index}
+        className="absolute left-0 right-0 p-3 transform-gpu will-change-transform"
+        style={{ transform: `translateY(${vRow.start}px)` }}
+                  >
+                    <ItemCard
+                      item={item}
+                      index={vRow.index}
+                      currentPage={currentPage}
+                      priceMap={priceData[item.uniqueName]}
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}

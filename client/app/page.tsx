@@ -3,18 +3,23 @@
 import React from 'react'
 import ItemSearch from '@/components/ItemSearch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import Link from 'next/link'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
+        {/* grid and overlays */}
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+        {/* decorative orbs */}
+        <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/20 blur-3xl" />
         <div className="relative">
           <div className="container mx-auto px-4 py-16 lg:py-24">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+              <h1 className="text-4xl lg:text-6xl font-extrabold text-white mb-6 tracking-tight">
                 Albion Online
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600">
                   Item Database
@@ -37,6 +42,23 @@ export default function HomePage() {
                   All Servers
                 </span>
               </div>
+
+              {/* hero ctas */}
+              <div className="mt-10 flex items-center justify-center gap-4">
+                <a
+                  href="#search"
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold text-slate-900 bg-gradient-to-r from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-yellow-400 transition-colors"
+                >
+                  เริ่มค้นหา
+                  <span className="text-xl">↘</span>
+                </a>
+                <Link
+                  href="/gold"
+                  className="inline-flex items-center gap-2 rounded-xl px-5 py-3 font-semibold text-amber-300 ring-1 ring-amber-400/30 hover:ring-amber-300/60 bg-slate-900/40 backdrop-blur-md"
+                >
+                  Gold Price
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -46,8 +68,8 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Search Section */}
-          <Card className="mb-8 shadow-xl border-0 bg-slate-800/50 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
+          <Card id="search" className="relative mb-8 shadow-2xl border-0 bg-slate-800/50 backdrop-blur-sm ring-1 ring-white/5">
+            <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-xl">
               <CardTitle className="text-2xl flex items-center gap-2 text-white">
                 <span className="text-2xl">🔍</span>
                 Item Search
@@ -63,10 +85,10 @@ export default function HomePage() {
 
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:-translate-y-1">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow ring-1 ring-amber-300/30">
                     <span className="text-2xl">🗡️</span>
                   </div>
                   <div>
@@ -80,10 +102,10 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:-translate-y-1">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow ring-1 ring-amber-300/30">
                     <span className="text-2xl">📊</span>
                   </div>
                   <div>
@@ -97,10 +119,10 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:-translate-y-1">
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow ring-1 ring-amber-300/30">
                     <span className="text-2xl">⚡</span>
                   </div>
                   <div>
@@ -116,8 +138,8 @@ export default function HomePage() {
           </div>
 
           {/* Usage Guide */}
-          <Card className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/50 border-0 shadow-xl backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 rounded-t-lg">
+          <Card className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/50 border-0 shadow-2xl backdrop-blur-sm ring-1 ring-white/5">
+            <CardHeader className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 rounded-t-xl">
               <CardTitle className="flex items-center gap-2 text-white">
                 <span className="text-2xl">🎯</span>
                 How to Use ItemSearch
@@ -127,7 +149,7 @@ export default function HomePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-1 ring-amber-300/40">
                       1
                     </div>
                     <div>
@@ -138,7 +160,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-1 ring-amber-300/40">
                       2
                     </div>
                     <div>
@@ -151,7 +173,7 @@ export default function HomePage() {
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-1 ring-amber-300/40">
                       3
                     </div>
                     <div>
@@ -162,7 +184,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg">
+                    <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-lg ring-1 ring-amber-300/40">
                       4
                     </div>
                     <div>

@@ -44,7 +44,6 @@ export type Price = {
 
 // API Functions
 const itemApi = {
-  // Get all items
   getItemImageUrl: (itemId: string, quality: number = 1, size: number = 64): string => {
     return `https://render.albiononline.com/v1/item/${encodeURIComponent(itemId)}.png?quality=${quality}&size=${size}`
   },
@@ -137,13 +136,13 @@ export const useCreateItem = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (newItem: Partial<ItemSummary>) => {
-      const { data } = await axiosInstance.post('/items', newItem)
+        mutationFn: async (payload: { id: string; name: string }) => {
+      const { data } = await axiosInstance.put(`/items/${payload.id}`, payload)
       return data
     },
-    onSuccess: () => {
-      // Invalidate and refetch items list
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['items'] })
+      queryClient.invalidateQueries({ queryKey: ['item', variables.id] })
     },
   })
 }
