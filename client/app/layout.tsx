@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
 import Link from "next/link"
+import Image from "next/image"
 import QueryProvider from "@/hooks/QueryProvider"
 
 const geistSans = Geist({
@@ -26,12 +27,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://render.albiononline.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//render.albiononline.com" />
+      </head>
       <body className="bg-gray-900 flex flex-col min-h-screen font-sans antialiased">
         <nav className="w-full flex items-center justify-between p-4 bg-slate-700">
           {/* Logo on the left */}
           <div>
             <Link href="/" className="text-lg font-bold text-gray-800">
-              <img className="h-8" src="/images/logo.png" alt="Albo Logo" />
+              <Image src="/images/logo.png" alt="Albo Logo" width={120} height={32} priority fetchPriority="high" className="h-8 w-auto" />
             </Link>
           </div>
           {/* Center navigation */}

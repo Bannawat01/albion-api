@@ -5,15 +5,19 @@ const nextConfig: NextConfig = {
   images: {
     domains: ['render.albiononline.com'],
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    deviceSizes: [360, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 24, 32, 48, 64, 96, 128, 256],
+    minimumCacheTTL: 60 * 60, // 1 hour cache at edge
     unoptimized: false,
   },
   
   //optimization options
   compress: true,
   poweredByHeader: false,
+  experimental: {
+    optimizePackageImports: ['react', 'react-dom'],
+    // concurrentFeatures: true // if needed for React 19; keep default if stable
+  },
 
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -50,6 +54,16 @@ const nextConfig: NextConfig = {
       };
     }
     return config;
+  },
+  async headers() {
+    return [
+      {
+        source: '/_next/image',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+    ]
   },
 }
 

@@ -18,6 +18,22 @@ const CITY_COLOR: Record<string,string> = {
   Martlock:"bg-sky-600 text-white", "Black Market":"bg-gray-800 text-white",
 }
 
+// Tiny SVG shimmer used as a fast blur placeholder for icons
+const shimmer = (w:number, h:number) => `
+  <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="g">
+        <stop stop-color="#1f2937" offset="20%" />
+        <stop stop-color="#111827" offset="50%" />
+        <stop stop-color="#1f2937" offset="70%" />
+      </linearGradient>
+    </defs>
+    <rect width="${w}" height="${h}" fill="#111827" />
+    <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
+    <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1.2s" repeatCount="indefinite"  />
+  </svg>`
+const toBase64 = (str:string) => typeof window === 'undefined' ? Buffer.from(str).toString('base64') : window.btoa(str)
+
 // Optimized price fetching with caching
 const priceCache = new Map<string, { data: CityMap; timestamp: number }>()
 const CACHE_TTL = 30000 // 30 seconds
@@ -131,12 +147,20 @@ const ItemCard = memo(({ item, index, currentPage, priceMap }: {
         <div className="flex items-start gap-4">
           <div className="relative flex-shrink-0 group">
             <div className="w-16 h-16 bg-slate-700/50 rounded-lg overflow-hidden border border-slate-600/30 group-hover:border-primary/30 transition-colors">
-              <Image src={itemApi.getItemImageUrl(item.id, 1, 64)} 
+              <Image
+              src={itemApi.getItemImageUrl(item.id, 1, 64)} 
               alt={item.name} 
               width={64}
               height={64}
-              priority={index < 4}
-              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
+              // Prioritize first rows; avoid Next transform for tiny icons; add instant blur
+              priority={index < 2}
+              loading={index < 2 ? 'eager' : 'lazy'}
+              fetchPriority={index < 2 ? 'high' : 'auto'}
+              unoptimized
+              placeholder="blur"
+              blurDataURL={`data:image/svg+xml;base64,${toBase64(shimmer(64,64))}`}
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200"
+              />
             </div>
             <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">{((currentPage-1)*20)+index+1}</div>
           </div>
