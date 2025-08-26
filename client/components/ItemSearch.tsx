@@ -6,7 +6,7 @@ import { useState, useCallback, memo, useEffect } from "react"
 import { useSearchItems, itemApi } from "../api"
 import { Card, CardContent } from "./ui/card"
 import { cn } from "@/lib/utils"
-import { useDebounce } from "../hooks/useDebounce"
+
 import Image from "next/image"
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
@@ -184,18 +184,16 @@ const ItemCard = memo(({ item, index, currentPage, priceMap }: {
 ItemCard.displayName = 'ItemCard'
 
 export default function ItemSearch() {
+  const [searchTerm, setSearchTerm] = useState("")
   const [searchInput, setSearchInput] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [priceData, setPriceData] = useState<Record<string, CityMap>>({})
   // tick state used to re-render when virtualizer range changes without flushSync
   const [vTick, setVTick] = useState(0)
   
-  // Debounce search term
-  const debouncedSearchTerm = useDebounce(searchInput, 300)
   
-  // Use React Query for efficient data fetching
   const { data: searchResults, isLoading, error, isPlaceholderData } = useSearchItems(
-    debouncedSearchTerm || undefined, 
+    searchTerm || undefined,
     currentPage, 
     20
   )
@@ -311,8 +309,9 @@ export default function ItemSearch() {
 
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault()
+    setSearchTerm(searchInput)
     setCurrentPage(1)
-  }, [])
+  }, [searchInput])
 
   const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
@@ -372,9 +371,9 @@ export default function ItemSearch() {
 
       <div id="search-results" className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold text-white">
-            {debouncedSearchTerm ? (
-              <>ผลการค้นหา <span className="text-primary">"{debouncedSearchTerm}"</span></>
+          <h2 className="text-xl font-semibold text-white mb-2">
+            {searchTerm ? (
+              <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></>
             ) : (
               "ไอเทมทั้งหมด"
             )}
