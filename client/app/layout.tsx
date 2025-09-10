@@ -14,7 +14,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 })
-import QueryProvider from "../hook/QueryProvider"
 import { AuthProvider } from "@/contexts/AuthContext"
 import NavBar from "@/components/navBar"   // ✅ client component
 

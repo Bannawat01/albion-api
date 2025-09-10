@@ -3,7 +3,7 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['render.albiononline.com'],
+    domains: ['render.albiononline.com', 'lh3.googleusercontent.com'],
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [360, 640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 24, 32, 48, 64, 96, 128, 256],
@@ -18,9 +18,6 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['react', 'react-dom'],
     // concurrentFeatures: true // if needed for React 19; keep default if stable
   },
-    domains: ["lh3.googleusercontent.com"], // ✅ อนุญาตให้โหลดรูปจาก Google profile
-  },
-};
 
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
@@ -58,6 +55,7 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+
   async headers() {
     return [
       {
@@ -67,8 +65,8 @@ const nextConfig: NextConfig = {
         ],
       },
     ]
-  },
-}
+  }
+};
 
 const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
