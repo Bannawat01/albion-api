@@ -8,6 +8,8 @@ import { Card, CardContent } from "./ui/card"
 import { cn } from "@/lib/utils"
 
 import Image from "next/image"
+import { shimmer, toBase64 } from "@/lib/image"
+import { safeNumber as n, minDefined as minDef, maxDefined as maxDef } from "@/lib/number"
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
 type CityMap = Record<string, CityMetrics>
@@ -18,21 +20,7 @@ const CITY_COLOR: Record<string,string> = {
   Martlock:"bg-sky-600 text-white", "Black Market":"bg-gray-800 text-white",
 }
 
-// Tiny SVG shimmer used as a fast blur placeholder for icons
-const shimmer = (w:number, h:number) => `
-  <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="g">
-        <stop stop-color="#1f2937" offset="20%" />
-        <stop stop-color="#111827" offset="50%" />
-        <stop stop-color="#1f2937" offset="70%" />
-      </linearGradient>
-    </defs>
-    <rect width="${w}" height="${h}" fill="#111827" />
-    <rect id="r" width="${w}" height="${h}" fill="url(#g)" />
-    <animate xlink:href="#r" attributeName="x" from="-${w}" to="${w}" dur="1.2s" repeatCount="indefinite"  />
-  </svg>`
-const toBase64 = (str:string) => typeof window === 'undefined' ? Buffer.from(str).toString('base64') : window.btoa(str)
+// shimmer & toBase64 moved to lib/image
 
 // Optimized price fetching with caching
 const priceCache = new Map<string, { data: CityMap; timestamp: number }>()
@@ -152,7 +140,6 @@ const ItemCard = memo(({ item, index, currentPage, priceMap }: {
               alt={item.name} 
               width={64}
               height={64}
-              // Prioritize first rows; avoid Next transform for tiny icons; add instant blur
               priority={index < 2}
               loading={index < 2 ? 'eager' : 'lazy'}
               fetchPriority={index < 2 ? 'high' : 'auto'}
@@ -188,9 +175,7 @@ export default function ItemSearch() {
   const [searchInput, setSearchInput] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [priceData, setPriceData] = useState<Record<string, CityMap>>({})
-  // tick state used to re-render when virtualizer range changes without flushSync
   const [vTick, setVTick] = useState(0)
-  
   
   const { data: searchResults, isLoading, error, isPlaceholderData } = useSearchItems(
     searchTerm || undefined,
@@ -205,14 +190,11 @@ export default function ItemSearch() {
   const hasNextPage = pagination?.hasNextPage || false
   const hasPreviousPage = pagination?.hasPreviousPage || false
 
-  // Virtualization setup (must be inside component and after items are known)
   const scrollParentRef = useRef<HTMLDivElement | null>(null)
-  // Schedule re-render outside of lifecycle to avoid flushSync during layout effects
   const handleVirtualChange = useCallback(() => {
-    // Use a microtask/task to re-render after commit
-    // setTimeout avoids flush during render phase in React 19
     setTimeout(() => setVTick((t) => t + 1), 0)
   }, [])
+
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => scrollParentRef.current,
@@ -231,9 +213,7 @@ export default function ItemSearch() {
 
   // --- helpers ---
   const isMarketItem = (u: string) => /^T[2-8]_/.test(u)
-  const n = (v:any) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null }
-  const minDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.min(a,b)
-  const maxDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.max(a,b)
+  // number helpers moved to lib/number
   const rowsFrom = (res:any) => Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : []
 
   const fetchCityPricesOptimized = async (uniqueName: string): Promise<CityMap> => {
