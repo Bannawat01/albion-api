@@ -2,13 +2,8 @@ import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
-  images: {
-    domains: ['render.albiononline.com', 'lh3.googleusercontent.com'],
-    formats: ['image/avif', 'image/webp'],
-    deviceSizes: [360, 640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 24, 32, 48, 64, 96, 128, 256],
-    minimumCacheTTL: 60 * 60, // 1 hour cache at edge
-    unoptimized: false,
+   images: {
+    domains: ["lh3.googleusercontent.com"], // ✅ อนุญาตให้โหลดรูปจาก Google profile
   },
   
   //optimization options
@@ -66,6 +61,7 @@ const nextConfig: NextConfig = {
       },
     ]
   }
+  
 };
 
 const withAnalyzer = withBundleAnalyzer({
