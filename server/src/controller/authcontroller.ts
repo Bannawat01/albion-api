@@ -92,7 +92,6 @@ export const OauthController = new Elysia({ prefix: "/api" })
   })
 
   // OAuth callback
-  // OAuth callback - Updated error handling
   .get('/auth/:provider/callback', async ({ params, query, set, jwt }) => {
     try {
       if (params.provider !== 'google') {
@@ -125,56 +124,40 @@ export const OauthController = new Elysia({ prefix: "/api" })
         email: user.email,
         name: user.name
       })
+      
 
-      // Set cookie
-      set.cookie = {
-        'auth-token': {
-          value: token,
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 // 7 days
-        }
-      }
+        set.cookie = {
+  'auth-token': {
+    value: token,
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60
+  },
+  // 👇 เพิ่มคุกกี้สถานะให้ middleware ใช้ gate หน้า
+  'logged_in': {
+    value: '1',
+    httpOnly: false,       // ให้ Next/middleware อ่านได้
+    secure: false,         // dev: false; prod ควร true
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60
+  }
+}
 
-
-      return {
-        success: true,
-        message: 'Authentication successful',
-        token: token,
-        user: {
-          id: user._id,
-          googleId: user.googleId,
-          email: user.email,
-          name: user.name,
-          picture: user.picture
-        }
-      }
-
+return new Response(null, {
+  status: 303,
+  headers: {
+    Location: `http://localhost:3000/auth/callback?token=${encodeURIComponent(token)}`
+  }
+})
     } catch (error) {
       console.error('OAuth callback error:', error)
-
-      // More specific error handling
-      let errorMessage = 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
-
-      if (error instanceof Error) {
-        // You can add specific error type checking here
-        if (error.message.includes('invalid_grant')) {
-          errorMessage = 'รหัสการตรวจสอบหมดอายุ กรุณาลองใหม่อีกครั้ง'
-        } else if (error.message.includes('network')) {
-          errorMessage = 'เกิดข้อผิดพลาดในการเชื่อมต่อ'
-        }
+      set.status = 500
+      return {
+        error: 'Authentication failed',
       }
-
-      // Redirect to frontend with error
-      set.status = 302
-      set.headers = {
-        'Location': `http://localhost:3000/login?error=${encodeURIComponent(errorMessage)}`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      }
-      return
     }
   })
 
