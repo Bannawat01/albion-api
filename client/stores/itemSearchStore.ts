@@ -21,6 +21,16 @@ type ItemSearchState = {
   setTotalItems: (n: number) => void
 
   itemsPerPage: number
+
+  abortController: AbortController | null
+  setAbortController: (c: AbortController | null) => void
+
+  nextPageItems: ItemSummary[] | null
+  setNextPageItems: (items: ItemSummary[] | null) => void
+
+  lastQueryKey: string | null
+  setLastQueryKey: (k: string | null) => void
+
 }
 
 export const useItemSearchStore = create<ItemSearchState>((set) => ({
@@ -42,5 +52,14 @@ export const useItemSearchStore = create<ItemSearchState>((set) => ({
   totalItems: 0,
   setTotalItems: (n) => set({ totalItems: n }),
 
-  itemsPerPage: 20,
+  itemsPerPage: 6,
+  
+  abortController: null,
+  setAbortController: (c) => set({ abortController: c }),
+
+  nextPageItems: null,
+  setNextPageItems: (items) => set({ nextPageItems: items }),
+
+  lastQueryKey: null,
+  setLastQueryKey: (k) => set({ lastQueryKey: k }),
 }))

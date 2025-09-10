@@ -19,7 +19,7 @@ const CITY_COLOR: Record<string, string> = {
 const CITIES_PARAM = CITY_ORDER.join(",")
 
 export default function ItemSearch() {
-  const { searchTerm, setSearchTerm, items, setItems, loading, setLoading, error, setError, currentPage, setCurrentPage, totalItems, setTotalItems, itemsPerPage } = useItemSearchStore()
+  const { searchTerm, setSearchTerm, items, setItems, loading, setLoading, error, setError, currentPage, setCurrentPage, totalItems, setTotalItems, itemsPerPage, abortController, setAbortController, lastQueryKey, setLastQueryKey, nextPageItems, setNextPageItems } = useItemSearchStore()
   const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
 
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
@@ -53,17 +53,43 @@ export default function ItemSearch() {
         cm.sellMin = minDef(cm.sellMin, n(r.sell_Price_Min))
         cm.sellMax = maxDef(cm.sellMax, n(r.sell_Price_Max))
         cm.buyMin = minDef(cm.buyMin, n(r.buy_Price_Min))
-        cm.buyMax = maxDef(cm.buyMax, n(r.buy_Price_Max))
+        cm.buyMax = maxDef(cm.buyMax, n(r.buy_Price_max))
       }
       return map
     } catch { return {} }
   }
 
   const searchItems = async (term: string, pageNum = 1, reset = true) => {
+    const queryKey = JSON.stringify({ term: term || "", page: pageNum, cities: CITIES_PARAM })
+    if (queryKey === lastQueryKey && reset) return
+    setLastQueryKey(queryKey)
+
+    try { abortController?.abort() } catch {}
+    const controller = new AbortController()
+    setAbortController(controller)
+    const signal = controller.signal
+
     setLoading(true); setError(null)
     try {
-      const res = await itemApi.searchItems(term || undefined, pageNum, itemsPerPage)
-      const pricePairs = await Promise.all(res.data.map(async (it) => [it.uniqueName, await fetchCityPrices(it.uniqueName)] as const))
+      const res = await itemApi.searchItems(term || undefined, pageNum, itemsPerPage, signal)
+      // Limit concurrent price requests to reduce refetch storms
+      const itemsList = res.data
+      const concurrency = 4
+      let cursor = 0
+      const pricePairs: ReadonlyArray<readonly [string, CityMap]> = await (async () => {
+        const out: Array<readonly [string, CityMap]> = new Array(itemsList.length)
+        async function worker() {
+          while (true) {
+            const idx = cursor++
+            if (idx >= itemsList.length) break
+            const it = itemsList[idx]
+            const prices = await fetchCityPrices(it.uniqueName)
+            out[idx] = [it.uniqueName, prices] as const
+          }
+        }
+        await Promise.all(Array.from({ length: Math.min(concurrency, itemsList.length) }, () => worker()))
+        return out
+      })()
 
       setCityPricesByItem(prev => {
         const next = reset ? {} : { ...prev }
@@ -73,6 +99,14 @@ export default function ItemSearch() {
 
       setItems(reset ? res.data : [...items, ...res.data])
       setTotalItems(res.data.length < itemsPerPage ? (pageNum - 1) * itemsPerPage + res.data.length : pageNum * itemsPerPage + 1)
+
+      // prefetch next page summaries
+      if (pageNum < totalPages) {
+        try {
+          const nextRes = await itemApi.searchItems(term || undefined, pageNum + 1, itemsPerPage)
+          setNextPageItems(Array.isArray(nextRes?.data) ? nextRes.data : null)
+        } catch {}
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to search items"); setItems([]); setTotalItems(0); setCityPricesByItem({})
     } finally { setLoading(false) }
@@ -80,7 +114,16 @@ export default function ItemSearch() {
 
   useEffect(() => { searchItems("", 1) /* eslint-disable-next-line */ }, [])
   const handleSearch = async (e: React.FormEvent) => { e.preventDefault(); setCurrentPage(1); await searchItems(searchTerm, 1, true) }
-  const handlePageChange = async (p: number) => { if (p === currentPage || p < 1 || p > totalPages) return; setCurrentPage(p); await searchItems(searchTerm, p, true); document.getElementById("search-results")?.scrollIntoView({ behavior: "smooth" }) }
+  const handlePageChange = async (p: number) => {
+    if (p === currentPage || p < 1 || p > totalPages) return
+    setCurrentPage(p)
+    if (p === currentPage + 1 && nextPageItems) {
+      setItems(nextPageItems)
+      setNextPageItems(null)
+    }
+    await searchItems(searchTerm, p, true)
+    document.getElementById("search-results")?.scrollIntoView({ behavior: "smooth" })
+  }
 
   // UI helpers
   const ChipsRow = ({ label, metric, map }:{
@@ -90,14 +133,14 @@ export default function ItemSearch() {
       {/* label: แสดงบรรทัดบนในมือถือ, ชิดซ้ายในจอใหญ่ */}
       <div className="sm:hidden text-[11px] font-semibold text-slate-300">{label}</div>
       <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
-        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span>
-        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap */}
+        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span> 
+        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap (แสดงเฉพาะเมืองที่มีราคา) */}
         <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap sm:gap-2">
-          {CITY_ORDER.map(city => {
-            const val = map?.[city]?.[metric] ?? null
+          {CITY_ORDER.filter(city => (map?.[city]?.[metric] ?? null) != null).map(city => {
+            const val = map?.[city]?.[metric] as number
             const base = "px-1.5 py-0.5 rounded-md text-[11px] sm:text-xs font-bold leading-5 text-center min-w-[64px]"
-            const color = val!=null ? (CITY_COLOR[city] || "bg-slate-600 text-white") : "bg-slate-700 text-slate-400 line-through opacity-60"
-            return <span key={city+label} className={`${base} ${color}`} title={city}>{val!=null ? val.toLocaleString() : city}</span>
+            const color = CITY_COLOR[city] || "bg-slate-600 text-white"
+            return <span key={city+label} className={`${base} ${color}`} title={city}>{val.toLocaleString()}</span>
           })}
         </div>
       </div>
@@ -213,7 +256,6 @@ export default function ItemSearch() {
                     <div className="flex-1 min-w-0 w-full">
                       <h3 className="font-semibold text-base sm:text-lg text-white">{item.name}</h3>
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                        <span className="text-[10px] sm:text-xs font-medium text-white/90 bg-white/10 px-2 py-1 rounded">ID: {item.id}</span>
                         <span className="text-[10px] sm:text-xs font-medium text-white/90 bg-white/10 px-2 py-1 rounded truncate max-w-[240px] sm:max-w-none">{item.uniqueName}</span>
                       </div>
 

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { axiosInstance } from './config'
+import type { AxiosRequestConfig } from 'axios'
 
 // Types
 export type ItemSummary = {
@@ -53,7 +54,7 @@ const itemApi = {
   },
 
   // Search items with pagination
-  searchItems: async (searchTerm?: string, page = 1, limit = 20): Promise<PaginatedResponse<ItemSummary>> => {
+  searchItems: async (searchTerm?: string, page = 1, limit = 20, signal?: AbortSignal): Promise<PaginatedResponse<ItemSummary>> => {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -63,7 +64,8 @@ const itemApi = {
       params.append('search', searchTerm)
     }
 
-    const { data } = await axiosInstance.get(`/items/paginated?${params}`)
+    const config: AxiosRequestConfig = { signal }
+    const { data } = await axiosInstance.get(`/items/paginated?${params}`, config)
     
     // Return server response directly (server now includes pagination metadata)
     return {
@@ -81,12 +83,20 @@ const itemApi = {
   },
 
   // Get item prices
-  getItemPrices: async (itemId: string, city?: string) => {
+  getItemPrices: async (itemId: string, city?: string, signal?: AbortSignal) => {
     const params = new URLSearchParams({ id: itemId })
     if (city) {
       params.append('city', city)
     }
-    const { data } = await axiosInstance.get(`/item/price?${params}`)
+    const config: AxiosRequestConfig = { signal }
+    const { data } = await axiosInstance.get(`/item/price?${params}`, config)
+    return data
+  },
+  // Batch prices
+  getItemsPricesBatch: async (ids: string[], city?: string, signal?: AbortSignal) => {
+    const body = { ids, city }
+    const config: AxiosRequestConfig = { signal }
+    const { data } = await axiosInstance.post(`/items/prices/batch`, body, config)
     return data
   },
   getGoldPrice: async () => {

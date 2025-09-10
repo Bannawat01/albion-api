@@ -8,6 +8,7 @@ import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
 import { securityHeaders } from "./middleware/security"
 import { requestLogger } from "./middleware/logger"
+import { cors } from "@elysiajs/cors"
 
 
 await connectToDatabase.connect()
@@ -24,6 +25,7 @@ const app = new Elysia()
     .onError(errorHandler)
     .use(requestLogger())
     .use(securityHeaders())
+    .use(cors())
     .get('/', () => ({
         message: 'Albion API Server',
         version: '1.0.0',

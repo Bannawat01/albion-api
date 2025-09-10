@@ -7,7 +7,9 @@ import { PaginationService } from '../service/paginationService'
 import type { PaginationQuery, PaginatedResponse } from '../interface/paginationInterface'
 import type { ValidatedPaginationParams } from '../types/paginationType'
 
+
 export class ItemRepository {
+
     private static instance: ItemRepository
     private metadataCache = new TTLCache<{ items: any[], locations: string[], itemsData: any }>()
     private priceCache = new TTLCache<Price[]>()
@@ -16,6 +18,38 @@ export class ItemRepository {
     private cacheStats = {
         metadata: { hits: 0, misses: 0 },
         prices: { hits: 0, misses: 0 }
+    }
+
+    /**
+     * ดึงราคาหลาย item แบบ batch พร้อมกัน (มีตัวเลือกระบุเมือง)
+     */
+    async fetchItemsPricesBatch(itemIds: ItemId[], city?: string): Promise<Record<string, Price[]>> {
+        const results: Record<string, Price[]> = {}
+        const ids = Array.from(new Set(itemIds.filter(Boolean)))
+
+        // Limit concurrency to avoid upstream throttling
+        const concurrency = 4
+        let cursor = 0
+
+        const worker = async () => {
+            while (true) {
+                const idx = cursor++
+                if (idx >= ids.length) break
+                const id = ids[idx]
+                try {
+                    const prices = city
+                        ? await this.fetchItemPriceAndLocation(id, city)
+                        : await this.fetchItemPrice(id)
+                    results[id] = Array.isArray(prices) ? prices : []
+                } catch (e) {
+                    console.warn(`batch price failed for ${id}:`, e)
+                    results[id] = []
+                }
+            }
+        }
+
+        await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, () => worker()))
+        return results
     }
 
     private responseTimeStats = {
@@ -142,7 +176,7 @@ export class ItemRepository {
     }
 
     async fetchItemPrice(itemId: ItemId): Promise<Price[] | string> {
-        const cacheKey = `price_${itemId}`
+        const cacheKey = `price_${itemId}_ALL`
 
         // ตรวจสอบ price cache ก่อน
         const cachedPrice = this.priceCache.get(cacheKey)
@@ -159,46 +193,62 @@ export class ItemRepository {
 
             const response = await fetch(`https://albion-online-data.com/api/v2/stats/prices/${itemId}`)
             if (!response.ok) {
-                throw new ExternalApiError("Unable to fetch price data from Albion Online API")
+                // negative cache (empty) for 60s to avoid repeated upstream hits
+                this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+                return []
             }
             const data = await response.json()
 
-            if (data.length === 0) {
-                throw new ExternalApiError("No price data available for this item")
+            if (!Array.isArray(data) || data.length === 0) {
+                this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+                return []
             }
 
             const mappedData = mapPriceData(data, itemInfo, itemId)
 
-            // เก็บข้อมูลลง price cache
-            this.priceCache.set(cacheKey, mappedData, TTL_CONSTANTS.FIVE_MINUTES)
+            // เก็บข้อมูลลง price cache (longer TTL for better hit rate)
+            this.priceCache.set(cacheKey, mappedData, TTL_CONSTANTS.TEN_MINUTES)
             return mappedData
 
         } catch (error) {
             console.error("Error fetching item price:", error)
-            throw new ExternalApiError("Unable to fetch price data from Albion Online API")
+            this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+            return []
         }
     }
 
     async fetchItemPriceAndLocation(itemId: ItemId, city: string): Promise<
         Price[] | string> {
+        const cityKey = encodeURIComponent(city.trim()) || 'ALL'
+        const cacheKey = `price_${itemId}_${cityKey}`
+        const cachedPrice = this.priceCache.get(cacheKey)
+        if (cachedPrice) {
+            return cachedPrice
+        }
         try {
-            const response = await fetch(`https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${city}`)
+            const response = await fetch(
+                `https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${encodeURIComponent(city)}`
+              )
             if (!response.ok) {
-                throw new ExternalApiError("Unable to fetch price data from Albion Online API")
+                this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+                return []
             }
 
             const data = await response.json()
             const itemInfo = (await this.fetchMetadata()).itemsData[itemId]
-            if (data.length === 0) {
-                throw new ExternalApiError("No price data available for this item in the specified location")
+            if (!Array.isArray(data) || data.length === 0) {
+                this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+                return []
             }
 
             const mappedData = mapPriceData(data, itemInfo, itemId)
+            this.priceCache.set(cacheKey, mappedData, TTL_CONSTANTS.TEN_MINUTES)
             return mappedData
 
         } catch (error) {
             console.error("Error fetching item price and location:", error)
-            throw new ExternalApiError("Unable to fetch price data from Albion Online API")
+            this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
+            return []
         }
     }
 

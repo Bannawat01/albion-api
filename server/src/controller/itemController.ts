@@ -103,7 +103,7 @@ export const itemController = new Elysia({
 
     })
 
-    .get("/item/price", async ({ query: { id, city } }) => {
+    .get("/item/price", async ({ query: { id, city }, set }) => {
         try {
             const metadata = await itemRepository.fetchMetadata()
             const itemInfo = metadata.itemsData[id]
@@ -122,20 +122,22 @@ export const itemController = new Elysia({
 
             if (result.length > 0) {
                 const expectedItemName = itemInfo?.LocalizedNames?.['EN-US'] || itemInfo?.UniqueName
-                const actualItemName = result[0].itemName // Type-safe access
-
+                const actualItemName = result[0].itemName
                 if (expectedItemName && actualItemName !== expectedItemName) {
-                    throw new Error(`Data inconsistency: Expected '${expectedItemName}' but got '${actualItemName}'`)
+                    console.warn(`[itemController] Name mismatch for id=${id}: expected='${expectedItemName}' got='${actualItemName}'`)
                 }
             }
 
+            // Cache for clients/proxies ~60s, allow short stale
+            set.headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=30'
             return { success: true, data: result }
 
         } catch (error) {
-            if (error instanceof NotFoundError || error instanceof BadRequestError) {
+            if (error instanceof NotFoundError || error instanceof BadRequestError || error instanceof ExternalApiError) {
                 throw error
             }
-            throw new Error(error instanceof Error ? error.message : "Failed to fetch item price")
+            // Convert unknown errors to ExternalApiError so clients don't see 500
+            throw new ExternalApiError(error instanceof Error ? error.message : "Failed to fetch item price")
         }
     })
 
@@ -268,5 +270,33 @@ export const itemController = new Elysia({
                 throw error
             }
             throw new Error(error instanceof Error ? error.message : "Failed to fetch item image")
+        }
+    })
+
+    // Batch prices endpoint
+    .post("/items/prices/batch", async ({ body, set }) => {
+        try {
+            const payload = (body ?? {}) as any
+            const { ids, city } = payload
+            if (!Array.isArray(ids) || ids.length === 0) {  
+                throw new BadRequestError("'ids' must be a non-empty array")
+            }
+
+            // Validate ids exist in metadata (optional, cheap cache lookup)
+            const metadata = await itemRepository.fetchMetadata()
+            const validIds = ids.filter((id: string) => !!metadata.itemsData[id])
+            if (validIds.length === 0) {
+                throw new BadRequestError("No valid item ids provided")
+            }
+
+            const data = await itemRepository.fetchItemsPricesBatch(validIds, city)
+
+            set.headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=30'
+            return { success: true, data }
+        } catch (error) {
+            if (error instanceof BadRequestError || error instanceof ExternalApiError || error instanceof NotFoundError) {
+                throw error
+            }
+            throw new Error(error instanceof Error ? error.message : 'Failed to fetch batch prices')
         }
     })
