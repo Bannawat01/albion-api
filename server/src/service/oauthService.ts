@@ -2,7 +2,7 @@ import crypto from "crypto"
 import type { GoogleTokenResponse, GoogleUserInfo, User } from "../types/UserType"
 import type { DatabaseService } from "../repository/authRepository"
 import { DatabaseManager } from '../configs/databaseManager'
-import { OAUTH_CONFIG } from "../configs/oauth"
+import { OAUTH_CONFIG } from "../configs/Oauth"
 
 class SomeService {
   async initialize() {

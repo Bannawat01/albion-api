@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['react', 'react-dom'],
     // concurrentFeatures: true // if needed for React 19; keep default if stable
   },
+    domains: ["lh3.googleusercontent.com"], // ✅ อนุญาตให้โหลดรูปจาก Google profile
+  },
+};
 
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {

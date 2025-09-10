@@ -1,21 +1,28 @@
 'use client'
 import { useEffect, useState } from 'react'
 import type { GoldPrice } from '@server/interface/goldInterface'
-import dynamic from 'next/dynamic'
-const GoldLineChart = dynamic(() => import('./GoldLineChart'), {
-  ssr: false,
-  loading: () => <div className="h-96" />, // skeleton ชั่วคราว
-})
+import {
+  Chart as ChartJS,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend,
+} from 'chart.js'
+import { itemApi } from '@/api/item'
+ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
+
 export default function GoldChartPage() {
   const [goldData, setGoldData] = useState<GoldPrice[]>([])
   const [loading, setLoading] = useState(true)
+  
 
   useEffect(() => {
     const fetchGold = async () => {
       try {
-        const res = await fetch('https://localhost:8800/api/gold?count=50')
-
-        const data = await res.json()
+        // เปลี่ยนจาก fetch เป็น axios
+        const data = await itemApi.getGoldPrice()
 
         if (data.success) {
           setGoldData(data.data)

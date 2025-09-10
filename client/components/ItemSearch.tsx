@@ -13,6 +13,8 @@ import { safeNumber as n, minDefined as minDef, maxDefined as maxDef } from "@/l
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
 type CityMap = Record<string, CityMetrics>
+type CityPricesByItem = Record<string, CityMap>
+
 const CITY_ORDER = ["Brecilien","Caerleon","Thetford","Fort Sterling","Lymhurst","Bridgewatch","Martlock","Black Market"] as const
 const CITY_COLOR: Record<string,string> = {
   Brecilien:"bg-violet-500 text-white", Caerleon:"bg-black text-white", Thetford:"bg-rose-600 text-white",
@@ -205,30 +207,26 @@ export default function ItemSearch() {
   })
   
   const getPageNumbers = () => {
-    const delta = 2, pages:(number|"...")[] = [1]
+    const delta = 2, pages: (number | "...")[] = [1]
     const s = Math.max(2, currentPage - delta), e = Math.min(totalPages - 1, currentPage + delta)
-    if (s > 2) pages.push("..."); for (let i=s;i<=e;i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
+    if (s > 2) pages.push("..."); for (let i = s; i <= e; i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
     return pages
   }
 
-  // --- helpers ---
+  // helpers
   const isMarketItem = (u: string) => /^T[2-8]_/.test(u)
-  // number helpers moved to lib/number
+  const n = (v:any) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null }
+  const minDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.min(a,b)
+  const maxDef = (a?:number|null, b?:number|null) => a==null ? b??null : b==null ? a : Math.max(a,b)
   const rowsFrom = (res:any) => Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : []
 
   const fetchCityPricesOptimized = async (uniqueName: string): Promise<CityMap> => {
     if (!isMarketItem(uniqueName)) return {}
-
-    // Check cache first
-    const cached = priceCache.get(uniqueName)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.data
-    }
-
     try {
-      const res = await itemApi.getItemPrices(uniqueName)
-      const rows = rowsFrom(res)
-      
+      let res = await itemApi.getItemPrices(uniqueName, CITIES_PARAM)
+      let rows:any[] = rowsFrom(res)
+      if (!rows.length) { res = await itemApi.getItemPrices(uniqueName); rows = rowsFrom(res) }
+
       const map: CityMap = {}
       for (const r of rows) {
         const city = String(r.city ?? "").trim()
@@ -270,259 +268,141 @@ export default function ItemSearch() {
         })
         return next
       })
-    }
-  }, [])
 
-  // Fetch prices when items change (side-effect)
-  useEffect(() => {
-    if (items.length > 0) {
-      // fire and forget; ignore if unmounted
-      let cancelled = false
-      ;(async () => {
-        if (!cancelled) await fetchPricesForItems(items)
-      })()
-      return () => {
-        cancelled = true
-      }
-    }
-  }, [items, fetchPricesForItems])
+      setItems(reset ? res.data : [...items, ...res.data])
+      setTotalItems(res.data.length < itemsPerPage ? (pageNum - 1) * itemsPerPage + res.data.length : pageNum * itemsPerPage + 1)
+    } catch (e:any) {
+      setError(e?.message || "Failed to search items"); setItems([]); setTotalItems(0); setCityPricesByItem({})
+    } finally { setLoading(false) }
+  }
 
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    setSearchTerm(searchInput)
-    setCurrentPage(1)
-  }, [searchInput])
+  useEffect(() => { searchItems("", 1) /* eslint-disable-next-line */ }, [])
 
-  const handlePageChange = useCallback((page: number) => {
-    if (page >= 1 && page <= totalPages && page !== currentPage) {
-      setCurrentPage(page)
-      document.getElementById("search-results")?.scrollIntoView({behavior:"smooth"})
-    }
-  }, [currentPage, totalPages])
+  const handleSearch = async (e: React.FormEvent) => { e.preventDefault(); setCurrentPage(1); await searchItems(searchTerm, 1, true) }
+  const handlePageChange = async (p:number) => { if (p===currentPage||p<1||p>totalPages) return; setCurrentPage(p); await searchItems(searchTerm, p, true); document.getElementById("search-results")?.scrollIntoView({behavior:"smooth"}) }
 
-  const handlePreviousPage = useCallback(() => {
-    if (hasPreviousPage) {
-      setCurrentPage(currentPage - 1)
-    }
-  }, [currentPage, hasPreviousPage])
-
-  const handleNextPage = useCallback(() => {
-    if (hasNextPage) {
-      setCurrentPage(currentPage + 1)
-    }
-  }, [currentPage, hasNextPage])
-
-  // --- small presentational helpers ---
-  const ChipsRow = ({ label, metric, map }:{label:string; metric:keyof CityMetrics; map?:CityMap}) => (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-xs font-semibold text-slate-300 w-20">{label}</span>
-      {CITY_ORDER.map(city => {
-        const val = map?.[city]?.[metric] ?? null
-        const base = "px-2 py-0.5 rounded-md text-xs font-bold"
-        const color = val!=null ? (CITY_COLOR[city] || "bg-slate-600 text-white") : "bg-slate-700 text-slate-400 line-through opacity-60"
-        return <span key={city+label} className={`${base} ${color}`} title={`${city}`}>{val!=null ? val.toLocaleString() : city}</span>
-      })}
+  // UI helpers
+  const ChipsRow = ({ label, metric, map }:{
+    label:string; metric:keyof CityMetrics; map?:CityMap
+  }) => (
+    <div className="space-y-1.5">
+      {/* label: แสดงบรรทัดบนในมือถือ, ชิดซ้ายในจอใหญ่ */}
+      <div className="sm:hidden text-[11px] font-semibold text-slate-300">{label}</div>
+      <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
+        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span>
+        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap */}
+        <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap sm:gap-2">
+          {CITY_ORDER.map(city => {
+            const val = map?.[city]?.[metric] ?? null
+            const base = "px-1.5 py-0.5 rounded-md text-[11px] sm:text-xs font-bold leading-5 text-center min-w-[64px]"
+            const color = val!=null ? (CITY_COLOR[city] || "bg-slate-600 text-white") : "bg-slate-700 text-slate-400 line-through opacity-60"
+            return <span key={city+label} className={`${base} ${color}`} title={city}>{val!=null ? val.toLocaleString() : city}</span>
+          })}
+        </div>
+      </div>
     </div>
   )
+
   const Legend = () => (
-    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-400">
+    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] sm:text-xs text-slate-400">
       <span className="font-medium">Prices legend:</span>
-      {CITY_ORDER.map(c => <span key={c} className={`px-2 py-0.5 rounded-md font-semibold ${CITY_COLOR[c]}`}>{c}</span>)}
+      {CITY_ORDER.map(c => <span key={c} className={`px-1.5 py-0.5 rounded-md font-semibold ${CITY_COLOR[c]}`}>{c}</span>)}
     </div>
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-3 sm:px-0">
+      {/* Search Form */}
       <form onSubmit={handleSearch} className="relative">
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
           <div className="relative flex-1">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" /></svg>
             </div>
-            <input value={searchInput} onChange={(e)=>setSearchInput(e.target.value)} placeholder="ค้นหาไอเทม... (เช่น sword, armor, potion)" className={cn("w-full pl-12 pr-4 py-3 rounded-xl border border-input bg-background text-foreground","placeholder:text-muted-foreground","focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent","transition-all duration-200")} />
+            <input value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} placeholder="ค้นหาไอเทม... (เช่น sword, armor, potion)" className={cn("w-full pl-12 pr-4 py-3 rounded-xl border border-input bg-background text-foreground","placeholder:text-muted-foreground","focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent","transition-all duration-200")} />
           </div>
-          <button type="submit" disabled={isLoading} className={cn("px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed","transition-all duration-200 min-w-[120px]")}>
-            {isLoading ? (<div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>กำลังค้นหา...</div>) : ("ค้นหา")}
+          <button type="submit" disabled={loading} className={cn("px-8 py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed","transition-all duration-200 min-w-[120px]")}>
+            {loading ? (<div className="flex items-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>กำลังค้นหา...</div>) : ("ค้นหา")}
           </button>
         </div>
       </form>
 
-      {error && (<Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm"><CardContent className="pt-6"><div className="flex items-center gap-3 mb-3"><div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-red-300 font-medium">เกิดข้อผิดพลาด: {error.message}</p></div><button onClick={() => window.location.reload()} className="px-3 py-1.5 text-xs font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded border border-red-500/30 transition-colors">รีเฟรชหน้า</button></CardContent></Card>)}
+      {error && (<Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm"><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p className="text-red-300 font-medium">เกิดข้อผิดพลาด: {error}</p></div></CardContent></Card>)}
 
-      <div id="search-results" className="flex justify-between items-center">
+      {/* Header */}
+      <div id="search-results" className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <div>
-          <h2 className="text-xl font-semibold text-white mb-2">
-            {searchTerm ? (
-              <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></>
-            ) : (
-              "ไอเทมทั้งหมด"
-            )}
-            {isPlaceholderData && <span className="text-yellow-400 ml-2">(กำลังอัพเดต...)</span>}
-          </h2>
-          <p className="text-sm text-slate-300 mt-1">
-            {isLoading && items.length === 0 ? (
-              "กำลังโหลดข้อมูล..."
-            ) : (
-              <>
-                แสดง {items.length} รายการ
-                {totalItems > 0 && ` จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}
-                {totalPages > 1 && <span className="ml-2">(หน้า {currentPage} จาก {totalPages})</span>}
-                {isPlaceholderData && <span className="text-yellow-400 ml-2">(กำลังอัพเดต...)</span>}
-              </>
-            )}
-          </p>
+          <h2 className="text-xl font-semibold text-white">{searchTerm ? <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></> : "ไอเทมทั้งหมด"}</h2>
+          <p className="text-sm text-slate-300 mt-1">แสดง {items.length} รายการ {totalItems>0 && `จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}{totalPages>1 && <span className="ml-2">(หน้า {currentPage} จาก {totalPages})</span>}</p>
         </div>
-        <div className="text-sm text-slate-300">แสดง {pagination?.itemsPerPage || 20} รายการต่อหน้า</div>
+        <div className="text-sm text-slate-300">แสดง {itemsPerPage} รายการต่อหน้า</div>
 
       </div>
 
-      {/* Loading State */}
-      {isLoading && items.length === 0 && (
-        <div className="flex items-center justify-center py-16">
-          <div className="flex flex-col items-center gap-4 text-slate-300">
-            <div className="relative">
-              <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-              <div className="absolute inset-0 w-8 h-8 border-3 border-transparent border-t-primary/60 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '0.8s'}}></div>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-medium text-white mb-1">กำลังโหลดข้อมูล...</p>
-              <p className="text-sm text-slate-400">กรุณารอสักครู่</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {loading && items.length===0 && (<div className="flex items-center justify-center py-12"><div className="flex items-center gap-3 text-slate-300"><div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div><span>กำลังโหลดข้อมูล...</span></div></div>)}
 
-      {/* No Results State */}
-      {!isLoading && items.length === 0 && !error && (
-        <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border-dashed hover:border-slate-600/50 transition-all duration-300">
-          <CardContent className="pt-8 pb-8">
-            <div className="text-center py-8">
-              <div className="relative mx-auto mb-6 w-20 h-20">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-600/20 to-slate-700/20 rounded-full"></div>
-                <div className="relative w-full h-full flex items-center justify-center text-slate-500">
-                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-3">ไม่พบไอเทมที่ค้นหา</h3>
-              <p className="text-slate-400 mb-4 max-w-md mx-auto leading-relaxed">
-                ลองค้นหาด้วยคำอื่น หรือใช้คำค้นหาที่สั้นกว่า
-              </p>
-              <div className="flex flex-wrap justify-center gap-2 text-xs">
-                <span className="px-3 py-1 bg-slate-700/50 text-slate-300 rounded-full">เคล็ดลับ: ใช้ชื่อภาษาอังกฤษ</span>
-                <span className="px-3 py-1 bg-slate-700/50 text-slate-300 rounded-full">ลองคำค้นหาที่สั้นกว่า</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {!loading && items.length===0 && !error && (<Card className="border-slate-700/50 bg-slate-800/50 backdrop-blur-sm border-dashed"><CardContent className="pt-6"><div className="text-center py-8"><div className="w-16 h-16 mx-auto mb-4 text-slate-600"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-3-8a8 8 0 018 8 8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8z" /></svg></div><h3 className="text-lg font-medium text-white mb-2">ไม่พบไอเทมที่ค้นหา</h3><p className="text-slate-400">ลองค้นหาด้วยคำอื่น หรือใช้คำค้นหาที่สั้นกว่า</p></div></CardContent></Card>)}
 
-      {/* Results (Virtualized) */}
-      {items.length > 0 && (
-        <div className="space-y-4">
-          <div
-            ref={scrollParentRef}
-            className="relative h-[70vh] overflow-auto rounded-2xl border border-slate-700/40 bg-gradient-to-b from-slate-800/60 via-slate-900/40 to-slate-900/60 backdrop-blur-sm [--fade:16px] [--mask:linear-gradient(to_bottom,transparent,black_var(--fade),black_calc(100%-var(--fade)),transparent)] [mask-image:var(--mask)] [-webkit-mask-image:var(--mask)] [mask-mode:match-source] [mask-repeat:no-repeat] [mask-size:100%_100%]"
-          >
+      {items.length>0 && (
+        <div className="grid gap-4">
+          {items.map((item, index) => {
+            const pMap = cityPricesByItem[item.uniqueName]
+            const noData = !pMap || CITY_ORDER.every(c => !pMap[c]?.sellMin && !pMap[c]?.sellMax && !pMap[c]?.buyMin && !pMap[c]?.buyMax)
+            return (
+              <Card key={`${item.id}-${index}`} className={cn("hover:shadow-lg transition-all duration-200 cursor-pointer group","hover:border-primary/20")}>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="relative">
+                      <div className="w-16 h-16 bg-slate-700/30 rounded-xl flex items-center justify-center overflow-hidden">
+                        <img src={itemApi.getItemImageUrl(item.id, 1, 64)} alt={item.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-200" />
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold">{((currentPage-1)*itemsPerPage)+index+1}</div>
+                    </div>
 
-            <div style={{ height: rowVirtualizer.getTotalSize() }} className="relative">
-      {rowVirtualizer.getVirtualItems().map((vRow) => {
-                const item = items[vRow.index]
-                return (
-                  <div
-        key={vRow.key}
-                    ref={rowVirtualizer.measureElement}
-        data-index={vRow.index}
-        className="absolute left-0 right-0 p-3 transform-gpu will-change-transform"
-        style={{ transform: `translateY(${vRow.start}px)` }}
-                  >
-                    <ItemCard
-                      item={item}
-                      index={vRow.index}
-                      currentPage={currentPage}
-                      priceMap={priceData[item.uniqueName]}
-                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg text-white">{item.name}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-medium text-white bg-white/10 px-2 py-1 rounded">ID: {item.id}</span>
+                        <span className="text-xs font-medium text-white bg-white/10 px-2 py-1 rounded">{item.uniqueName}</span>
+                      </div>
+
+                      <div className="mt-3 space-y-1">
+                        {noData ? (
+                          <span className="text-sm text-slate-400">ไม่มีข้อมูลราคา</span>
+                        ) : (
+                          <>
+                            <ChipsRow label="Sell Min" metric="sellMin" map={pMap} />
+                            <ChipsRow label="Sell Max" metric="sellMax" map={pMap} />
+                            <ChipsRow label="Buy Min"  metric="buyMin"  map={pMap} />
+                            <ChipsRow label="Buy Max"  metric="buyMax"  map={pMap} />
+{items.length > 0 && (
+  <div className="mt-2"><Legend /></div>
+)}                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-slate-400 group-hover:text-primary transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </div>
                   </div>
-                )
-              })}
-            </div>
-          </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-8 pt-6 border-t border-slate-700/50">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-            {/* Page Info */}
-            <div className="text-sm text-slate-400 order-2 sm:order-1">
-              หน้า <span className="font-medium text-white">{currentPage}</span> จาก <span className="font-medium text-white">{totalPages}</span>
-              {totalItems > 0 && (
-                <span className="ml-2">({totalItems.toLocaleString()} รายการทั้งหมด)</span>
-              )}
+      {totalPages>1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
+          <div className="flex items-center gap-2">
+            <button onClick={()=>handlePageChange(currentPage-1)} disabled={!hasPrevPage||loading} className={cn("px-3 py-2 text-sm font-medium rounded-lg border","disabled:opacity-50 disabled:cursor-not-allowed",hasPrevPage?"bg-background hover:bg-muted border-input text-foreground":"bg-muted border-muted text-muted-foreground")}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((p,i)=>(
+                <button key={i} onClick={()=>typeof p==="number"&&handlePageChange(p)} disabled={loading||p==="..."} className={cn("px-3 py-2 text-sm font-medium rounded-lg border min-w-[40px]","disabled:cursor-not-allowed transition-all duration-200",p===currentPage?"bg-primary text-primary-foreground border-primary":p==="..."?"bg-transparent border-transparent text-muted-foreground cursor-default":"bg-background hover:bg-muted border-input text-foreground hover:border-primary/30")}>{p}</button>
+              ))}
             </div>
-            
-            {/* Pagination Controls */}
-            <div className="flex items-center gap-2 order-1 sm:order-2">
-              {/* Previous Button */}
-              <button 
-                onClick={() => handlePageChange(currentPage - 1)} 
-                disabled={!hasPreviousPage || isLoading} 
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  hasPreviousPage && !isLoading
-                    ? "bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white hover:border-primary/50 hover:text-primary"
-                    : "bg-slate-900/50 border-slate-700/50 text-slate-500"
-                )}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="hidden sm:inline">ก่อนหน้า</span>
-              </button>
-              
-              {/* Page Numbers */}
-              <div className="flex items-center gap-1">
-                {getPageNumbers().map((p, i) => (
-                  <button 
-                    key={i} 
-                    onClick={() => typeof p === "number" && handlePageChange(p)} 
-                    disabled={isLoading || p === "..."} 
-                    className={cn(
-                      "px-3 py-2 text-sm font-medium rounded-lg border min-w-[40px] transition-all duration-200",
-                      "disabled:cursor-not-allowed",
-                      p === currentPage
-                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
-                        : p === "..."
-                        ? "bg-transparent border-transparent text-slate-500 cursor-default"
-                        : "bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white hover:border-primary/50 hover:text-primary hover:shadow-md"
-                    )}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-              
-              {/* Next Button */}
-              <button 
-                onClick={() => handlePageChange(currentPage + 1)} 
-                disabled={!hasNextPage || isLoading} 
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  hasNextPage && !isLoading
-                    ? "bg-slate-800/50 hover:bg-slate-700/50 border-slate-600 text-white hover:border-primary/50 hover:text-primary"
-                    : "bg-slate-900/50 border-slate-700/50 text-slate-500"
-                )}
-              >
-                <span className="hidden sm:inline">ถัดไป</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
+            <button onClick={()=>handlePageChange(currentPage+1)} disabled={!hasNextPage||loading} className={cn("px-3 py-2 text-sm font-medium rounded-lg border","disabled:opacity-50 disabled:cursor-not-allowed",hasNextPage?"bg-background hover:bg-muted border-input text-foreground":"bg-muted border-muted text-muted-foreground")}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></button>
           </div>
         </div>
       )}

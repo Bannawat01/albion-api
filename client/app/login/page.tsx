@@ -1,27 +1,61 @@
 "use client"
-import React, { useState } from "react"
+import { getLoginErrorMessage } from "@/lib/errorMessage"
+import { useAuth } from "../../contexts/AuthContext"
+import { useRouter, useSearchParams } from "next/navigation"
+import React, { useEffect } from "react"
 
-const startGoogleLogin = async () => {
-  const res = await fetch('https://localhost:8800/api/auth/google') // เปลี่ยนเป็น URL ของ backend จริง
-  const data = await res.json()
-
-  if (data.success && data.url) {
-    window.location.href = data.url // redirect ไปยัง Google OAuth
-  } else {
-    console.error('OAuth error:', data.error)
-  }
-}
 const LoginPage: React.FC = () => {
+  const { login, isAuthenticated, isLoading } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const error = searchParams.get('error')
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/')
+    }
+  }, [isAuthenticated, router])
+
   const handleGoogleLogin = () => {
-    startGoogleLogin()
+    login()
   }
+
+  const errorMessage = getLoginErrorMessage(error)
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-lg">กำลังโหลด...</div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return null
+  }
+
+
 
   return (
 
     <div className="flex flex-col items-center justify-center min-h-20 bg-gradient-to-br from-slate-900 to-slate-700 p-6 rounded-3xl shadow-xl w-full max-w-sm mx-auto mt-20">
 
+      {/* แสดง Error Message */}
+      {errorMessage && (
+        <div className="error-message">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="mb-8 h-32 w-32 shadow-lg rounded-full bg-white flex items-center justify-center">
-        <img src="/images/google.webp" alt="Google Logo" className="h-full w-full object-contain" />
+        <img
+          src="/images/google.webp"
+          alt="Google Logo"
+          width="128"
+          height="128"
+          className="h-full w-full object-contain"
+        />
       </div>
 
       <button
