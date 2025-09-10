@@ -1,21 +1,13 @@
+// app/layout.tsx
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
-import Link from "next/link"
-import Image from "next/image"
 import QueryProvider from "@/hooks/QueryProvider"
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-})
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-})
 import { AuthProvider } from "@/contexts/AuthContext"
-import NavBar from "@/components/navBar"   // ✅ client component
+import NavBar from "@/components/navBar"
+
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Albion-Api",
@@ -30,79 +22,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="dns-prefetch" href="//render.albiononline.com" />
       </head>
       <body className="bg-gray-900 flex flex-col min-h-screen font-sans antialiased">
-        <nav className="w-full flex items-center justify-between p-4 bg-slate-700">
-          {/* Logo on the left */}
-          <div>
-            <Link href="/" className="text-lg font-bold text-gray-800">
-              <Image src="/images/logo.png" alt="Albo Logo" width={120} height={32} priority fetchPriority="high" className="h-8 w-auto" />
-            </Link>
-          </div>
-          {/* Center navigation */}
-          <div className="flex-1 flex justify-left space-x-4 ml-8">
-            <Link
-              href="/gold"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 text-gray-900 font-semibold shadow-md hover:from-yellow-500 hover:to-yellow-700 hover:text-white transition-all duration-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 17h18M5 13h14M7 9h10M9 5h6"
-                />
-              </svg>
-              Gold Market
-            </Link>
-          </div>
-          {/* Login on the right */}
-          <div>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-400 to-purple-600 text-gray-900 font-semibold shadow-md hover:from-blue-600 hover:to-purple-900 hover:text-white transition-all duration-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16 21v-2a4 4 0 00-8 0v2M12 11a4 4 0 100-8 4 4 0 000 8z"
-                />
-              </svg>
-              Login
-            </Link>
-          </div>
-        </nav>
-
-        <main className="flex-1 mt-4 mb-16">
+        <AuthProvider>
           <QueryProvider>
-            {children}
-          </QueryProvider>
-        </main>
-
-        <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
-          <p>© 2025 Albo. All rights reserved.</p>
-        </footer>
-        <QueryProvider>
-          <AuthProvider>
             <NavBar />
             <main className="flex-1 mt-4 mb-16">{children}</main>
             <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
               <p>© 2025 Albo. All rights reserved.</p>
             </footer>
-          </AuthProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   )
