@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import ItemSearch from '@/components/ItemSearch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 export default function HomePage() {
   // ตัวอย่าง mock loading state (เปลี่ยน logic นี้ตามจริงได้)

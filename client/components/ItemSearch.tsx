@@ -409,3 +409,7 @@ export default function ItemSearch() {
     </div>
   )
 }
+function setTotalItems(arg0: number) {
+  throw new Error('Function not implemented.')
+}
+

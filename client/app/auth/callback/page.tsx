@@ -5,7 +5,7 @@ import CallbackClient from './CallbackClient'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function AuthCallbackPage({
+export async function AuthCallbackPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>

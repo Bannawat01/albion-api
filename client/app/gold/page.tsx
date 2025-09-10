@@ -11,6 +11,7 @@ import {
   Legend,
 } from 'chart.js'
 import { itemApi } from '@/api/item'
+import GoldLineChart from './GoldLineChart'
 ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 export default function GoldChartPage() {
