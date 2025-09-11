@@ -5,6 +5,7 @@ import { itemApi } from "../api"
 import { Card, CardContent } from "./ui/card"
 import { cn } from "@/lib/utils"
 import { useItemSearchStore } from "@/stores/itemSearchStore"
+import { isMarketItem, maxDef, minDef, n, rowsFrom } from "@/helpers/helperItem"
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
 type CityMap = Record<string, CityMetrics>
@@ -31,13 +32,6 @@ export default function ItemSearch() {
     if (s > 2) pages.push("..."); for (let i = s; i <= e; i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
     return pages
   }
-
-  // helpers
-  const isMarketItem = (u: string) => /^T[2-8]_/.test(u)
-  const n = (v: any) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : null }
-  const minDef = (a?: number | null, b?: number | null) => a == null ? b ?? null : b == null ? a : Math.min(a, b)
-  const maxDef = (a?: number | null, b?: number | null) => a == null ? b ?? null : b == null ? a : Math.max(a, b)
-  const rowsFrom = (res: any) => Array.isArray(res?.data) ? res.data : Array.isArray(res?.data?.data) ? res.data.data : []
 
   async function fetchCityPrices(uniqueName: string): Promise<CityMap> {
     if (!isMarketItem(uniqueName)) return {}

@@ -9,7 +9,8 @@ export const UserProfile = () => {
 
   if (!isAuthenticated) {
     return (
-      <Button   onClick={login}
+      <Button
+        onClick={() => login()}
         className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-400 to-purple-600 text-gray-900 font-semibold shadow-md hover:from-blue-600 hover:to-purple-900 hover:text-white transition-all duration-200 "
       >
         Login
