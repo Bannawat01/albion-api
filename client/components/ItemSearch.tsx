@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { itemApi } from "../api"
+import { useEffect, useRef, useState } from "react"
+import { itemApi, useSearchItems } from "../api"
+import PaginationControls from './pagination/PaginationControls'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from "./ui/card"
 import { cn } from "@/lib/utils"
-import { useItemSearchStore } from "@/stores/itemSearchStore"
+import { useDebounce } from "@/hooks/useDebounce"
 import { isMarketItem, maxDef, minDef, n, rowsFrom } from "@/helpers/helperItem"
 
 type CityMetrics = { sellMin?: number | null; sellMax?: number | null; buyMin?: number | null; buyMax?: number | null }
@@ -20,16 +22,36 @@ const CITY_COLOR: Record<string, string> = {
 const CITIES_PARAM = CITY_ORDER.join(",")
 
 export default function ItemSearch() {
-  const { searchTerm, setSearchTerm, items, setItems, loading, setLoading, error, setError, currentPage, setCurrentPage, totalItems, setTotalItems, itemsPerPage, abortController, setAbortController, lastQueryKey, setLastQueryKey, nextPageItems, setNextPageItems } = useItemSearchStore()
-  const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
+  // Search & pagination state
+  const [rawSearch, setRawSearch] = useState("")
+  const debouncedSearch = useDebounce(rawSearch, 300)
+  const [page, setPage] = useState(1)
+  const itemsPerPage = 10
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage))
-  const hasNextPage = currentPage < totalPages
-  const hasPrevPage = currentPage > 1
+  // Price state & caches
+  const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
+  const priceCacheRef = useRef<Record<string, CityMap>>({})
+  const lazyBatchTimer = useRef<NodeJS.Timeout | null>(null)
+  const initialPriceSlice = 5 // first N items priced immediately (half page), remainder after short delay
+
+  // React Query
+  const { data, isFetching, isError, error, isPreviousData } = useSearchItems(debouncedSearch || undefined, page, itemsPerPage) as any
+  const queryClient = useQueryClient()
+
+  const items = data?.data || []
+  const pagination = data?.pagination
+  const totalItems = pagination?.totalItems || 0
+  const totalPages = pagination?.totalPages || 1
+  const hasNextPage = !!pagination?.hasNextPage
+  const hasPrevPage = !!pagination?.hasPreviousPage
+
   const getPageNumbers = () => {
     const delta = 2, pages: (number | "...")[] = [1]
-    const s = Math.max(2, currentPage - delta), e = Math.min(totalPages - 1, currentPage + delta)
-    if (s > 2) pages.push("..."); for (let i = s; i <= e; i++) pages.push(i); if (e < totalPages - 1) pages.push("..."); if (totalPages > 1) pages.push(totalPages)
+    const s = Math.max(2, page - delta), e = Math.min(totalPages - 1, page + delta)
+    if (s > 2) pages.push("...")
+    for (let i = s; i <= e; i++) pages.push(i)
+    if (e < totalPages - 1) pages.push("...")
+    if (totalPages > 1) pages.push(totalPages)
     return pages
   }
 
@@ -53,71 +75,64 @@ export default function ItemSearch() {
     } catch { return {} }
   }
 
-  const searchItems = async (term: string, pageNum = 1, reset = true) => {
-    const queryKey = JSON.stringify({ term: term || "", page: pageNum, cities: CITIES_PARAM })
-    if (queryKey === lastQueryKey && reset) return
-    setLastQueryKey(queryKey)
+  const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1) }
+  const handlePageChange = (p: number) => { if (p===page||p<1||p>totalPages) return; setPage(p); document.getElementById("search-results")?.scrollIntoView({behavior:"smooth"}) }
 
-    try { abortController?.abort() } catch {}
-    const controller = new AbortController()
-    setAbortController(controller)
-    const signal = controller.signal
-
-    setLoading(true); setError(null)
-    try {
-      const res = await itemApi.searchItems(term || undefined, pageNum, itemsPerPage, signal)
-      // Limit concurrent price requests to reduce refetch storms
-      const itemsList = res.data
-      const concurrency = 4
-      let cursor = 0
-      const pricePairs: ReadonlyArray<readonly [string, CityMap]> = await (async () => {
-        const out: Array<readonly [string, CityMap]> = new Array(itemsList.length)
-        async function worker() {
-          while (true) {
-            const idx = cursor++
-            if (idx >= itemsList.length) break
-            const it = itemsList[idx]
-            const prices = await fetchCityPrices(it.uniqueName)
-            out[idx] = [it.uniqueName, prices] as const
-          }
-        }
-        await Promise.all(Array.from({ length: Math.min(concurrency, itemsList.length) }, () => worker()))
-        return out
-      })()
-
-      setCityPricesByItem(prev => {
-        const next = reset ? {} : { ...prev }
-        for (const [k, v] of pricePairs) next[k] = v
-        return next
+  // Prefetch next page when current data resolved
+  useEffect(() => {
+    if (hasNextPage && !isPreviousData) {
+      queryClient.prefetchQuery({
+        queryKey: ['items','search', debouncedSearch || undefined, page + 1, itemsPerPage],
+        queryFn: () => itemApi.searchItems(debouncedSearch || undefined, page + 1, itemsPerPage),
+        staleTime: 2 * 60 * 1000,
       })
-
-      setItems(reset ? res.data : [...items, ...res.data])
-      setTotalItems(res.data.length < itemsPerPage ? (pageNum - 1) * itemsPerPage + res.data.length : pageNum * itemsPerPage + 1)
-
-      // prefetch next page summaries
-      if (pageNum < totalPages) {
-        try {
-          const nextRes = await itemApi.searchItems(term || undefined, pageNum + 1, itemsPerPage)
-          setNextPageItems(Array.isArray(nextRes?.data) ? nextRes.data : null)
-        } catch {}
-      }
-    } catch (e: any) {
-      setError(e?.message || "Failed to search items"); setItems([]); setTotalItems(0); setCityPricesByItem({})
-    } finally { setLoading(false) }
-  }
-
-  useEffect(() => { searchItems("", 1) /* eslint-disable-next-line */ }, [])
-  const handleSearch = async (e: React.FormEvent) => { e.preventDefault(); setCurrentPage(1); await searchItems(searchTerm, 1, true) }
-  const handlePageChange = async (p: number) => {
-    if (p === currentPage || p < 1 || p > totalPages) return
-    setCurrentPage(p)
-    if (p === currentPage + 1 && nextPageItems) {
-      setItems(nextPageItems)
-      setNextPageItems(null)
     }
-    await searchItems(searchTerm, p, true)
-    document.getElementById("search-results")?.scrollIntoView({ behavior: "smooth" })
-  }
+  }, [hasNextPage, isPreviousData, debouncedSearch, page, itemsPerPage, queryClient])
+
+  // Lazy price loading (first slice immediately, rest after small delay)
+  useEffect(() => {
+    if (!items.length) return
+
+    // Cleanup any prior timer when dependencies change
+    if (lazyBatchTimer.current) {
+      clearTimeout(lazyBatchTimer.current)
+      lazyBatchTimer.current = null
+    }
+
+    let cancelled = false
+
+  const uncachedItems = items.filter((i: any) => !priceCacheRef.current[i.uniqueName])
+    if (!uncachedItems.length) {
+      // All already cached, ensure state synced
+      setCityPricesByItem(prev => prev === priceCacheRef.current ? prev : { ...priceCacheRef.current })
+      return () => { cancelled = true }
+    }
+
+    const firstSlice = uncachedItems.slice(0, initialPriceSlice)
+    const remainder = uncachedItems.slice(initialPriceSlice)
+
+    const fetchPricesFor = async (subset: typeof uncachedItems) => {
+      const promises = subset.map((it: any) => fetchCityPrices(it.uniqueName))
+      const results = await Promise.all(promises)
+      results.forEach((map, idx) => {
+        const name = subset[idx].uniqueName
+        if (!priceCacheRef.current[name]) priceCacheRef.current[name] = map
+      })
+      if (!cancelled) setCityPricesByItem({ ...priceCacheRef.current })
+    }
+
+    // Immediate fetch for first slice
+    if (firstSlice.length) fetchPricesFor(firstSlice)
+
+    // Delayed fetch for remainder
+    if (remainder.length) {
+      lazyBatchTimer.current = setTimeout(() => {
+        if (!cancelled) fetchPricesFor(remainder)
+      }, 150)
+    }
+
+    return () => { cancelled = true; if (lazyBatchTimer.current) clearTimeout(lazyBatchTimer.current) }
+  }, [items, debouncedSearch, page])
 
   // UI helpers
   const ChipsRow = ({ label, metric, map }:{
@@ -158,8 +173,8 @@ export default function ItemSearch() {
               <svg className="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607z" /></svg>
             </div>
             <input
-              value={searchTerm}
-              onChange={(e)=>setSearchTerm(e.target.value)}
+              value={rawSearch}
+              onChange={(e)=>setRawSearch(e.target.value)}
               placeholder="ค้นหาไอเทม... (เช่น sword, armor, potion)"
               className={cn("w-full pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl border border-input bg-background text-foreground","placeholder:text-muted-foreground","focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent","transition-all duration-200")}
               aria-label="ค้นหาไอเทม"
@@ -167,22 +182,22 @@ export default function ItemSearch() {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isFetching && items.length===0}
             className={cn("w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200")}
             aria-label="ปุ่มค้นหา"
           >
-            {loading ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}
+            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}
           </button>
         </div>
       </form>
 
       {/* Error */}
-      {error && (
+      {isError && (
         <Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm">
           <CardContent className="pt-5 sm:pt-6">
             <div className="flex items-start gap-3">
               <div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-              <p className="text-red-300 text-sm sm:text-base font-medium">เกิดข้อผิดพลาด: {error}</p>
+              <p className="text-red-300 text-sm sm:text-base font-medium">เกิดข้อผิดพลาด: {error instanceof Error ? error.message : String(error)}</p>
             </div>
           </CardContent>
         </Card>
@@ -191,10 +206,10 @@ export default function ItemSearch() {
       {/* Header */}
       <div id="search-results" className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-white">{searchTerm ? <>ผลการค้นหา <span className="text-primary">"{searchTerm}"</span></> : "ไอเทมทั้งหมด"}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-white">{rawSearch ? <>ผลการค้นหา <span className="text-primary">"{rawSearch}"</span></> : "ไอเทมทั้งหมด"}</h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-0.5 sm:mt-1">
             แสดง {items.length} รายการ {totalItems>0 && `จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}
-            {totalPages>1 && <span className="ml-1.5 sm:ml-2">(หน้า {currentPage} จาก {totalPages})</span>}
+            {totalPages>1 && <span className="ml-1.5 sm:ml-2">(หน้า {page} จาก {totalPages})</span>}
           </p>
         </div>
         <div className="text-xs sm:text-sm text-slate-300">แสดง {itemsPerPage} รายการต่อหน้า</div>
@@ -204,7 +219,7 @@ export default function ItemSearch() {
       {items.length > 0 && <Legend />}
 
       {/* Loading/Empty */}
-      {loading && items.length===0 && (
+      {isFetching && items.length===0 && (
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3 text-slate-300">
             <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
@@ -212,7 +227,7 @@ export default function ItemSearch() {
           </div>
         </div>
       )}
-      {!loading && items.length===0 && !error && (
+      {!isFetching && items.length===0 && !isError && (
         <Card className="border-slate-700/50 bg-slate-800/50 backdrop-blur-sm border-dashed">
           <CardContent className="pt-6">
             <div className="text-center py-8">
@@ -229,7 +244,7 @@ export default function ItemSearch() {
       {/* Items */}
       {items.length>0 && (
         <div className="grid gap-3.5 sm:gap-4">
-          {items.map((item, index) => {
+          {items.map((item: any, index: number) => {
             const pMap = cityPricesByItem[item.uniqueName]
             const noData = !pMap || CITY_ORDER.every(c => !pMap[c]?.sellMin && !pMap[c]?.sellMax && !pMap[c]?.buyMin && !pMap[c]?.buyMax)
             return (
@@ -242,7 +257,7 @@ export default function ItemSearch() {
                         <img src={itemApi.getItemImageUrl(item.id, 1, 64)} alt={item.name} className="w-full h-full object-contain" />
                       </div>
                       <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold">
-                        {(currentPage-1)*itemsPerPage + index + 1}
+                        {(page-1)*itemsPerPage + index + 1}
                       </div>
                     </div>
 
@@ -281,16 +296,13 @@ export default function ItemSearch() {
 
       {/* Pagination */}
       {totalPages>1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-6">
-          <div className="flex items-center gap-2">
-            <button onClick={()=>handlePageChange(currentPage-1)} disabled={!hasPrevPage||loading} className={cn("px-3 py-2 text-sm font-medium rounded-lg border","disabled:opacity-50 disabled:cursor-not-allowed",hasPrevPage?"bg-background hover:bg-muted border-input text-foreground":"bg-muted border-muted text-muted-foreground")}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
-            <div className="flex items-center gap-1">
-              {getPageNumbers().map((p,i)=>(
-                <button key={i} onClick={()=>typeof p==="number"&&handlePageChange(p)} disabled={loading||p==="..."} className={cn("px-3 py-2 text-sm font-medium rounded-lg border min-w-[40px]","disabled:cursor-not-allowed transition-all duration-200",p===currentPage?"bg-primary text-primary-foreground border-primary":p==="..."?"bg-transparent border-transparent text-muted-foreground cursor-default":"bg-background hover:bg-muted border-input text-foreground hover:border-primary/30")}>{p}</button>
-              ))}
-            </div>
-            <button onClick={()=>handlePageChange(currentPage+1)} disabled={!hasNextPage||loading} className={cn("px-3 py-2 text-sm font-medium rounded-lg border","disabled:opacity-50 disabled:cursor-not-allowed",hasNextPage?"bg-background hover:bg-muted border-input text-foreground":"bg-muted border-muted text-muted-foreground")}><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></button>
-          </div>
+        <div className="pt-6">
+          <PaginationControls
+            page={page}
+            totalPages={totalPages}
+            isFetching={isFetching}
+            onChange={handlePageChange}
+          />
         </div>
       )}
     </div>

@@ -12,12 +12,21 @@ export class ItemRepository {
 
     private static instance: ItemRepository
     private metadataCache = new TTLCache<{ items: any[], locations: string[], itemsData: any }>()
+    // Precomputed lookup structures
+    private lowercaseIndex: Array<{ id: string; nameLower: string; uniqueLower: string }> = []
+    private prefixMap = new Map<string, Set<string>>() // prefix -> set of ids
+    private pageCache = new TTLCache<PaginatedResponse<{ id: string; name: string; uniqueName: string; searchCount?: number }>>()
     private priceCache = new TTLCache<Price[]>()
     private popularItems = new Map<string, number>()
 
     private cacheStats = {
         metadata: { hits: 0, misses: 0 },
         prices: { hits: 0, misses: 0 }
+    }
+
+    // Popularity helpers (re-introduced for pagination mapping)
+    public getItemSearchCount(itemId: string): number {
+        return this.popularItems.get(itemId) || 0
     }
 
     /**
@@ -165,6 +174,29 @@ export class ItemRepository {
 
             const result = { items, locations: locations(), itemsData: itemsDataMap }
 
+            // Build precomputed lowercase index & prefix map (one-time per metadata refresh)
+            this.lowercaseIndex = items.map(id => {
+                const info = itemsDataMap[id]
+                const localized = info?.LocalizedNames?.['EN-US'] || ''
+                const unique = info?.UniqueName || id
+                return { id, nameLower: localized.toLowerCase(), uniqueLower: unique.toLowerCase() }
+            })
+            this.prefixMap.clear()
+            for (const entry of this.lowercaseIndex) {
+                // build prefixes up to length 4 for both nameLower and uniqueLower
+                const sources = [entry.nameLower, entry.uniqueLower]
+                for (const src of sources) {
+                    const max = Math.min(4, src.length)
+                    for (let l = 1; l <= max; l++) {
+                        const prefix = src.slice(0, l)
+                        if (!prefix) continue
+                        let set = this.prefixMap.get(prefix)
+                        if (!set) { set = new Set(); this.prefixMap.set(prefix, set) }
+                        set.add(entry.id)
+                    }
+                }
+            }
+
             // Cache the result
             this.metadataCache.set(cacheKey, result, TTL_CONSTANTS.ONE_HOUR)
             return result
@@ -263,6 +295,7 @@ export class ItemRepository {
         searchTerm?: string
     ): Promise<PaginatedResponse<{ id: string, name: string, uniqueName: string }>> {
         try {
+            const t0 = performance.now()
             // Validate pagination parameters
             const params: ValidatedPaginationParams = PaginationService.validateParams(query)
 
@@ -270,14 +303,29 @@ export class ItemRepository {
             const metadata = await this.fetchMetadata()
             let items = metadata.items
 
-            // Filter ตาม search term ถ้ามี
+            // Cache key (includes search + pagination)
+            const pageCacheKey = `${searchTerm || ''}|${params.page}|${params.limit}`
+            const cachedPage = this.pageCache.get(pageCacheKey)
+            if (cachedPage) {
+                return cachedPage
+            }
+
+            // Filter ตาม search term ถ้ามี (optimized with prefix map and lowercase index)
             if (searchTerm) {
-                const searchLower = searchTerm.toLowerCase()
-                items = items.filter(itemId => {
-                    const itemInfo = metadata.itemsData[itemId]
-                    return itemId.toLowerCase().includes(searchLower) ||
-                        (itemInfo?.LocalizedNames?.['EN-US'] || '').toLowerCase().includes(searchLower)
-                })
+                const q = searchTerm.trim().toLowerCase()
+                if (q.length === 0) {
+                    // no-op
+                } else if (q.length <= 4) {
+                    const candidateSet = this.prefixMap.get(q)
+                    if (candidateSet) {
+                        items = Array.from(candidateSet)
+                    } else {
+                        items = []
+                    }
+                } else {
+                    // fallback: full scan over pre-lowered array (still optimized)
+                    items = this.lowercaseIndex.filter(e => e.nameLower.includes(q) || e.uniqueLower.includes(q)).map(e => e.id)
+                }
             }
             // คำนวณ total items
             const totalItems = items.length
@@ -293,17 +341,25 @@ export class ItemRepository {
                 return {
                     id: itemId,
                     name: itemInfo?.LocalizedNames?.['EN-US'] || itemId,
-                    uniqueName: itemInfo?.UniqueName || itemId
+                    uniqueName: itemInfo?.UniqueName || itemId,
+                    searchCount: this.getItemSearchCount(itemId)
                 }
             })
 
-            // สร้าง paginated response
-            return PaginationService.createResponse(
+            const response = PaginationService.createResponse(
                 mappedItems,
                 totalItems,
                 params,
                 searchTerm ? `Found ${totalItems} items matching "${searchTerm}"` : undefined
             )
+
+            // Cache page (short TTL for freshness)
+            this.pageCache.set(pageCacheKey, response as any, TTL_CONSTANTS.FIVE_MINUTES)
+            const t1 = performance.now()
+            if ((t1 - t0) > 50) {
+                console.log(`[perf] fetchItemsPaginated q='${searchTerm || ''}' page=${params.page} took ${(t1 - t0).toFixed(1)}ms (items=${mappedItems.length}/${totalItems})`)
+            }
+            return response
 
         } catch (error) {
             console.error("Error fetching paginated items:", error)
