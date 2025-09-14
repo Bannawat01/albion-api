@@ -1,0 +1,27 @@
+{
+  "name": "Albion Chatbot Router",
+  "nodes": [
+    { "parameters": { "httpMethod": "POST", "path": "albion/chatbot", "responseMode": "lastNode", "options": { "rawBody": false } }, "id": "webhookIn", "name": "Webhook In", "type": "n8n-nodes-base.webhook", "typeVersion": 1, "position": [200,300] },
+    { "parameters": { "functionCode": "const q=(($json.question)||'').toString().toLowerCase();let intent='other';if(/(?:sell|price|profit|arbitrage|ขาย|กำไร)/.test(q)) intent='recommend'; if(/(?:gold|ทอง)/.test(q)) intent='gold';return [{json:{question:q,intent}}];" }, "id": "classify", "name": "Classify Intent", "type": "n8n-nodes-base.function", "typeVersion": 1, "position": [460,300] },
+    { "parameters": { "conditions": { "string": [ { "value1": "={{$json.intent}}", "operation": "equal", "value2": "recommend" }, { "value1": "={{$json.intent}}", "operation": "equal", "value2": "gold" } ] } }, "id": "switch", "name": "Route by Intent", "type": "n8n-nodes-base.switch", "typeVersion": 1, "position": [700,300] },
+    { "parameters": { "url": "https://albion-server:8800/api/gold", "responseFormat": "json" }, "id": "fetchGold", "name": "Fetch Gold", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [960,180] },
+    { "parameters": { "functionCode": "const g=$json;return [{json:{reply:`Current gold price is ${g.currentPrice} silver. 24h change: ${g.change24h ?? 'N/A'}`}}];" }, "id": "formatGold", "name": "Format Gold Reply", "type": "n8n-nodes-base.function", "typeVersion": 1, "position": [1200,180] },
+  { "parameters": { "functionCode": "const q=($json.question||'').toString().toLowerCase();const m=q.match(/t\\d{1,2}_[a-z0-9_]+/);const itemId=m?m[0].toUpperCase():'T4_BAG';return [{json:{...$json,itemId}}];" }, "id": "extractItem", "name": "Extract ItemId", "type": "n8n-nodes-base.function", "typeVersion": 1, "position": [960,420] },
+    { "parameters": { "url": "=https://albion-server:8800/api/items/{{$json.itemId}}/recommendations", "responseFormat": "json", "options": { "queryParametersUi": { "parameter": [ {"name":"mode","value":"balanced"},{"name":"strategy","value":"list"},{"name":"scenario","value":"haveStock"},{"name":"qty","value":"100"},{"name":"weight","value":"50"},{"name":"limit","value":"3"} ] } } }, "id": "fetchRecs", "name": "Fetch Recommendations", "type": "n8n-nodes-base.httpRequest", "typeVersion": 3, "position": [1200,420] },
+    { "parameters": { "functionCode": "const recs=$json.data||[];if(!recs.length){return [{json:{reply:'No profitable market found right now.'}}];}const lines=recs.map(r=>`City: ${r.city} | Net: ${r.net.toFixed(0)} | ProfitScore: ${(r.score.profitScore*100).toFixed(0)}%`).join('\\n');return [{json:{reply:`Top markets for ${$json.params.itemId}:\\n${lines}`}}];" }, "id": "formatRecs", "name": "Format Rec Reply", "type": "n8n-nodes-base.function", "typeVersion": 1, "position": [1440,420] },
+    { "parameters": { "respondWith": "json", "options": {}, "responseBody": "={{$json.reply}}" }, "id": "webhookResponse", "name": "Webhook Response", "type": "n8n-nodes-base.respondToWebhook", "typeVersion": 1, "position": [1680,300] }
+  ],
+  "connections": {
+    "Webhook In": { "main": [[ { "node": "Classify Intent", "type": "main", "index": 0 } ]] },
+    "Classify Intent": { "main": [[ { "node": "Route by Intent", "type": "main", "index": 0 } ]] },
+    "Route by Intent": { "main": [[ { "node": "Extract ItemId", "type": "main", "index": 0 }, { "node": "Fetch Gold", "type": "main", "index": 1 } ]] },
+    "Fetch Gold": { "main": [[ { "node": "Format Gold Reply", "type": "main", "index": 0 } ]] },
+    "Format Gold Reply": { "main": [[ { "node": "Webhook Response", "type": "main", "index": 0 } ]] },
+    "Extract ItemId": { "main": [[ { "node": "Fetch Recommendations", "type": "main", "index": 0 } ]] },
+    "Fetch Recommendations": { "main": [[ { "node": "Format Rec Reply", "type": "main", "index": 0 } ]] },
+    "Format Rec Reply": { "main": [[ { "node": "Webhook Response", "type": "main", "index": 0 } ]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},  
+  "versionId": "albion-chatbot-router-v5"
+}

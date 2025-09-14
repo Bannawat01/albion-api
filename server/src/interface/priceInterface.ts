@@ -17,9 +17,13 @@ export interface Price {
     buy_Price_Min: number //ราค่าซื้อต่ำสุด
     buy_Price_Min_Date: ISODateString  //วันที่ราคาซื้อต่ำสุด
 
+    lastUpdated?: string | null
+
 }
 
-export interface CurrentPricesOptions {
+interface CurrentPricesOptions {
     locations?: LocationIdentifier[]
     qualities?: ItemQuality[]
 }
+
+export type { CurrentPricesOptions }

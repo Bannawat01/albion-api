@@ -1,12 +1,12 @@
 // Query parameters ที่ client ส่งมา
-export interface PaginationQuery {
+ interface PaginationQuery {
     page?: number
     limit?: number
     offset?: number      // จำนวนรายการที่ข้าม (alternative to page)
 }
 
 // Metadata ที่ส่งกลับไปยัง client
-export interface PaginationMeta {
+ interface PaginationMeta {
     currentPage: number      
     totalPages: number       
     totalItems: number       
@@ -18,7 +18,7 @@ export interface PaginationMeta {
 }
 
 // Generic response structure สำหรับ paginated data
-export interface PaginatedResponse<T> {
+ interface PaginatedResponse<T> {
     data: T[]                // ข้อมูลที่ส่งกลับ
     pagination: PaginationMeta // ข้อมูล
     success: boolean        
@@ -26,8 +26,10 @@ export interface PaginatedResponse<T> {
 }
 
 // Configuration สำหรับ pagination
-export interface PaginationConfig {
+ interface PaginationConfig {
     defaultLimit: number     
     maxLimit: number         
     minLimit: number         
 }
+
+export type { PaginationQuery, PaginationMeta, PaginatedResponse, PaginationConfig }

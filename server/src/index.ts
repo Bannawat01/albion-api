@@ -3,6 +3,8 @@ import { connectToDatabase } from "./configs/database"
 import { tlsConfig } from "./configs/tls"
 import { itemController } from "./controller/itemController"
 import { goldController } from "./controller/goldController"
+import { recommendationController } from "./controller/recommendationController"
+import { n8nController } from "./controller/n8nController"
 import { errorHandler } from "./middleware/errorHandler"
 import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
@@ -38,9 +40,12 @@ const app = new Elysia()
     .use(itemController)
     .use(goldController)
     .use(OauthController)
+    .use(recommendationController)
+    .use(n8nController)
 
     .listen({
         port: Bun.env.PORT || 8800,
+        hostname: '0.0.0.0',
         tls: tlsConfig
     })
 app.get('/health/database', async () => {
@@ -50,8 +55,14 @@ app.get('/health/database', async () => {
 
 
 
-let protocol = 'http'
-if ('cert' in tlsConfig) {
-    protocol = 'https'
+const hasTLS = typeof (tlsConfig as any).cert !== 'undefined'
+const protocol = hasTLS ? 'https' : 'http'
+console.log(`[server] Listening on ${protocol}://${app.server?.hostname}:${app.server?.port}`)
+if (!hasTLS) {
+    console.log('[server] TLS disabled (set ENABLE_TLS=true to enable self-signed cert)')
+} else {
+    console.log('[server] TLS enabled (self-signed). If browser shows ERR_SSL_PROTOCOL_ERROR try:')
+    console.log('  1) Clear HSTS / force reload (Chrome: chrome://net-internals/#hsts)')
+    console.log('  2) Use curl -k https://localhost:8800/')
+    console.log('  3) Confirm cert files in ssl/ match localhost CN')
 }
-console.log(`${protocol}://${app.server?.hostname}:${app.server?.port}`)
