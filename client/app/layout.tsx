@@ -1,13 +1,9 @@
-// app/layout.tsx
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import "./globals.css"
-import QueryProvider from "@/hooks/QueryProvider"
+import QueryProvider from "../hooks/QueryProvider"
 import { AuthProvider } from "@/contexts/AuthContext"
-import NavBar from "@/components/navBar"
-
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] })
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] })
+import NavBar from "@/components/navBar"   // ✅ client component
 
 export const metadata: Metadata = {
   title: "Albion-Api",
@@ -17,20 +13,16 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://render.albiononline.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="//render.albiononline.com" />
-      </head>
       <body className="bg-gray-900 flex flex-col min-h-screen font-sans antialiased">
-        <AuthProvider>
-          <QueryProvider>
+        <QueryProvider>
+          <AuthProvider>
             <NavBar />
             <main className="flex-1 mt-4 mb-16">{children}</main>
             <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
               <p>© 2025 Albo. All rights reserved.</p>
             </footer>
-          </QueryProvider>
-        </AuthProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )
