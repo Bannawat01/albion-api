@@ -25,7 +25,11 @@ const app = new Elysia()
     .onError(errorHandler)
     .use(requestLogger())
     .use(securityHeaders())
-    .use(cors())
+ .use(cors({
+    origin: ['http://localhost:3000'], // frontend ที่อนุญาต
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'] // ต้องมี Authorization
+  }))
     .get('/', () => ({
         message: 'Albion API Server',
         version: '1.0.0',

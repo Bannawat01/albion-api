@@ -1,20 +1,26 @@
-import { redirect } from 'next/navigation'
-import CallbackClient from './CallbackClient'
+'use client'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+import { useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
-export default async function AuthCallbackPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>
-}) {
-  const code = typeof searchParams.code === 'string' ? searchParams.code : undefined
-  const state = typeof searchParams.state === 'string' ? searchParams.state : undefined
+export default function CallbackPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { checkAuthStatus } = useAuth()
 
-  if (!code || !state) {
-    redirect('/login?error=invalid_callback')
-  }
+  useEffect(() => {
+    const token = searchParams.get('token')
+    if (token) {
+      localStorage.setItem('auth-token', token)
+      // โหลด user ใหม่
+      checkAuthStatus().then(() => {
+        router.replace('/') // กลับไปหน้าแรก หรือจะ redirect ไปหน้าที่คุณต้องการก็ได้
+      })
+    } else {
+      router.replace('/login?error=missing_token')
+    }
+  }, [searchParams, router, checkAuthStatus])
 
-  return <CallbackClient code={code} state={state} />
+  return <p className="p-4">กำลังเข้าสู่ระบบ...</p>
 }

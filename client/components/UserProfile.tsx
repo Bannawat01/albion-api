@@ -17,7 +17,7 @@ export const UserProfile = () => {
       </Button>
     )
   }
-
+  
   return (
     <div className="flex items-center gap-3">
       <Image
