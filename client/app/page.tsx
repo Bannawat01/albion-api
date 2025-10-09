@@ -67,12 +67,12 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           {/* Search Section */}
           <Card className="mb-8 shadow-xl border-0 glass-card">
-            <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
-              <CardTitle className="text-2xl flex items-center gap-2 text-white">
-                <span className="text-2xl">🔍</span>
+            <CardHeader className="glass-card rounded-t-lg border-b border-slate-600/30 p-6">
+              <CardTitle className="text-2xl flex items-center gap-3 text-white font-bold mb-2">
+                <span className="text-3xl animate-pulse text-cyan-400">🔍</span>
                 Item Search
               </CardTitle>
-              <CardDescription className="text-slate-200">
+              <CardDescription className="text-slate-200 text-base leading-relaxed">
                 Search through thousands of Albion Online items with real-time data
               </CardDescription>
             </CardHeader>

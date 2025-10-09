@@ -22,11 +22,14 @@ const CITY_COLOR: Record<string, string> = {
 const CITIES_PARAM = CITY_ORDER.join(",")
 
 export default function ItemSearch() {
-  // Search & pagination state
-  const [rawSearch, setRawSearch] = useState("")
-  const debouncedSearch = useDebounce(rawSearch, 300)
-  const [page, setPage] = useState(1)
-  const itemsPerPage = 10
+   // Search & pagination state
+   const [rawSearch, setRawSearch] = useState("")
+   const debouncedSearch = useDebounce(rawSearch, 300)
+   const [page, setPage] = useState(1)
+   const itemsPerPage = 10
+
+   // City filter state
+   const [selectedCities, setSelectedCities] = useState<Set<string>>(new Set(CITY_ORDER))
 
   // Price state & caches
   const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
@@ -77,6 +80,19 @@ export default function ItemSearch() {
 
   const handleSearch = (e: React.FormEvent) => { e.preventDefault(); setPage(1) }
   const handlePageChange = (p: number) => { if (p===page||p<1||p>totalPages) return; setPage(p); document.getElementById("search-results")?.scrollIntoView({behavior:"smooth"}) }
+
+  const toggleCity = (city: string) => {
+    const newSelected = new Set(selectedCities)
+    if (newSelected.has(city)) {
+      newSelected.delete(city)
+    } else {
+      newSelected.add(city)
+    }
+    setSelectedCities(newSelected)
+  }
+
+  const selectAllCities = () => setSelectedCities(new Set(CITY_ORDER))
+  const clearAllCities = () => setSelectedCities(new Set())
 
   // Prefetch next page when current data resolved
   useEffect(() => {
@@ -142,12 +158,12 @@ export default function ItemSearch() {
       {/* label: แสดงบรรทัดบนในมือถือ, ชิดซ้ายในจอใหญ่ */}
       <div className="sm:hidden text-[11px] font-semibold text-slate-300">{label}</div>
       <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
-        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span> 
-        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap (แสดงเฉพาะเมืองที่มีราคา) */}
+        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span>
+        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap (แสดงเฉพาะเมืองที่มีราคาและถูกเลือก) */}
         <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap sm:gap-2">
-          {CITY_ORDER.filter(city => (map?.[city]?.[metric] ?? null) != null).map(city => {
+          {CITY_ORDER.filter(city => selectedCities.has(city) && (map?.[city]?.[metric] ?? null) != null).map(city => {
             const val = map?.[city]?.[metric] as number
-            const base = "px-1.5 py-0.5 rounded-md text-[11px] sm:text-xs font-bold leading-5 text-center min-w-[64px]"
+            const base = "px-1.5 py-0.5 rounded-md text-[11px] sm:text-xs font-bold leading-5 text-center min-w-[64px] cursor-pointer transition-all duration-200 hover:scale-105"
             const color = CITY_COLOR[city] || "bg-slate-600 text-white"
             return <span key={city+label} className={`${base} ${color}`} title={city}>{val.toLocaleString()}</span>
           })}
@@ -157,9 +173,49 @@ export default function ItemSearch() {
   )
 
   const Legend = () => (
-    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-[11px] sm:text-xs text-slate-400">
-      <span className="font-medium">Prices legend:</span>
-      {CITY_ORDER.map(c => <span key={c} className={`px-1.5 py-0.5 rounded-md font-semibold ${CITY_COLOR[c]}`}>{c}</span>)}
+    <div className="glass-card rounded-xl p-4 border border-slate-600/30 space-y-3">
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="font-semibold text-slate-200 text-sm flex items-center gap-2">
+          <span className="text-cyan-400">🏛️</span>
+          Filter Cities:
+        </span>
+        <button
+          onClick={selectAllCities}
+          className="px-3 py-1.5 text-xs bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:from-cyan-500/30 hover:to-purple-500/30 hover:border-cyan-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/10 font-medium"
+        >
+          Select All
+        </button>
+        <button
+          onClick={clearAllCities}
+          className="px-3 py-1.5 text-xs glass-card text-slate-400 rounded-lg border border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-200 font-medium"
+        >
+          Clear All
+        </button>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-medium text-slate-300 text-sm flex items-center gap-2">
+          <span className="text-purple-400">💰</span>
+          Price Legend:
+        </span>
+        <div className="flex gap-1.5 flex-wrap">
+          {CITY_ORDER.map(c => {
+            const isSelected = selectedCities.has(c)
+            return (
+              <button
+                key={c}
+                onClick={() => toggleCity(c)}
+                className={`px-2 py-1 rounded-lg font-semibold text-xs transition-all duration-200 hover:scale-105 border ${
+                  isSelected
+                    ? `${CITY_COLOR[c]} ring-2 ring-cyan-400/60 shadow-lg shadow-cyan-500/20 border-cyan-400/50`
+                    : `${CITY_COLOR[c]} opacity-60 hover:opacity-80 border-transparent hover:border-slate-500/30`
+                }`}
+              >
+                {c}
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 
@@ -186,7 +242,7 @@ export default function ItemSearch() {
             className={cn("w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200")}
             aria-label="ปุ่มค้นหา"
           >
-            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />Searching...</div>) : ("ค้นหา")}
+            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}
           </button>
         </div>
       </form>
@@ -247,6 +303,7 @@ export default function ItemSearch() {
         <div className="grid gap-3.5 sm:gap-4">
           {items.map((item: any, index: number) => {
             const pMap = cityPricesByItem[item.uniqueName]
+            const isLoadingPrice = !pMap && index >= initialPriceSlice // Price data not loaded yet for lazy loaded items
             const noData = !pMap || CITY_ORDER.every(c => !pMap[c]?.sellMin && !pMap[c]?.sellMax && !pMap[c]?.buyMin && !pMap[c]?.buyMax)
             return (
               <Card key={`${item.id}-${index}`} className={cn("hover:shadow-lg transition-all duration-200 hover:border-primary/20")}>
@@ -265,19 +322,21 @@ export default function ItemSearch() {
                     {/* Info */}
                     <div className="flex-1 min-w-0 w-full">
                       <h3 className="font-semibold text-base sm:text-lg text-white">{item.name}</h3>
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
-                        <span className="text-[10px] sm:text-xs font-medium text-white/90 bg-white/10 px-2 py-1 rounded truncate max-w-[240px] sm:max-w-none">{item.uniqueName}</span>
-                      </div>
 
                       <div className="mt-2.5 sm:mt-3 space-y-1.5">
-                        {noData ? (
+                        {isLoadingPrice ? (
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400">
+                            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                            กำลังโหลดข้อมูลราคา...
+                          </div>
+                        ) : noData ? (
                           <span className="text-xs sm:text-sm text-slate-400">ไม่มีข้อมูลราคา</span>
                         ) : (
                           <>
                             <ChipsRow label="Sell Min" metric="sellMin" map={pMap} />
                             <ChipsRow label="Sell Max" metric="sellMax" map={pMap} />
-                            <ChipsRow label="Buy Min"  metric="buyMin"  map={pMap} />
-                            <ChipsRow label="Buy Max"  metric="buyMax"  map={pMap} />
+                            <ChipsRow label="Buy Min" metric="buyMin"  map={pMap} />
+                            <ChipsRow label="Buy Max" metric="buyMax"  map={pMap} />
                           </>
                         )}
                       </div>

@@ -41,7 +41,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 		return () => window.removeEventListener('keydown', handler)
 	}, [page, canPrev, canNext, onChange])
 
-	const btnBase = "h-10 min-w-[40px] px-3 inline-flex items-center justify-center rounded-xl text-sm font-medium border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed select-none"
+	const btnBase = "h-10 min-w-[40px] px-3 inline-flex items-center justify-center rounded-xl text-sm font-medium border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed select-none backdrop-blur-sm"
 
 	const renderNumber = (p: number | "...") => {
 		if (p === "...") return <span key={`e-${Math.random()}`} className="px-2 text-muted-foreground">…</span>
@@ -55,7 +55,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 				disabled={isFetching && active}
 				onClick={() => onChange(p)}
 				className={cn(btnBase,
-					active ? "bg-primary text-primary-foreground border-primary shadow-sm" : "bg-background hover:bg-muted border-input hover:border-primary/40 text-foreground"
+					active ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-cyan-500/50 shadow-lg shadow-cyan-500/25" : "glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white hover:shadow-md hover:shadow-cyan-500/10"
 				)}
 			>{p}</button>
 		)
@@ -70,7 +70,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						type="button"
 						onClick={() => canPrev && onChange(1)}
 						disabled={!canPrev || isFetching}
-						className={cn(btnBase, "w-10", canPrev?"bg-background hover:bg-muted border-input":"bg-muted border-muted text-muted-foreground")}
+						className={cn(btnBase, "w-10", canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
 						aria-label="หน้าแรก"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
@@ -80,7 +80,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					type="button"
 					onClick={() => canPrev && onChange(page - 1)}
 					disabled={!canPrev || isFetching}
-					className={cn(btnBase, canPrev?"bg-background hover:bg-muted border-input":"bg-muted border-muted text-muted-foreground")}
+					className={cn(btnBase, canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
 					aria-label="หน้าก่อนหน้า"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -90,7 +90,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					type="button"
 					onClick={() => canNext && onChange(page + 1)}
 					disabled={!canNext || isFetching}
-					className={cn(btnBase, canNext?"bg-background hover:bg-muted border-input":"bg-muted border-muted text-muted-foreground")}
+					className={cn(btnBase, canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
 					aria-label="หน้าถัดไป"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -100,14 +100,14 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						type="button"
 						onClick={() => canNext && onChange(totalPages)}
 						disabled={!canNext || isFetching}
-						className={cn(btnBase, "w-10", canNext?"bg-background hover:bg-muted border-input":"bg-muted border-muted text-muted-foreground")}
+						className={cn(btnBase, "w-10", canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
 						aria-label="หน้าสุดท้าย"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
 					</button>
 				)}
 			</div>
-			<p className="mt-2 text-xs text-slate-400">หน้า {page} / {totalPages}</p>
+			<p className="mt-3 text-sm text-slate-300 font-medium text-center bg-slate-800/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-slate-600/30">หน้า {page} จาก {totalPages}</p>
 		</nav>
 	)
 }
