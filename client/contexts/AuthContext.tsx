@@ -24,7 +24,7 @@ const g: { val: AuthSingleton } = (globalThis as any)[GLOBAL_KEY] ??= {
 }
 
 const AuthContext = createContext<Ctx | undefined>(undefined)
-const API = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8800' 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8800' 
 const MIN_INTERVAL_MS = 8000
 
 function getToken() {

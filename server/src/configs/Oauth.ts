@@ -9,3 +9,4 @@ export const OAUTH_CONFIG = {
     scope: 'openid email profile'
   }
 }
+//     redirectUri: process.env.GOOGLE_REDIRECT_URI || `${process.env.BASE_URL || 'http://localhost:8800'}/api/auth/google/callback`,
