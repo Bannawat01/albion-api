@@ -18,35 +18,64 @@ const nextConfig: NextConfig = {
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
-        minSize: 20000,
-        maxSize: 60000, // ลดขนาดสูงสุดลง
+        minSize: 15000, // Reduced for more aggressive splitting
+        maxSize: 50000, // Smaller chunks for better caching
         cacheGroups: {
+          // Framework chunk
+          framework: {
+            test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+            name: 'framework',
+            chunks: 'all',
+            priority: 40,
+            enforce: true,
+          },
+          // Vendor libraries
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
-            minSize: 20000,
+            minSize: 10000,
           },
-          // แยก chart.js ออกมา
+          // Chart libraries
           charts: {
-            test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/,
+            test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2|recharts)[\\/]/,
             name: 'charts',
             chunks: 'all',
             priority: 20,
-            minSize: 10000,
+            minSize: 5000,
             enforce: true,
           },
-          // แยก UI libraries
+          // UI libraries
           ui: {
-            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+            test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/,
             name: 'ui',
             chunks: 'all',
             priority: 15,
-            minSize: 15000,
+            minSize: 8000,
+          },
+          // State management
+          state: {
+            test: /[\\/]node_modules[\\/](zustand|@tanstack)[\\/]/,
+            name: 'state',
+            chunks: 'all',
+            priority: 25,
+            minSize: 3000,
+          },
+          // HTTP client
+          http: {
+            test: /[\\/]node_modules[\\/](axios)[\\/]/,
+            name: 'http',
+            chunks: 'all',
+            priority: 30,
+            minSize: 2000,
           },
         },
       };
+
+      // Enable webpack optimizations
+      config.optimization.moduleIds = 'deterministic';
+      config.optimization.chunkIds = 'deterministic';
     }
     return config;
   },

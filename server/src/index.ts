@@ -10,6 +10,7 @@ import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
 import { securityHeaders } from "./middleware/security"
 import { requestLogger } from "./middleware/logger"
+import { performanceMonitor } from "./service/performanceMonitor"
 import { cors } from "@elysiajs/cors"
 
 
@@ -46,16 +47,24 @@ const app = new Elysia()
     .use(OauthController)
     .use(recommendationController)
     .use(n8nController)
-
+    .get('/health/database', async () => {
+        const healthStatus = await DatabaseManager.getInstance().healthCheck()
+        return healthStatus
+    })
+    .get('/health/performance', () => {
+        return performanceMonitor.getSystemHealth()
+    })
+    .get('/metrics/endpoints', () => {
+        return performanceMonitor.getEndpointStats()
+    })
+    .get('/metrics/connections', () => {
+        return connectToDatabase.getConnectionStats()
+    })
     .listen({
         port: Bun.env.PORT || 8800,
         hostname: '0.0.0.0',
         tls: tlsConfig
     })
-app.get('/health/database', async () => {
-    const healthStatus = await DatabaseManager.getInstance().healthCheck()
-    return healthStatus
-})
 
 
 

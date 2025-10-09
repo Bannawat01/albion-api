@@ -20,7 +20,7 @@ if (directUri) {
 } else if (username && password) {
     resolvedUrl = `mongodb+srv://${username}:${password}@${host}/?retryWrites=true&w=majority&appName=albion-api-project`
 } else {
-    resolvedUrl = 'mongodb://root:rootpassword@mongo:27017/albion_dev?authSource=admin'
+    resolvedUrl = 'mongodb://root:rootpassword@localhost:27017/albion_dev?authSource=admin'
 }
 const fallbackLocal = 'mongodb://root:rootpassword@localhost:27017/albion_dev?authSource=admin'
 
@@ -31,13 +31,19 @@ let isConnected = false
 let isConnecting = false
 
 const baseMongoOptions = {
-    maxPoolSize: 10,
+    maxPoolSize: 20, // Increased for better concurrency
+    minPoolSize: 5,  // Increased minimum connections
+    maxIdleTimeMS: 30000,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
-    minPoolSize: 2,
-    maxIdleTimeMS: 30000,
     connectTimeoutMS: 10000,
     heartbeatFrequencyMS: 10000,
+    retryWrites: true,
+    retryReads: true,
+    // Add connection monitoring
+    monitorCommands: true,
+    bufferMaxEntries: 0, // Disable mongoose buffering
+    bufferCommands: false, // Disable mongoose buffering
 } as const
 
 let mongoClient = new MongoClient(resolvedUrl, baseMongoOptions)
@@ -121,6 +127,19 @@ export const connectToDatabase = {
     getDb: () => database,
     getItemRepo: () => itemRepo,
     isConnected: () => isConnected,
+
+    // Add connection monitoring
+    getConnectionStats: () => {
+        return {
+            isConnected,
+            readyState: mongoose.connection.readyState,
+            name: mongoose.connection.name,
+            host: mongoose.connection.host,
+            port: mongoose.connection.port,
+            db: mongoose.connection.db?.databaseName || 'unknown'
+        }
+    },
+
     close: async () => {
         try {
             await mongoose.disconnect()

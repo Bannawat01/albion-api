@@ -4,6 +4,7 @@ import "./globals.css"
 import QueryProvider from "../hooks/QueryProvider"
 import { AuthProvider } from "@/contexts/AuthContext"
 import NavBar from "@/components/navBar"   // ✅ client component
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 
 export const metadata: Metadata = {
   title: "Albion-Api",
@@ -14,15 +15,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className="bg-gray-900 flex flex-col min-h-screen font-sans antialiased">
-        <QueryProvider>
-          <AuthProvider>
-            <NavBar />
-            <main className="flex-1 mt-4 mb-16">{children}</main>
-            <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
-              <p>© 2025 Albo. All rights reserved.</p>
-            </footer>
-          </AuthProvider>
-        </QueryProvider>
+        <ErrorBoundary>
+          <QueryProvider>
+            <AuthProvider>
+              <NavBar />
+              <main className="flex-1 mt-4 mb-16">{children}</main>
+              <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
+                <p>© 2025 Albo. All rights reserved.</p>
+              </footer>
+            </AuthProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
