@@ -186,7 +186,7 @@ export default function ItemSearch() {
             className={cn("w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200")}
             aria-label="ปุ่มค้นหา"
           >
-            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}
+            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />Searching...</div>) : ("ค้นหา")}
           </button>
         </div>
       </form>
@@ -221,10 +221,11 @@ export default function ItemSearch() {
       {/* Loading/Empty */}
       {isFetching && items.length===0 && (
         <div className="flex items-center justify-center py-12">
-          <div className="flex items-center gap-3 text-slate-300">
-            <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-            <span>กำลังโหลดข้อมูล...</span>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
+          <span className="ml-4 text-slate-300">Loading magical items...</span>
         </div>
       )}
       {!isFetching && items.length===0 && !isError && (

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import ItemSearch from '@/components/ItemSearch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Sword, BarChart3, Zap } from 'lucide-react'
 
 export default function HomePage() {
   // ตัวอย่าง mock loading state (เปลี่ยน logic นี้ตามจริงได้)
@@ -25,7 +26,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 animated-bg">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
@@ -33,9 +34,9 @@ export default function HomePage() {
         <div className="relative">
           <div className="container mx-auto px-4 py-16 lg:py-24">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 tracking-tight drop-shadow-lg">
                 Albion Online
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600">
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 animate-pulse">
                   Item Database
                 </span>
               </h1>
@@ -65,7 +66,7 @@ export default function HomePage() {
       <div className="container mx-auto px-4 py-12 relative z-10">
         <div className="max-w-6xl mx-auto">
           {/* Search Section */}
-          <Card className="mb-8 shadow-xl border-0 bg-slate-800/50 backdrop-blur-sm">
+          <Card className="mb-8 shadow-xl border-0 glass-card">
             <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
               <CardTitle className="text-2xl flex items-center gap-2 text-white">
                 <span className="text-2xl">🔍</span>
@@ -82,11 +83,11 @@ export default function HomePage() {
 
           {/* Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 glass-card md:hover:scale-105 animate-slide-in-up" style={{ animationDelay: '0.1s' }}>
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
-                    <span className="text-2xl">🗡️</span>
+                    <Sword className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg text-white">All Items</h3>
@@ -99,11 +100,11 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 glass-card md:hover:scale-105 animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
-                    <span className="text-2xl">📊</span>
+                    <BarChart3 className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg text-white">Live Prices</h3>
@@ -116,11 +117,11 @@ export default function HomePage() {
               </CardContent>
             </Card>
 
-            <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-slate-800/50 backdrop-blur-sm hover:scale-105">
+            <Card className="group hover:shadow-xl transition-all duration-300 border-0 glass-card md:hover:scale-105 animate-slide-in-up" style={{ animationDelay: '0.3s' }}>
               <CardContent className="pt-6">
                 <div className="flex items-center mb-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center mr-4 shadow-lg group-hover:shadow-amber-500/25 transition-shadow">
-                    <span className="text-2xl">⚡</span>
+                    <Zap className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg text-white">Fast Search</h3>
@@ -135,7 +136,7 @@ export default function HomePage() {
           </div>
 
           {/* Usage Guide */}
-          <Card className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/50 border-0 shadow-xl backdrop-blur-sm">
+          <Card className="glass-card shadow-xl animate-slide-in-up" style={{ animationDelay: '0.4s' }}>
             <CardHeader className="bg-gradient-to-r from-slate-800/30 to-slate-700/30 rounded-t-lg">
               <CardTitle className="flex items-center gap-2 text-white">
                 <span className="text-2xl">🎯</span>
