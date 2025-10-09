@@ -1,8 +1,6 @@
 import { NotFoundError, BadRequestError, UnauthorizedError, ForbiddenError, ValidationError, ExternalApiError, ConnectionError } from "./customError"
 
 export const errorHandler = ({ error }: { error: any }) => {
-
-
     if (error instanceof BadRequestError) {
         return new Response(JSON.stringify({
             error: 'Bad Request',
@@ -30,7 +28,6 @@ export const errorHandler = ({ error }: { error: any }) => {
         }), { status: 403, headers: { 'Content-Type': 'application/json' } })
     }
 
-
     if (error instanceof NotFoundError) {
         return new Response(JSON.stringify({
             error: 'Not Found',
@@ -49,14 +46,12 @@ export const errorHandler = ({ error }: { error: any }) => {
         }), { status: 422, headers: { 'Content-Type': 'application/json' } })
     }
 
-
     if (error instanceof ExternalApiError) {
         return new Response(JSON.stringify({
             error: 'Bad Gateway',
             message: error.message
         }), { status: 502, headers: { 'Content-Type': 'application/json' } })
     }
-
 
     // Handle standard Error objects
     if (error instanceof Error) {
@@ -71,10 +66,10 @@ export const errorHandler = ({ error }: { error: any }) => {
 
     if (error instanceof ConnectionError) {
         return new Response(JSON.stringify({
-            error: 'Connection Error',
+            error: 'Service Unavailable',
             message: error.message
         }), {
-            status: 85,
+            status: 503,
             headers: { 'Content-Type': 'application/json' }
         })
     }

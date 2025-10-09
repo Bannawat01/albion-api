@@ -1,8 +1,10 @@
 <div align="center">
-  <h1>🏰 Albion API Server</h1>
-  <p><em>High-performance API for Albion Online market data and analytics</em></p>
-  
+  <h1>🏰 Albion Online Database</h1>
+  <p><em>Beautiful full-stack application for Albion Online market data and analytics</em></p>
+
   ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+  ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+  ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
   ![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)
   ![Elysia](https://img.shields.io/badge/Elysia-FF6B6B?style=for-the-badge&logo=elysia&logoColor=white)
   ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
@@ -16,6 +18,7 @@
 - [🚀 Quick Start](#-quick-start)
 - [🛠️ Installation](#️-installation)
 - [⚙️ Configuration](#️-configuration)
+- [🎨 Client Features](#-client-features)
 - [📡 API Endpoints](#-api-endpoints)
 - [🏗️ Project Structure](#️-project-structure)
 - [🧪 Testing](#-testing)
@@ -45,6 +48,15 @@
 - Secure session management
 - HTTPS/TLS support
 
+🎨 **Beautiful User Interface**
+
+- Modern glassmorphism design
+- Dark/light theme toggle
+- Responsive design for all devices
+- Smooth animations and transitions
+- Interactive city filtering for prices
+- Real-time loading states
+
 🛡️ **Enterprise Ready**
 
 - TypeScript for type safety
@@ -57,29 +69,41 @@
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd albion-api/server
+cd albion-api
 
-# Install dependencies
+# Start the full-stack application
+docker-compose up -d
+
+# Or run manually:
+
+# 1. Start the server
+cd server
 bun install
-
-# Set up environment variables
 cp .env.example .env
-# Edit .env with your configuration
-
-# Start development server
+# Configure your .env file
 bun run dev
+
+# 2. Start the client (in another terminal)
+cd ../client
+npm install
+cp .env.local.example .env.local
+# Configure your .env.local file
+npm run dev
 ```
 
-🎉 **Server will be running at `https://localhost:8800`**
+🎉 **Application will be running at:**
+- **Client**: `http://localhost:3000`
+- **Server**: `https://localhost:8800`
 
 ## 🛠️ Installation
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) v1.2.1 or higher
+- [Docker](https://docker.com) (recommended for easy setup)
+- [Bun](https://bun.sh) v1.2.1 or higher (for server)
+- [Node.js](https://nodejs.org) v18+ (for client)
 - [MongoDB](https://www.mongodb.com) (local or cloud)
 - Google OAuth 2.0 credentials (for authentication)
-- Node.js v18+ (for compatibility)
 
 ### Step-by-step Installation
 
@@ -272,34 +296,42 @@ GET /api/gold
 ## 🏗️ Project Structure
 
 ```
-src/
-├── 📁 configs/          # Configuration files
-│   ├── database.ts       # MongoDB connection with Mongoose & native driver
-│   ├── databaseManager.ts # Database manager with health checks
-│   ├── indexs.ts        # Database index definitions
-│   ├── Oauth.ts         # Google OAuth configuration
-│   ├── albionbase.ts    # Albion API config
-│   ├── tls.ts           # HTTPS/TLS config
-│   └── dbMigration.ts   # Database migration utilities
-├── 📁 controller/        # Route controllers
-│   ├── authcontroller.ts # Authentication & OAuth routes
-│   ├── itemController.ts # Items API routes
-│   └── goldController.ts # Gold API routes
-├── 📁 interface/         # TypeScript interfaces
-├── 📁 middleware/        # Custom middleware
-│   ├── errorHandler.ts   # Global error handling
-│   └── customError.ts    # Custom error classes
-├── 📁 model/            # Database models
-├── 📁 repository/       # Data access layer
-│   ├── itemRepository.ts # Items data operations
-│   └── goldRepository.ts # Gold data operations
-├── 📁 service/          # Business logic
-│   ├── paginationService.ts # Pagination utilities
-│   ├── filterPriceService.ts # Price filtering
-│   ├── httpClient.ts    # External API client
-│   └── timeToLive.ts    # Caching utilities
-├── 📁 types/            # Type definitions
-└── index.ts             # Application entry point
+albion-api/
+├── 📁 client/           # Next.js frontend application
+│   ├── 📁 app/          # Next.js app router
+│   │   ├── globals.css  # Global styles with glassmorphism
+│   │   ├── layout.tsx   # Root layout with theme provider
+│   │   ├── page.tsx     # Home page with search interface
+│   │   └── gold/        # Gold price charts page
+│   ├── 📁 components/   # Reusable UI components
+│   │   ├── navBar.tsx   # Navigation with theme toggle
+│   │   ├── ItemSearch.tsx # Search component with filtering
+│   │   └── ui/          # Shadcn/ui components
+│   ├── 📁 contexts/     # React contexts
+│   ├── 📁 hooks/        # Custom React hooks
+│   └── 📁 lib/          # Utility functions
+├── 📁 server/           # Bun/Elysia backend API
+│   └── 📁 src/
+│       ├── 📁 configs/      # Configuration files
+│       │   ├── database.ts   # MongoDB connection
+│       │   ├── Oauth.ts      # Google OAuth config
+│       │   └── databaseManager.ts # Health checks
+│       ├── 📁 controller/    # Route controllers
+│       │   ├── authcontroller.ts # Auth & OAuth routes
+│       │   └── itemController.ts # Items API routes
+│       ├── 📁 middleware/    # Custom middleware
+│       │   ├── errorHandler.ts # Error handling
+│       │   └── oauthErrorHandler.ts # OAuth errors
+│       ├── 📁 repository/   # Data access layer
+│       │   ├── authRepository.ts # User operations
+│       │   └── itemRepository.ts # Item operations
+│       ├── 📁 service/      # Business logic
+│       │   ├── oauthService.ts # OAuth logic
+│       │   └── paginationService.ts # Pagination
+│       └── index.ts         # Server entry point
+├── 📁 n8n/             # N8N workflow automation
+├── docker-compose.yml  # Docker orchestration
+└── README.md          # This file
 ```
 
 ## 🧪 Testing
@@ -326,11 +358,19 @@ bun test src/service/paginationService.test.ts
 
 ### Optimization Features
 
+**Backend:**
 - ⚡ **Bun Runtime**: 3x faster than Node.js
 - 🔄 **Dual Database Connections**: Mongoose for schemas + native MongoDB driver
 - 🏥 **Health Monitoring**: Database connection health checks
 - 🔐 **JWT Authentication**: Secure token-based authentication
 - 📦 **Response Caching**: TTL-based caching system
+
+**Frontend:**
+- 🎨 **Tailwind CSS**: Utility-first styling with purging
+- ⚛️ **Next.js**: Optimized React framework with SSR
+- 🔄 **React Query**: Intelligent data fetching and caching
+- 📱 **Responsive Design**: Mobile-first approach
+- 🎭 **Glassmorphism**: Modern UI with backdrop filters
 
 ## 🤝 Contributing
 

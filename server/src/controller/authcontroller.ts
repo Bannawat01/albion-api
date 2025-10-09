@@ -30,9 +30,8 @@ const initializeServices = async () => {
       throw new Error('MongoClient or Db is undefined!')
     }
 
-    const databaseInstance = new DatabaseService(client, db) // ✅
+    const databaseInstance = new DatabaseService(client, db)
     dbService = databaseInstance
-    oauthService = new OAuthService(databaseInstance)
 
     if (!dbService) {
       throw new Error('Database service is null after connection')
@@ -63,8 +62,6 @@ export const OauthController = new Elysia({ prefix: "/api" })
   // Start OAuth flow
   .get('/auth/:provider', async ({ params, set }) => {
     try {
-
-
       if (params.provider !== 'google') {
         set.status = 400
         return { error: 'Unsupported provider' }
@@ -74,9 +71,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
         throw new Error('OAuth service is not initialized')
       }
 
-
       const { url, state } = await oauthService.getAuthorizationUrl('google')
-      // console.log('Generated URL:', url); // ลบออก
       return {
         success: true,
         message: 'Redirecting to OAuth provider',
@@ -84,7 +79,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
         state
       }
     } catch (error) {
-      console.error('OAuth error:', error) // เก็บเฉพาะ error สำคัญ
+      console.error('OAuth error:', error)
       set.status = 500
       return { error: 'Failed to initialize OAuth flow' }
     }
@@ -117,15 +112,13 @@ export const OauthController = new Elysia({ prefix: "/api" })
       // Handle OAuth callback
       const user = await oauthService.handleCallback(code, state)
 
-
       const token = await jwt.sign({
         googleId: user.googleId,
         email: user.email,
         name: user.name
       })
-      
 
-        set.cookie = {
+      set.cookie = {
   'auth-token': {
     value: token,
     httpOnly: true,

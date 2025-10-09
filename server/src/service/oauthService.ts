@@ -4,12 +4,6 @@ import type { DatabaseService } from "../repository/authRepository"
 import { DatabaseManager } from '../configs/databaseManager'
 import { OAUTH_CONFIG } from "../configs/Oauth"
 
-class SomeService {
-  async initialize() {
-    // ตรวจสอบว่า indexes ถูกสร้างแล้วหรือยัง
-    await DatabaseManager.getInstance().initializeIndexes()
-  }
-}
 export class OAuthService {
   private db: DatabaseService
   // ลดขนาด Sets และ Maps
@@ -175,7 +169,6 @@ export class OAuthService {
   async handleCallback(code: string, state: string): Promise<User> {
     const requestKey = `${code}-${state}`
     if (this.pendingRequests.has(requestKey)) {
-      // console.log('Duplicate callback request detected, waiting for existing request...'); // ลบออก
       return await this.pendingRequests.get(requestKey)!
     }
 
@@ -204,7 +197,6 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
-        // console.log(`Updated existing user: ${userInfo.email}`) // ลบออก
       } else {
         user = await this.db.createUser({
           googleId: userInfo.id,
@@ -212,7 +204,6 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
-        // console.log(`Created new user: ${userInfo.email}`) // ลบออก
       }
 
       if (!user) {
@@ -225,8 +216,6 @@ export class OAuthService {
       throw error
     }
   }
-
-
 
   // Cleanup method สำหรับการปิด service
   cleanup() {

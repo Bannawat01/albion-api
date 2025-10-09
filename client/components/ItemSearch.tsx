@@ -31,15 +31,15 @@ export default function ItemSearch() {
    // City filter state
    const [selectedCities, setSelectedCities] = useState<Set<string>>(new Set(CITY_ORDER))
 
-  // Price state & caches
-  const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
-  const priceCacheRef = useRef<Record<string, CityMap>>({})
-  const lazyBatchTimer = useRef<NodeJS.Timeout | null>(null)
-  const initialPriceSlice = 5 // first N items priced immediately (half page), remainder after short delay
+   // Price state & caches
+   const [cityPricesByItem, setCityPricesByItem] = useState<CityPricesByItem>({})
+   const priceCacheRef = useRef<Record<string, CityMap>>({})
+   const lazyBatchTimer = useRef<NodeJS.Timeout | null>(null)
+   const initialPriceSlice = 5 // first N items priced immediately (half page), remainder after short delay
 
-  // React Query
-  const { data, isFetching, isError, error, isPreviousData } = useSearchItems(debouncedSearch || undefined, page, itemsPerPage) as any
-  const queryClient = useQueryClient()
+   // React Query
+   const { data, isFetching, isError, error, isPreviousData } = useSearchItems(debouncedSearch || undefined, page, itemsPerPage) as any
+   const queryClient = useQueryClient()
 
   const items = data?.data || []
   const pagination = data?.pagination
@@ -48,15 +48,6 @@ export default function ItemSearch() {
   const hasNextPage = !!pagination?.hasNextPage
   const hasPrevPage = !!pagination?.hasPreviousPage
 
-  const getPageNumbers = () => {
-    const delta = 2, pages: (number | "...")[] = [1]
-    const s = Math.max(2, page - delta), e = Math.min(totalPages - 1, page + delta)
-    if (s > 2) pages.push("...")
-    for (let i = s; i <= e; i++) pages.push(i)
-    if (e < totalPages - 1) pages.push("...")
-    if (totalPages > 1) pages.push(totalPages)
-    return pages
-  }
 
   async function fetchCityPrices(uniqueName: string): Promise<CityMap> {
     if (!isMarketItem(uniqueName)) return {}
@@ -117,10 +108,12 @@ export default function ItemSearch() {
 
     let cancelled = false
 
-  const uncachedItems = items.filter((i: any) => !priceCacheRef.current[i.uniqueName])
+    const uncachedItems = items.filter((i: any) => !priceCacheRef.current[i.uniqueName])
     if (!uncachedItems.length) {
       // All already cached, ensure state synced
-      setCityPricesByItem(prev => prev === priceCacheRef.current ? prev : { ...priceCacheRef.current })
+      setCityPricesByItem(prev =>
+        prev === priceCacheRef.current ? prev : { ...priceCacheRef.current }
+      )
       return () => { cancelled = true }
     }
 
@@ -232,14 +225,24 @@ export default function ItemSearch() {
               value={rawSearch}
               onChange={(e)=>setRawSearch(e.target.value)}
               placeholder="ค้นหาไอเทม... (เช่น sword, armor, potion)"
-              className={cn("w-full pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl border border-input bg-background text-foreground","placeholder:text-muted-foreground","focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent","transition-all duration-200")}
+              className={cn(
+                "w-full pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl border border-input",
+                "bg-background text-foreground placeholder:text-muted-foreground",
+                "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
+                "transition-all duration-200"
+              )}
               aria-label="ค้นหาไอเทม"
             />
           </div>
           <button
             type="submit"
             disabled={isFetching && items.length===0}
-            className={cn("w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground rounded-xl font-medium","hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2","disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200")}
+            className={cn(
+              "w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground",
+              "rounded-xl font-medium hover:bg-primary/90",
+              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+              "disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            )}
             aria-label="ปุ่มค้นหา"
           >
             {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}

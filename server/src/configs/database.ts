@@ -45,8 +45,6 @@ const baseMongoOptions = {
 
 let mongoClient = new MongoClient(resolvedUrl, baseMongoOptions)
 
-
-
 export const connectToDatabase = {
     connect: async () => {
         // ป้องกันการ connect ซ้ำ
@@ -109,7 +107,6 @@ export const connectToDatabase = {
 
             // Initialize ItemRepository with native MongoDB Db
             itemRepo = new ItemRepository()
-            // console.log("MongoDB native client connected")
 
         } catch (error) {
             console.error("Error connecting to MongoDB:", error)

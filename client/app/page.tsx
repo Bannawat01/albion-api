@@ -1,29 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import ItemSearch from '@/components/ItemSearch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { Sword, BarChart3, Zap } from 'lucide-react'
 
 export default function HomePage() {
-  // ตัวอย่าง mock loading state (เปลี่ยน logic นี้ตามจริงได้)
-  const [loading, setLoading] = useState(false)
-  useEffect(() => {
-    setLoading(true)
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700">
-        <LoadingSpinner size={60} />
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 animated-bg">
@@ -198,40 +180,6 @@ export default function HomePage() {
           </Card>
         </div>
       </div>
-
-      {/* Custom Animations */}
-      <style jsx global>{`
-        @keyframes gradient-move {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        .animate-gradient-move {
-          animation: gradient-move 12s ease-in-out infinite;
-          background-size: 200% 200%;
-        }
-        @keyframes text-gradient {
-          0%,100% { filter: hue-rotate(0deg);}
-          50% { filter: hue-rotate(40deg);}
-        }
-        .animate-text-gradient {
-          animation: text-gradient 3s ease-in-out infinite;
-        }
-        @keyframes wiggle {
-          0%, 100% { transform: rotate(-6deg);}
-          50% { transform: rotate(6deg);}
-        }
-        .animate-wiggle {
-          animation: wiggle 1.2s ease-in-out infinite;
-        }
-        @keyframes pop {
-          0% { transform: scale(0.8);}
-          60% { transform: scale(1.15);}
-          100% { transform: scale(1);}
-        }
-        .animate-pop {
-          animation: pop 0.6s cubic-bezier(.68,-0.55,.27,1.55) both;
-        }
-      `}</style>
     </div>
   )
 }
