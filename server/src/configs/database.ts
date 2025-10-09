@@ -31,8 +31,8 @@ let isConnected = false
 let isConnecting = false
 
 const baseMongoOptions = {
-    maxPoolSize: 20, // Increased for better concurrency
-    minPoolSize: 5,  // Increased minimum connections
+    maxPoolSize: 20,
+    minPoolSize: 5,
     maxIdleTimeMS: 30000,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
@@ -40,10 +40,7 @@ const baseMongoOptions = {
     heartbeatFrequencyMS: 10000,
     retryWrites: true,
     retryReads: true,
-    // Add connection monitoring
     monitorCommands: true,
-    bufferMaxEntries: 0, // Disable mongoose buffering
-    bufferCommands: false, // Disable mongoose buffering
 } as const
 
 let mongoClient = new MongoClient(resolvedUrl, baseMongoOptions)

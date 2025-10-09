@@ -51,10 +51,9 @@ await initializeServices()
 
 export const OauthController = new Elysia({ prefix: "/api" })
 .use(cors({
-  origin: 'http://localhost:3000',
-  credentials: false, // ใช้ header ไม่พึ่งคุกกี้แล้ว
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'POST', 'OPTIONS']
+  origin: true, // Allow any origin for development
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }))
   .use(jwt({
     name: 'jwt',
