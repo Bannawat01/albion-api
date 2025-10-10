@@ -23,7 +23,7 @@ export default function HomePage() {
                 </span>
               </h1>
               <p className="text-xl text-slate-300 mb-8 leading-relaxed">
-                ค้นหาและดูข้อมูลไอเทมในเกม Albion Online พร้อมข้อมูลราคาและสถิติแบบเรียลไทม์
+                Search and view item data from the game Albion Online with real-time price information and statistics
               </p>
               <div className="flex flex-wrap justify-center gap-6 text-sm text-slate-400">
                 <span className="flex items-center gap-2 bg-slate-800/50 px-3 py-2 rounded-full backdrop-blur-sm">

@@ -50,7 +50,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 			<button
 				key={p}
 				type="button"
-				aria-label={`ไปหน้า ${p}`}
+				aria-label={`Go to page ${p}`}
 				aria-current={active ? 'page' : undefined}
 				disabled={isFetching && active}
 				onClick={() => onChange(p)}
@@ -71,7 +71,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						onClick={() => canPrev && onChange(1)}
 						disabled={!canPrev || isFetching}
 						className={cn(btnBase, "w-10", canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
-						aria-label="หน้าแรก"
+						aria-label="First page"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
 					</button>
@@ -81,7 +81,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					onClick={() => canPrev && onChange(page - 1)}
 					disabled={!canPrev || isFetching}
 					className={cn(btnBase, canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
-					aria-label="หน้าก่อนหน้า"
+					aria-label="Previous page"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
 				</button>
@@ -91,7 +91,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					onClick={() => canNext && onChange(page + 1)}
 					disabled={!canNext || isFetching}
 					className={cn(btnBase, canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
-					aria-label="หน้าถัดไป"
+					aria-label="Next page"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
 				</button>
@@ -101,13 +101,13 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						onClick={() => canNext && onChange(totalPages)}
 						disabled={!canNext || isFetching}
 						className={cn(btnBase, "w-10", canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
-						aria-label="หน้าสุดท้าย"
+						aria-label="Last page"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
 					</button>
 				)}
 			</div>
-			<p className="mt-3 text-sm text-slate-300 font-medium text-center bg-slate-800/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-slate-600/30">หน้า {page} จาก {totalPages}</p>
+			<p className="mt-3 text-sm text-slate-300 font-medium text-center bg-slate-800/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-slate-600/30">Page {page} of {totalPages}</p>
 		</nav>
 	)
 }

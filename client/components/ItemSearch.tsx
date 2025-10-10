@@ -148,11 +148,11 @@ export default function ItemSearch() {
     label:string; metric:keyof CityMetrics; map?:CityMap
   }) => (
     <div className="space-y-1.5">
-      {/* label: แสดงบรรทัดบนในมือถือ, ชิดซ้ายในจอใหญ่ */}
+      {/* label: show on top row on mobile, left-aligned on desktop */}
       <div className="sm:hidden text-[11px] font-semibold text-slate-300">{label}</div>
       <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
         <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span>
-        {/* mobile -> grid 3 คอลัมน์, desktop -> flex wrap (แสดงเฉพาะเมืองที่มีราคาและถูกเลือก) */}
+        {/* mobile -> grid 3 columns, desktop -> flex wrap (show only cities with prices and selected) */}
         <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap sm:gap-2">
           {CITY_ORDER.filter(city => selectedCities.has(city) && (map?.[city]?.[metric] ?? null) != null).map(city => {
             const val = map?.[city]?.[metric] as number
@@ -224,14 +224,14 @@ export default function ItemSearch() {
             <input
               value={rawSearch}
               onChange={(e)=>setRawSearch(e.target.value)}
-              placeholder="ค้นหาไอเทม... (เช่น sword, armor, potion)"
+              placeholder="Search items... (e.g. sword, armor, potion)"
               className={cn(
                 "w-full pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-xl border border-input",
                 "bg-background text-foreground placeholder:text-muted-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent",
                 "transition-all duration-200"
               )}
-              aria-label="ค้นหาไอเทม"
+              aria-label="Search items"
             />
           </div>
           <button
@@ -243,9 +243,9 @@ export default function ItemSearch() {
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             )}
-            aria-label="ปุ่มค้นหา"
+            aria-label="Search button"
           >
-            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />กำลังค้นหา...</div>) : ("ค้นหา")}
+            {isFetching && items.length===0 ? (<div className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />Searching...</div>) : ("Search")}
           </button>
         </div>
       </form>
@@ -256,7 +256,7 @@ export default function ItemSearch() {
           <CardContent className="pt-5 sm:pt-6">
             <div className="flex items-start gap-3">
               <div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-              <p className="text-red-300 text-sm sm:text-base font-medium">เกิดข้อผิดพลาด: {error instanceof Error ? error.message : String(error)}</p>
+              <p className="text-red-300 text-sm sm:text-base font-medium">Error occurred: {error instanceof Error ? error.message : String(error)}</p>
             </div>
           </CardContent>
         </Card>
@@ -265,16 +265,16 @@ export default function ItemSearch() {
       {/* Header */}
       <div id="search-results" className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-white">{rawSearch ? <>ผลการค้นหา <span className="text-primary">"{rawSearch}"</span></> : "ไอเทมทั้งหมด"}</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-white">{rawSearch ? <>Search results for <span className="text-primary">"{rawSearch}"</span></> : "All items"}</h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-0.5 sm:mt-1">
-            แสดง {items.length} รายการ {totalItems>0 && `จากทั้งหมด ${totalItems.toLocaleString()} รายการ`}
-            {totalPages>1 && <span className="ml-1.5 sm:ml-2">(หน้า {page} จาก {totalPages})</span>}
+            Showing {items.length} items {totalItems>0 && `from ${totalItems.toLocaleString()} total`}
+            {totalPages>1 && <span className="ml-1.5 sm:ml-2">(page {page} of {totalPages})</span>}
           </p>
         </div>
-        <div className="text-xs sm:text-sm text-slate-300">แสดง {itemsPerPage} รายการต่อหน้า</div>
+        <div className="text-xs sm:text-sm text-slate-300">{itemsPerPage} items per page</div>
       </div>
 
-      {/* Legend – แสดงครั้งเดียว */}
+      {/* Legend – show once */}
       {items.length > 0 && <Legend />}
 
       {/* Loading/Empty */}
@@ -294,8 +294,8 @@ export default function ItemSearch() {
               <div className="w-16 h-16 mx-auto mb-4 text-slate-600">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-3-8a8 8 0 018 8 8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8z" /></svg>
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">ไม่พบไอเทมที่ค้นหา</h3>
-              <p className="text-slate-400">ลองค้นหาด้วยคำอื่น หรือใช้คำค้นหาที่สั้นกว่า</p>
+              <h3 className="text-lg font-medium text-white mb-2">No items found</h3>
+              <p className="text-slate-400">Try searching with different terms or use shorter search terms</p>
             </div>
           </CardContent>
         </Card>
@@ -330,10 +330,10 @@ export default function ItemSearch() {
                         {isLoadingPrice ? (
                           <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400">
                             <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
-                            กำลังโหลดข้อมูลราคา...
+                            Loading price data...
                           </div>
                         ) : noData ? (
-                          <span className="text-xs sm:text-sm text-slate-400">ไม่มีข้อมูลราคา</span>
+                          <span className="text-xs sm:text-sm text-slate-400">No price data</span>
                         ) : (
                           <>
                             <ChipsRow label="Sell Min" metric="sellMin" map={pMap} />
