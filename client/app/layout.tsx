@@ -14,13 +14,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-900 flex flex-col min-h-screen font-sans antialiased">
+      <body className="bg-background text-foreground flex flex-col min-h-screen font-sans antialiased">
         <ErrorBoundary>
           <QueryProvider>
             <AuthProvider>
               <NavBar />
               <main className="flex-1 mt-4 mb-16">{children}</main>
-              <footer className="w-full bg-slate-800 text-center p-4 text-white mt-auto">
+              <footer className="w-full bg-card border-t border-border text-center p-4 text-foreground mt-auto">
                 <p>© 2025 Albo. All rights reserved.</p>
               </footer>
             </AuthProvider>

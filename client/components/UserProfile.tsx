@@ -17,7 +17,7 @@ export const UserProfile = () => {
       </Button>
     )
   }
-  
+
   return (
     <div className="flex items-center gap-3">
       <Image
@@ -27,8 +27,8 @@ export const UserProfile = () => {
         height={32}
         className="rounded-full"
       />
-      <span className="text-white hidden sm:block">{user?.name}</span>
-      <button onClick={logout} className="cursor-pointer px-3 py-1 bg-red-500 text-white rounded">
+      <span className="text-foreground hidden sm:block">{user?.name}</span>
+      <button onClick={logout} className="cursor-pointer px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors">
         ออกจากระบบ
       </button>
     </div>

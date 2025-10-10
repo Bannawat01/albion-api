@@ -174,13 +174,13 @@ export default function ItemSearch() {
         </span>
         <button
           onClick={selectAllCities}
-          className="px-3 py-1.5 text-xs bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:from-cyan-500/30 hover:to-purple-500/30 hover:border-cyan-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/10 font-medium"
+          className="cursor-pointer px-3 py-1.5 text-xs bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:from-cyan-500/30 hover:to-purple-500/30 hover:border-cyan-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/10 font-medium"
         >
           Select All
         </button>
         <button
           onClick={clearAllCities}
-          className="px-3 py-1.5 text-xs glass-card text-slate-400 rounded-lg border border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-200 font-medium"
+          className="cursor-pointer px-3 py-1.5 text-xs glass-card text-slate-400 rounded-lg border border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-200 font-medium"
         >
           Clear All
         </button>
@@ -197,7 +197,7 @@ export default function ItemSearch() {
               <button
                 key={c}
                 onClick={() => toggleCity(c)}
-                className={`px-2 py-1 rounded-lg font-semibold text-xs transition-all duration-200 hover:scale-105 border ${
+                className={`cursor-pointer px-2 py-1 rounded-lg font-semibold text-xs transition-all duration-200 hover:scale-105 border ${
                   isSelected
                     ? `${CITY_COLOR[c]} ring-2 ring-cyan-400/60 shadow-lg shadow-cyan-500/20 border-cyan-400/50`
                     : `${CITY_COLOR[c]} opacity-60 hover:opacity-80 border-transparent hover:border-slate-500/30`
@@ -238,6 +238,7 @@ export default function ItemSearch() {
             type="submit"
             disabled={isFetching && items.length===0}
             className={cn(
+              "cursor-pointer",
               "w-full sm:w-auto px-4 sm:px-8 py-2.5 sm:py-3 bg-primary text-primary-foreground",
               "rounded-xl font-medium hover:bg-primary/90",
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
