@@ -23,11 +23,17 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="w-full flex items-center justify-between p-4 bg-slate-700">
+    <nav className="w-full flex items-center justify-between p-4 bg-card border-b border-border">
       {/* Logo */}
       <div>
-        <Link href="/" className="text-lg font-bold text-gray-800">
-          <img src="/images/logo.png" alt="Albo Logo" width="50" height="50" className="h-8" />
+        <Link href="/" className="text-lg font-bold text-foreground">
+          <img
+            src={theme === 'dark' ? "/images/logo.png" : "/images/logo-black.png"}
+            alt="Albo Logo"
+            width="50"
+            height="50"
+            className="h-8"
+          />
         </Link>
       </div>
 
@@ -57,8 +63,9 @@ export default function NavBar() {
       {/* Theme Toggle & Profile/Login */}
       <div className="flex items-center gap-4">
         <button
+
           onClick={toggleTheme}
-          className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors text-white"
+          className="cursor-pointer p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-foreground"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? '☀️' : '🌙'}
