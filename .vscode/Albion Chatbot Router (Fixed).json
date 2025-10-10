@@ -1,0 +1,122 @@
+{
+  "name": "Albion Chatbot Router (Fixed)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "options": {
+          "rawBody": false
+        }
+      },
+      "id": "1ee7a04b-0fbf-45b2-9fac-c7d06e15b750",
+      "name": "Webhook In",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -128
+      ],
+      "webhookId": "a0e3cb07-9a55-44fe-b573-04954afae0d3"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "{{ $json.question }}",
+        "options": {
+          "systemMessage": "You are a useful assistant for the game Albion Online. Answer in Thai, friendly, informative, reply no more than 100 characters"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        384,
+        -128
+      ],
+      "id": "b1c908d6-8ff5-4fc3-8950-2132919a7d92",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        384,
+        96
+      ],
+      "id": "71c5443e-1d40-4f14-aceb-0948f8c7fa73",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Y4TgRUb3tMq74LHW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { reply: $json.message } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        752,
+        -128
+      ],
+      "id": "4c951d16-c50f-41f7-8f2b-940c71b7d944",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook In": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "97666e8c-2d91-44fb-b37e-bc3456451273",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "aa815d1738e94a4c9a7ae3f4b254a1487061cbeeb9bb96fa237b38433d1fc814"
+  },
+  "id": "oGr0F7rvjWd0buYW",
+  "tags": []
+}
