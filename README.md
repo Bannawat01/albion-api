@@ -57,6 +57,13 @@
 - Interactive city filtering for prices
 - Real-time loading states
 
+🤖 **AI Chatbot**
+
+- Integrated AI assistant for Albion Online queries
+- Powered by n8n workflow automation
+- Real-time conversational interface
+- Contextual responses about game mechanics and market data
+
 🛡️ **Enterprise Ready**
 
 - TypeScript for type safety
@@ -293,17 +300,45 @@ GET /api/gold
 }
 ```
 
+### 🤖 Chatbot API
+
+```http
+POST /api/chatbot
+```
+
+**Description**: Send a question to the AI chatbot for Albion Online assistance
+
+**Request Body**:
+
+```json
+{
+  "question": "string"
+}
+```
+
+**Response Example**:
+
+```json
+{
+  "reply": "🤖 albo: Your response here"
+}
+```
+
 ## 🏗️ Project Structure
 
 ```
 albion-api/
 ├── 📁 client/           # Next.js frontend application
 │   ├── 📁 app/          # Next.js app router
+│   │   ├── 📁 api/      # API routes
+│   │   │   └── 📁 chatbot/ # Chatbot API endpoint
+│   │   │       └── route.ts
 │   │   ├── globals.css  # Global styles with glassmorphism
 │   │   ├── layout.tsx   # Root layout with theme provider
 │   │   ├── page.tsx     # Home page with search interface
 │   │   └── gold/        # Gold price charts page
 │   ├── 📁 components/   # Reusable UI components
+│   │   ├── ChatBot.tsx  # AI chatbot component
 │   │   ├── navBar.tsx   # Navigation with theme toggle
 │   │   ├── ItemSearch.tsx # Search component with filtering
 │   │   └── ui/          # Shadcn/ui components
