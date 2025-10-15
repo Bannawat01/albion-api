@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     console.log('Chatbot API called with question:', question);
 
     // Call n8n cloud workflow
-    const n8nResponse = await fetch('https://bannawat103.app.n8n.cloud/webhook/webhook', {
+    const n8nResponse = await fetch('https://bannawat103.app.n8n.cloud/webhook-test/webhook', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
