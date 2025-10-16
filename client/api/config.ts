@@ -1,6 +1,6 @@
 import { handleApiError } from '@/lib/errorMessage'
 import axios from 'axios'
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8800"
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://albion-api-6o2m.onrender.com"
 export const API_PREFIX = "/api"
 
 export const axiosInstance = axios.create({
