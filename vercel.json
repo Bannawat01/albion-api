@@ -11,16 +11,19 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://albion-backend-4exf.onrender.com/api/:path*",
+      "destination": "https://albion-backend-4exf.onrender.com/api/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "x-forwarded-host",
           "value": "albion-market-ai.online"
         }
       ]
-    }
-  ],
-  "headers": [
+    },
     {
       "source": "/(.*)",
       "headers": [
