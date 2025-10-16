@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { checkAuthStatus } = useAuth()
@@ -23,4 +23,12 @@ export default function CallbackPage() {
   }, [searchParams, router, checkAuthStatus])
 
   return <p className="p-4">กำลังเข้าสู่ระบบ...</p>
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense fallback={<p className="p-4">กำลังโหลด...</p>}>
+      <CallbackContent />
+    </Suspense>
+  )
 }

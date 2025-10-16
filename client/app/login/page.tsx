@@ -3,27 +3,25 @@
 import { useAuth } from "@/contexts/AuthContext"
 import { getLoginErrorMessage } from "@/lib/errorMessage"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Suspense, useEffect } from "react"
 
-import React, { useEffect } from "react"
-
-
-const LoginPage: React.FC = () => {
+const LoginContent: React.FC = () => {
   const { login, isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const error = searchParams.get('error')
-  const redirect = searchParams.get('redirect') || '/' // <-- เพิ่มบรรทัดนี้
+  const redirect = searchParams.get('redirect') || '/'
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace(redirect) // <-- เด้งกลับปลายทาง
+      router.replace(redirect)
     }
   }, [isAuthenticated, router, redirect])
 
   const handleGoogleLogin = () => {
-  localStorage.setItem('postLoginRedirect', redirect) // กันพลาด
-  login(redirect) // 👈 ส่ง redirect เข้าไปเลย
-}
+    localStorage.setItem('postLoginRedirect', redirect)
+    login(redirect)
+  }
 
   const errorMessage = getLoginErrorMessage(error)
 
@@ -53,6 +51,18 @@ const LoginPage: React.FC = () => {
         <span>เข้าสู่ระบบด้วย Google</span>
       </button>
     </div>
+  )
+}
+
+const LoginPage: React.FC = () => {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-white text-lg">กำลังโหลด...</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
 

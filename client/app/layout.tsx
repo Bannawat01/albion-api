@@ -22,6 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <main className="flex-1 mt-4 mb-16">{children}</main>
               <footer className="w-full bg-card border-t border-border text-center p-4 text-foreground mt-auto">
                 <p>© 2025 Albo. All rights reserved.</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Powered by <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline">Albion Online Data API</a> |
+                  <a href="https://wiki.albiononline.com/wiki/API:Render_service" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline ml-1">Albion Online Wiki API</a>
+                </p>
               </footer>
             </AuthProvider>
           </QueryProvider>

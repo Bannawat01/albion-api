@@ -58,6 +58,15 @@ export default function NavBar() {
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-yellow-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </Link>
         )}
+
+        <Link
+          href="/about"
+          className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r
+                     from-blue-400 via-blue-500 to-blue-600 text-white font-semibold
+                     shadow-md hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 overflow-hidden">
+          <span className="relative z-10">About</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        </Link>
       </div>
 
       {/* Theme Toggle & Profile/Login */}
