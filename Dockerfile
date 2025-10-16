@@ -1,5 +1,5 @@
 # Dockerfile for Render.com deployment
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install bun
 RUN npm install -g bun
