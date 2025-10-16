@@ -28,10 +28,10 @@ const app = new Elysia()
     .use(requestLogger())
     .use(securityHeaders())
  .use(cors({
-    origin: ['http://localhost:3000'], // frontend ที่อนุญาต
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'] // ต้องมี Authorization
-  }))
+   origin: ['http://localhost:3000', 'https://albion-market-ai.online', 'https://www.albion-market-ai.online'], // frontend ที่อนุญาต
+   credentials: true,
+   allowedHeaders: ['Content-Type', 'Authorization'] // ต้องมี Authorization
+ }))
     .get('/', () => ({
         message: 'Albion API Server',
         version: '1.0.0',
