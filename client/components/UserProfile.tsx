@@ -29,7 +29,7 @@ export const UserProfile = () => {
       />
       <span className="text-foreground hidden sm:block">{user?.name}</span>
       <button onClick={logout} className="cursor-pointer px-3 py-1 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors">
-        ออกจากระบบ
+        Logout
       </button>
     </div>
   )

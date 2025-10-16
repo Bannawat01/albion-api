@@ -15,26 +15,26 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background/50 to-transparent" />
         <div className="relative">
           <div className="container mx-auto px-4 py-16 lg:py-24">
-            <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight drop-shadow-lg">
+            <div className="text-center max-w-2xl mx-auto">
+              <h1 className="text-3xl lg:text-5xl font-bold text-foreground mb-4 tracking-tight drop-shadow-lg">
                 Albion Online
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 animate-pulse">
                   Item Database
                 </span>
               </h1>
-              <p className="text-xl text-slate-300 mb-8 leading-relaxed">
+              <p className="text-lg text-slate-300 mb-6 leading-relaxed">
                 Search and view item data from the game Albion Online with real-time price information and statistics
               </p>
-              <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2 bg-card/50 px-3 py-2 rounded-full backdrop-blur-sm border border-border">
+              <div className="flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-2 bg-card/50 px-2 py-1 rounded-full backdrop-blur-sm border border-border">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                   Live Market Data
                 </span>
-                <span className="flex items-center gap-2 bg-card/50 px-3 py-2 rounded-full backdrop-blur-sm border border-border">
+                <span className="flex items-center gap-2 bg-card/50 px-2 py-1 rounded-full backdrop-blur-sm border border-border">
                   <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
                   Real-time Updates
                 </span>
-                <span className="flex items-center gap-2 bg-card/50 px-3 py-2 rounded-full backdrop-blur-sm border border-border">
+                <span className="flex items-center gap-2 bg-card/50 px-2 py-1 rounded-full backdrop-blur-sm border border-border">
                   <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                   All Servers
                 </span>
