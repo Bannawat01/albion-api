@@ -48,7 +48,7 @@ const initializeServices = async () => {
 // Initialize services
 await initializeServices()
 
-export const OauthController = new Elysia({ prefix: "/api" })
+export const OauthController = new Elysia()
 .use(cors({
   origin: true, // Allow any origin for development
   credentials: true,
@@ -86,12 +86,8 @@ export const OauthController = new Elysia({ prefix: "/api" })
   })
 
   // OAuth callback
-  .get('/auth/:provider/callback', async ({ params, query, set, jwt }) => {
+  .get('/auth/google/callback', async ({ query, set, jwt }) => {
     try {
-      if (params.provider !== 'google') {
-        set.status = 400
-        return { error: 'Unsupported provider' }
-      }
 
       const { code, state, error } = query as {
         code?: string
