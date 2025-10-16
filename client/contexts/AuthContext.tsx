@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuthStatus = async () => { await _doCheck(setLocal) }
 
   const login = async (redirect?: string) => {
-    const r = await fetch(`https://albion-backend-4exf.onrender.com/api/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`)
+    const r = await fetch(`${API}/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`)
     const d = await r.json()
     if (d?.url) window.location.href = d.url
   }
