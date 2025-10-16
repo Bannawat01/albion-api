@@ -27,4 +27,5 @@ RUN cd client && npm run build
 EXPOSE 8800
 
 # Start command
-CMD ["cd", "server", "&&", "bun", "run", "src/index.ts"]
+WORKDIR /app/server
+CMD ["bun", "run", "src/index.ts"]
