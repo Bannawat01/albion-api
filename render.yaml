@@ -1,23 +1,14 @@
 services:
+  # Full-stack application with Docker
   - type: web
-    name: albion-client
-    runtime: static
-    buildCommand: npm run build
-    staticPublishPath: ./out
-    envVars:
-      - key: NODE_ENV
-        value: production
-
-  - type: web
-    name: albion-server
-    runtime: node
-    buildCommand: bun install
-    startCommand: bun run src/index.ts
+    name: albion-fullstack
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 10000
+        value: 8800
       - key: MONGODB_URI
         value: ${MONGODB_URI}
       - key: JWT_SECRET
