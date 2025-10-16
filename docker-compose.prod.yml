@@ -54,7 +54,7 @@ services:
     container_name: albion-client-prod
     restart: unless-stopped
     environment:
-      - NEXT_PUBLIC_API_URL=https://your-domain.com/api
+      - NEXT_PUBLIC_API_URL=https://albion-market-ai.online/api
     networks:
       - albion_net
     logging:

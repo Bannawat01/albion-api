@@ -7,20 +7,11 @@ import { UserProfile } from "@/components/UserProfile"
 
 export default function NavBar() {
   const { isAuthenticated, isLoading } = useAuth()
-  const [theme, setTheme] = useState('dark')
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark'
-    setTheme(savedTheme)
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
+    // Force dark theme
+    document.documentElement.classList.add('dark')
   }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }
 
   return (
     <nav className="w-full flex items-center justify-between p-4 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-lg">
@@ -28,7 +19,7 @@ export default function NavBar() {
       <div>
         <Link href="/" className="text-lg font-bold text-foreground">
           <img
-            src={theme === 'dark' ? "/images/logo.png" : "/images/logo-black.png"}
+            src="/images/logo.png"
             alt="Albo Logo"
             width="50"
             height="50"
@@ -84,16 +75,8 @@ export default function NavBar() {
         </Link>
       </div>
 
-      {/* Theme Toggle & Profile/Login */}
+      {/* Profile/Login */}
       <div className="flex items-center gap-4">
-        <button
-
-          onClick={toggleTheme}
-          className="cursor-pointer p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-foreground"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
         <UserProfile />
       </div>
     </nav>

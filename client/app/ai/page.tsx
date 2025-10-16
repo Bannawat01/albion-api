@@ -19,8 +19,11 @@ export default function AIPage() {
         <div className="container mx-auto py-8">
             <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold">Albion Online AI Assistant</h1>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-sm font-medium mb-2">
+                    🚧 Development Version
+                </div>
                 <p className="text-muted-foreground mt-2">
-                    ช่วยคุณหาที่ขายหรือซื้อไอเทมที่ดีที่สุดใน Albion Online
+                    Help you find the best places to buy or sell items in Albion Online
                 </p>
             </div>
             <ChatBot />

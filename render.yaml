@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: albion-client
+    runtime: static
+    buildCommand: npm run build
+    staticPublishPath: ./out
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+  - type: web
+    name: albion-server
+    runtime: node
+    buildCommand: bun install
+    startCommand: bun run src/index.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromSecret: mongodb_uri
+      - key: JWT_SECRET
+        fromSecret: jwt_secret
+      - key: GOOGLE_CLIENT_ID
+        fromSecret: google_client_id
+      - key: GOOGLE_CLIENT_SECRET
+        fromSecret: google_client_secret
+      - key: N8N_WEBHOOK_TOKEN
+        fromSecret: n8n_webhook_token
+
+  - type: pserv
+    name: albion-redis
+    runtime: redis
+    ipAllowList: []  # Allow all connections
+
+databases:
+  - name: albion-mongo
+    databaseName: albion_prod
+    user: albion_user
+    plan: starter
