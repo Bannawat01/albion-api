@@ -141,7 +141,7 @@ export const OauthController = new Elysia({ prefix: "/api" })
 return new Response(null, {
   status: 303,
   headers: {
-    Location: `http://localhost:3000/auth/callback?token=${encodeURIComponent(token)}`
+    Location: `${Bun.env.BASE_URL || 'https://albion-market-ai.online'}/auth/callback?token=${encodeURIComponent(token)}`
   }
 })
     } catch (error) {
