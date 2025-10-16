@@ -12,6 +12,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://albion-backend-4exf.onrender.com/api/:path*"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "https://albion-backend-4exf.onrender.com/api/auth/:path*"
     }
   ],
   "headers": [
