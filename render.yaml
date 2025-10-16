@@ -19,20 +19,15 @@ services:
       - key: PORT
         value: 10000
       - key: MONGODB_URI
-        fromSecret: mongodb_uri
+        value: ${MONGODB_URI}
       - key: JWT_SECRET
-        fromSecret: jwt_secret
+        value: ${JWT_SECRET}
       - key: GOOGLE_CLIENT_ID
-        fromSecret: google_client_id
+        value: ${GOOGLE_CLIENT_ID}
       - key: GOOGLE_CLIENT_SECRET
-        fromSecret: google_client_secret
+        value: ${GOOGLE_CLIENT_SECRET}
       - key: N8N_WEBHOOK_TOKEN
-        fromSecret: n8n_webhook_token
-
-  - type: pserv
-    name: albion-redis
-    runtime: redis
-    ipAllowList: []  # Allow all connections
+        value: ${N8N_WEBHOOK_TOKEN}
 
 databases:
   - name: albion-mongo
