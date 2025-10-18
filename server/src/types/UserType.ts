@@ -30,12 +30,14 @@ export interface GoogleTokenResponse {
 
 // Google User Info Response
 export interface GoogleUserInfo {
-  id: string
+  id?: string // Optional for backward compatibility
+  sub?: string // Google uses 'sub' instead of 'id'
   email: string
-  verified_email: boolean
+  verified_email?: boolean
+  email_verified?: boolean
   name: string
-  given_name: string
-  family_name: string
+  given_name?: string
+  family_name?: string
   picture: string
   locale?: string
 }

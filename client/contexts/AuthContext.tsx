@@ -1,6 +1,7 @@
 'use client'
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import type { SafeUser } from '@server/types/UserType'
+import { API_BASE_URL } from '../api/config'
 
 type Ctx = {
   user: SafeUser | null
@@ -24,7 +25,7 @@ const g: { val: AuthSingleton } = (globalThis as any)[GLOBAL_KEY] ??= {
 }
 
 const AuthContext = createContext<Ctx | undefined>(undefined)
-const API = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://albion-backend-4exf.onrender.com'
+const API = API_BASE_URL
 const MIN_INTERVAL_MS = 8000
 
 function getToken() {
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkAuthStatus = async () => { await _doCheck(setLocal) }
 
   const login = async (redirect?: string) => {
-    const r = await fetch(`${API}/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`)
+    const r = await fetch(`${API}/api/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`)
     const d = await r.json()
     if (d?.url) window.location.href = d.url
   }

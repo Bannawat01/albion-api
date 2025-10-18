@@ -60,7 +60,7 @@ export const OauthController = new Elysia()
   }))
 
   // Start OAuth flow
-  .get('/auth/:provider', async ({ params, set }) => {
+  .get('/api/auth/:provider', async ({ params, set }) => {
     try {
       if (params.provider !== 'google') {
         set.status = 400
@@ -150,7 +150,7 @@ return new Response(null, {
   })
 
   // Get current user
-  .get('/auth/me', async ({ headers, jwt, set }) => {
+  .get('/api/auth/me', async ({ headers, jwt, set }) => {
     try {
       const auth = headers.authorization
       const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
@@ -170,7 +170,7 @@ return new Response(null, {
     }
   })
 
-.post('/auth/logout', ({ set }) => {
+.post('/api/auth/logout', ({ set }) => {
   set.cookie = {
     'auth-token': { value: '', httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 },
     'logged_in':  { value: '', httpOnly: false, sameSite: 'lax', path: '/', maxAge: 0 } // 👈 เพิ่ม

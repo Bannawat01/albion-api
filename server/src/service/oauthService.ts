@@ -155,15 +155,26 @@ export class OAuthService {
 
     if (!response.ok) {
       const errorText = await response.text()
+      console.error('Google user info error:', response.status, errorText)
       throw new Error(`Failed to fetch user info: ${response.status} ${errorText}`)
     }
 
     const userInfo = await response.json()
-    if (!userInfo.id || !userInfo.email) {
+    console.log('Google user info response:', userInfo)
+
+    // Google uses 'sub' instead of 'id'
+    if (!userInfo.sub || !userInfo.email) {
+      console.error('Invalid user info:', userInfo)
       throw new Error('Invalid user info received from Google')
     }
 
-    return userInfo
+    // Map 'sub' to 'id' for compatibility
+    return {
+      id: userInfo.sub,
+      email: userInfo.email,
+      name: userInfo.name,
+      picture: userInfo.picture
+    }
   }
 
   async handleCallback(code: string, state: string): Promise<User> {
@@ -192,11 +203,17 @@ export class OAuthService {
       const userInfo = await this.getUserInfo(tokenResponse.access_token)
       console.log('User info fetched:', userInfo.id)
 
-      let user = await this.db.findUserByGoogleId(userInfo.id)
+      // Use id (which is mapped from sub) or fallback to sub
+      const googleId = userInfo.id || userInfo.sub!
+      if (!googleId) {
+        throw new Error('No Google ID found in user info')
+      }
+
+      let user = await this.db.findUserByGoogleId(googleId)
       console.log('Existing user found:', !!user)
 
       if (user) {
-        user = await this.db.updateUser(userInfo.id, {
+        user = await this.db.updateUser(googleId, {
           email: userInfo.email,
           name: userInfo.name,
           picture: userInfo.picture
@@ -204,7 +221,7 @@ export class OAuthService {
         console.log('User updated')
       } else {
         user = await this.db.createUser({
-          googleId: userInfo.id,
+          googleId: googleId,
           email: userInfo.email,
           name: userInfo.name,
           picture: userInfo.picture
