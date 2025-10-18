@@ -186,10 +186,14 @@ export class OAuthService {
 
   private async processCallback(code: string, state: string): Promise<User> {
     try {
+      console.log('Processing OAuth callback for state:', state)
       const tokenResponse = await this.exchangeCodeForToken(code, state)
+      console.log('Token exchange successful')
       const userInfo = await this.getUserInfo(tokenResponse.access_token)
+      console.log('User info fetched:', userInfo.id)
 
       let user = await this.db.findUserByGoogleId(userInfo.id)
+      console.log('Existing user found:', !!user)
 
       if (user) {
         user = await this.db.updateUser(userInfo.id, {
@@ -197,6 +201,7 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
+        console.log('User updated')
       } else {
         user = await this.db.createUser({
           googleId: userInfo.id,
@@ -204,12 +209,14 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
+        console.log('User created')
       }
 
       if (!user) {
         throw new Error('Failed to create or update user')
       }
 
+      console.log('OAuth callback successful for user:', user.email)
       return user
     } catch (error) {
       console.error('OAuth callback processing error:', error)
