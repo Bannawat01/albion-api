@@ -150,24 +150,25 @@ return new Response(null, {
   })
 
   // Get current user
-.get('/auth/me', async ({ headers, jwt, set }) => {
-  try {
-    const auth = headers.authorization
-    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
-    if (!token) { set.status = 401; return { error: 'Missing token' } }
+  .get('/auth/me', async ({ headers, jwt, set }) => {
+    try {
+      const auth = headers.authorization
+      const token = auth?.startsWith('Bearer ') ? auth.slice(7) : undefined
+      if (!token) { set.status = 401; return { error: 'Missing token' } }
 
-    const payload = await jwt.verify(token)
-    if (!payload) { set.status = 401; return { error: 'Invalid token' } }
+      const payload = await jwt.verify(token)
+      if (!payload) { set.status = 401; return { error: 'Invalid token' } }
 
-    const user = await dbService.findUserByGoogleId(String(payload.googleId))
-    if (!user) { set.status = 404; return { error: 'User not found' } }
+      const user = await dbService.findUserByGoogleId(String(payload.googleId))
+      if (!user) { set.status = 404; return { error: 'User not found' } }
 
-    return { id: user._id, email: user.email, name: user.name, picture: user.picture }
-  } catch {
-    set.status = 401
-    return { error: 'Token verification failed' }
-  }
-})
+      return { id: user._id, email: user.email, name: user.name, picture: user.picture }
+    } catch (error) {
+      console.error('Auth me error:', error)
+      set.status = 500
+      return { error: 'Internal server error' }
+    }
+  })
 
 .post('/auth/logout', ({ set }) => {
   set.cookie = {
