@@ -17,6 +17,8 @@ export default function CallbackClient({ code, state }: { code: string; state: s
     }
 
     localStorage.setItem('auth-token', token)
+    // เพิ่ม flag เพื่อบอกว่ามาจากการล็อกอิน
+    localStorage.setItem('isFromLogin', 'true')
 
     ;(async () => {
       await checkAuthStatus()

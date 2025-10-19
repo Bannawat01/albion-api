@@ -121,6 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // กลับไปหน้า redirect ที่เก็บไว้ (ถ้ามี)
   useEffect(() => {
     if (user) {
+      // เช็คว่ามาจากการล็อกอินหรือไม่
+      const isFromLogin = localStorage.getItem('isFromLogin')
+      if (isFromLogin) {
+        // ลบค่า flag
+        localStorage.removeItem('isFromLogin')
+        // อัปเดตสถานะการล็อกอินทันที
+        setLocal(user, false)
+      }
+      
       const to = localStorage.getItem('postLoginRedirect')
       if (to) {
         localStorage.removeItem('postLoginRedirect')

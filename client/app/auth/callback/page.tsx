@@ -13,6 +13,8 @@ function CallbackContent() {
     const token = searchParams.get('token')
     if (token) {
       localStorage.setItem('auth-token', token)
+      // เพิ่ม flag เพื่อบอกว่ามาจากการล็อกอิน
+      localStorage.setItem('isFromLogin', 'true')
       // โหลด user ใหม่
       checkAuthStatus().then(() => {
         router.replace('/') // กลับไปหน้าแรก หรือจะ redirect ไปหน้าที่คุณต้องการก็ได้
