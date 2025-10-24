@@ -135,7 +135,7 @@ export default function GoldChartPage() {
   }
 
   const chartData = {
-    labels: goldData.map((item) => new Date(item.timestamp).toLocaleDateString('th-TH', {
+    labels: goldData.map((item) => new Date(item.timestamp).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
