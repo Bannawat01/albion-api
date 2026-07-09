@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
 import { UserProfile } from "@/components/UserProfile"
@@ -14,69 +14,62 @@ export default function NavBar() {
   }, [])
 
   return (
-    <nav className="w-full flex items-center justify-between p-4 bg-card/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-lg">
+    <nav className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50 shadow-lg shadow-black/20">
       {/* Logo */}
-      <div>
-        <Link href="/" className="text-lg font-bold text-foreground">
+      <div className="shrink-0">
+        <Link href="/" className="flex items-center gap-2 group">
           <img
             src="/images/logo.png"
             alt="Albo Logo"
             width="50"
             height="50"
-            className="h-8"
+            className="h-8 w-auto transition-transform duration-200 group-hover:scale-105"
           />
         </Link>
       </div>
 
       {/* Center navigation */}
-      <div className="flex-1 flex justify-left space-x-4 ml-8">
+      <div className="flex-1 flex justify-start items-center gap-1.5 sm:gap-2 ml-2 sm:ml-6 overflow-x-auto">
+        {/* Gold Market – the primary, gold-accented action */}
         <Link
           href="/gold"
-          className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r
-                     from-yellow-400 via-yellow-500 to-yellow-600 text-gray-900 font-semibold
-                     shadow-md hover:shadow-yellow-500/25 transition-all duration-300 hover:scale-105 overflow-hidden border border-yellow-300/30">
-          <span className="relative z-10 flex items-center gap-2">
-            <span className="text-lg">💰</span>
-            Gold Market
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-yellow-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+          className="group inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg
+                     bg-primary/15 text-primary font-semibold border border-primary/30
+                     hover:bg-primary/25 hover:border-primary/50 transition-colors duration-200 whitespace-nowrap">
+          <span className="text-base">💰</span>
+          <span>Gold Market</span>
         </Link>
 
         {!isLoading && isAuthenticated && (
           <Link
             href="/ai"
-            className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r
-                       from-purple-400 via-purple-500 to-purple-600 text-white font-semibold
-                       shadow-md hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 overflow-hidden border border-purple-300/30">
-            <span className="relative z-10 flex items-center gap-2">
-              <span className="text-lg">🤖</span>
-              AI Tool
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-purple-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
+            className="group inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg
+                       text-emerald-300 font-semibold border border-emerald-500/25
+                       hover:bg-emerald-500/15 hover:border-emerald-400/45 transition-colors duration-200 whitespace-nowrap">
+            <span className="text-base">🤖</span>
+            <span>AI Tool</span>
           </Link>
         )}
 
         <Link
           href="/about"
-          className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r
-                     from-blue-400 via-blue-500 to-blue-600 text-white font-semibold
-                     shadow-md hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105 overflow-hidden">
-          <span className="relative z-10">About</span>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg
+                     text-muted-foreground font-medium border border-transparent
+                     hover:text-foreground hover:bg-secondary hover:border-border transition-colors duration-200 whitespace-nowrap">
+          About
         </Link>
 
         <Link
           href="/donate"
-          className="group relative inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r
-                     from-pink-400 via-pink-500 to-pink-600 text-white font-semibold
-                     shadow-md hover:shadow-pink-500/25 transition-all duration-300 hover:scale-105 overflow-hidden">
-          <span className="relative z-10">❤️ Donate</span>
-          <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg
+                     text-muted-foreground font-medium border border-transparent
+                     hover:text-rose-300 hover:bg-secondary hover:border-border transition-colors duration-200 whitespace-nowrap">
+          <span className="text-rose-400">❤️</span> <span className="hidden sm:inline">Donate</span>
         </Link>
       </div>
 
       {/* Profile/Login */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         <UserProfile />
       </div>
     </nav>

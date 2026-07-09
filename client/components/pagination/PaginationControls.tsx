@@ -55,7 +55,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 				disabled={isFetching && active}
 				onClick={() => onChange(p)}
 				className={cn(btnBase,
-					active ? "bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-cyan-500/50 shadow-lg shadow-cyan-500/25" : "glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white hover:shadow-md hover:shadow-cyan-500/10"
+					active ? "bg-primary text-primary-foreground border-primary/50 shadow-lg shadow-primary/25" : "glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground hover:shadow-md"
 				)}
 			>{p}</button>
 		)
@@ -70,7 +70,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						type="button"
 						onClick={() => canPrev && onChange(1)}
 						disabled={!canPrev || isFetching}
-						className={cn(btnBase, "w-10", canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
+						className={cn(btnBase, "w-10", canPrev?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
 						aria-label="First page"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
@@ -80,7 +80,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					type="button"
 					onClick={() => canPrev && onChange(page - 1)}
 					disabled={!canPrev || isFetching}
-					className={cn(btnBase, canPrev?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
+					className={cn(btnBase, canPrev?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
 					aria-label="Previous page"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
@@ -90,7 +90,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					type="button"
 					onClick={() => canNext && onChange(page + 1)}
 					disabled={!canNext || isFetching}
-					className={cn(btnBase, canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
+					className={cn(btnBase, canNext?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
 					aria-label="Next page"
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
@@ -100,14 +100,14 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						type="button"
 						onClick={() => canNext && onChange(totalPages)}
 						disabled={!canNext || isFetching}
-						className={cn(btnBase, "w-10", canNext?"glass-card hover:bg-slate-700/50 border-slate-600/50 hover:border-cyan-400/50 text-slate-200 hover:text-white":"bg-slate-800/50 border-slate-700/50 text-slate-500")}
+						className={cn(btnBase, "w-10", canNext?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
 						aria-label="Last page"
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
 					</button>
 				)}
 			</div>
-			<p className="mt-3 text-sm text-slate-300 font-medium text-center bg-slate-800/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-slate-600/30">Page {page} of {totalPages}</p>
+			<p className="mt-3 text-sm text-muted-foreground font-medium text-center bg-secondary/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-border">Page {page} of {totalPages}</p>
 		</nav>
 	)
 }

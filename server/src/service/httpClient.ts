@@ -24,17 +24,25 @@ export class HttpClient {
         return HttpClient.instance
     }
 
-    async get(url: string, options: RequestInit = {}): Promise<Response> {
+    async get(url: string, options: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
         const agent = url.startsWith('https:') ? httpsAgent : httpAgent
+        const { timeoutMs = 10000, signal, ...rest } = options
+
+        // Bound every outbound request so a hung upstream cannot pile up sockets.
+        const timeoutSignal = AbortSignal.timeout(timeoutMs)
+        const finalSignal = signal
+            ? (AbortSignal as any).any?.([signal, timeoutSignal]) ?? timeoutSignal
+            : timeoutSignal
 
         return fetch(url, {
-            ...options,
+            ...rest,
+            signal: finalSignal,
             // @ts-ignore - Bun supports agent
             agent,
             headers: {
                 'Connection': 'keep-alive',
                 'Accept-Encoding': 'gzip, deflate',
-                ...options.headers
+                ...rest.headers
             }
         })
     }

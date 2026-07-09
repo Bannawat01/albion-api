@@ -133,8 +133,9 @@ export class OAuthService {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Token exchange failed: ${response.status} ${errorText}`)
+      // Avoid logging/propagating the raw token-endpoint body (may echo secrets)
+      await response.text().catch(() => '')
+      throw new Error(`Token exchange failed with status ${response.status}`)
     }
 
     const tokenData = await response.json()
@@ -154,17 +155,15 @@ export class OAuthService {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Google user info error:', response.status, errorText)
-      throw new Error(`Failed to fetch user info: ${response.status} ${errorText}`)
+      console.error('Google user info error: status', response.status)
+      throw new Error(`Failed to fetch user info (status ${response.status})`)
     }
 
     const userInfo = await response.json()
-    console.log('Google user info response:', userInfo)
 
     // Google uses 'sub' instead of 'id'
     if (!userInfo.sub || !userInfo.email) {
-      console.error('Invalid user info:', userInfo)
+      console.error('Invalid user info received from Google (missing sub/email)')
       throw new Error('Invalid user info received from Google')
     }
 
@@ -197,11 +196,8 @@ export class OAuthService {
 
   private async processCallback(code: string, state: string): Promise<User> {
     try {
-      console.log('Processing OAuth callback for state:', state)
       const tokenResponse = await this.exchangeCodeForToken(code, state)
-      console.log('Token exchange successful')
       const userInfo = await this.getUserInfo(tokenResponse.access_token)
-      console.log('User info fetched:', userInfo.id)
 
       // Use id (which is mapped from sub) or fallback to sub
       const googleId = userInfo.id || userInfo.sub!
@@ -210,7 +206,6 @@ export class OAuthService {
       }
 
       let user = await this.db.findUserByGoogleId(googleId)
-      console.log('Existing user found:', !!user)
 
       if (user) {
         user = await this.db.updateUser(googleId, {
@@ -218,7 +213,6 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
-        console.log('User updated')
       } else {
         user = await this.db.createUser({
           googleId: googleId,
@@ -226,14 +220,13 @@ export class OAuthService {
           name: userInfo.name,
           picture: userInfo.picture
         })
-        console.log('User created')
       }
 
       if (!user) {
         throw new Error('Failed to create or update user')
       }
 
-      console.log('OAuth callback successful for user:', user.email)
+      console.log('OAuth callback completed successfully')
       return user
     } catch (error) {
       console.error('OAuth callback processing error:', error)

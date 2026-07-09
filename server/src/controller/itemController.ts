@@ -4,6 +4,7 @@ import { ItemRepository } from "../repository/itemRepository"
 import type { Price } from "../interface/priceInterface"
 import type { PaginationQuery } from "../interface/paginationInterface"
 import { HttpClient } from "../service/httpClient"
+import { assertValidItemId, validateCities, MAX_BATCH_IDS } from "../service/validation"
 const httpClient = HttpClient.getInstance()
 
 // สร้าง instance ของ ItemRepository
@@ -44,6 +45,7 @@ export const itemController = new Elysia({
 
     .get("/item/:id", async ({ params: { id } }) => {
         try {
+            assertValidItemId(id)
             const metadata = await itemRepository.fetchMetadata()
 
             const itemInfo = metadata.itemsData[id]
@@ -74,6 +76,7 @@ export const itemController = new Elysia({
         if (!itemId) {
             throw new BadRequestError("Missing item ID")
         }
+        assertValidItemId(itemId)
 
         try {
             const metadata = await itemRepository.fetchMetadata()
@@ -105,6 +108,8 @@ export const itemController = new Elysia({
 
     .get("/item/price", async ({ query: { id, city }, set }) => {
         try {
+            assertValidItemId(id)
+            const validatedCity = validateCities(city)
             const metadata = await itemRepository.fetchMetadata()
             const itemInfo = metadata.itemsData[id]
 
@@ -112,8 +117,8 @@ export const itemController = new Elysia({
                 throw new BadRequestError(`Item ID '${id}' does not exist in game data`)
             }
 
-            const result: Price[] | string = city
-                ? await itemRepository.fetchItemPriceAndLocation(id, city)
+            const result: Price[] | string = validatedCity
+                ? await itemRepository.fetchItemPriceAndLocation(id, validatedCity)
                 : await itemRepository.fetchItemPrice(id)
 
             if (typeof result === 'string') {
@@ -192,6 +197,7 @@ export const itemController = new Elysia({
 
     .get("/item/:id/prices/paginated", async ({ params: { id }, query }) => {
         try {
+            assertValidItemId(id)
             // ตรวจสอบว่า item ID มีอยู่จริง
             const metadata = await itemRepository.fetchMetadata()
             const itemInfo = metadata.itemsData[id]
@@ -244,8 +250,11 @@ export const itemController = new Elysia({
 
     .get("/item/:id/image", async ({ params: { id }, query, set }) => {
         try {
-            const { quality = 1, size = 217 } = query
-            const imageUrl = `https://render.albiononline.com/v1/item/${id}.png?quality=${quality}&size=${size}`
+            assertValidItemId(id)
+            // Clamp render params to sane bounds to avoid abusive upstream requests
+            const quality = Math.min(5, Math.max(0, parseInt(String(query.quality ?? 1)) || 1))
+            const size = Math.min(217, Math.max(16, parseInt(String(query.size ?? 217)) || 217))
+            const imageUrl = `https://render.albiononline.com/v1/item/${encodeURIComponent(id)}.png?quality=${quality}&size=${size}`
 
             // Cache และ proxy ภาพผ่าน server
             const response = await httpClient.get(imageUrl)
@@ -278,18 +287,25 @@ export const itemController = new Elysia({
         try {
             const payload = (body ?? {}) as any
             const { ids, city } = payload
-            if (!Array.isArray(ids) || ids.length === 0) {  
+            if (!Array.isArray(ids) || ids.length === 0) {
                 throw new BadRequestError("'ids' must be a non-empty array")
             }
+            if (ids.length > MAX_BATCH_IDS) {
+                throw new BadRequestError(`Too many ids: max ${MAX_BATCH_IDS} per request`)
+            }
 
-            // Validate ids exist in metadata (optional, cheap cache lookup)
+            const validatedCity = validateCities(city)
+
+            // Validate ids exist in metadata (cheap cached lookup) and are well-formed
             const metadata = await itemRepository.fetchMetadata()
-            const validIds = ids.filter((id: string) => !!metadata.itemsData[id])
+            const validIds = ids.filter((id: unknown): id is string =>
+                typeof id === 'string' && !!metadata.itemsData[id]
+            )
             if (validIds.length === 0) {
                 throw new BadRequestError("No valid item ids provided")
             }
 
-            const data = await itemRepository.fetchItemsPricesBatch(validIds, city)
+            const data = await itemRepository.fetchItemsPricesBatch(validIds, validatedCity)
 
             set.headers['Cache-Control'] = 'public, max-age=60, stale-while-revalidate=30'
             return { success: true, data }

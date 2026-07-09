@@ -53,28 +53,21 @@ export const errorHandler = ({ error }: { error: any }) => {
         }), { status: 502, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // Handle standard Error objects
-    if (error instanceof Error) {
-        return new Response(JSON.stringify({
-            error: 'Internal Server Error',
-            message: error.message || 'Something went wrong'
-        }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-        })
-    }
-
+    // ConnectionError extends Error, so it must be handled before the generic
+    // Error branch below (otherwise it would be swallowed as a 500).
     if (error instanceof ConnectionError) {
         return new Response(JSON.stringify({
             error: 'Service Unavailable',
-            message: error.message
+            message: 'Service temporarily unavailable, please try again later'
         }), {
             status: 503,
             headers: { 'Content-Type': 'application/json' }
         })
     }
 
-    // Handle other error types
+    // Unexpected errors: log the real detail server-side but never leak
+    // internal messages/stack to the client.
+    console.error('[errorHandler] Unhandled error:', error)
     return new Response(JSON.stringify({
         error: 'Internal Server Error',
         message: 'Something went wrong'

@@ -11,7 +11,7 @@ export const UserProfile = () => {
     return (
       <Button
         onClick={() => login()}
-        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-400 to-purple-600 text-gray-900 font-semibold shadow-md hover:from-blue-600 hover:to-purple-900 hover:text-white transition-all duration-200 "
+        className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold shadow-md hover:bg-primary/90 transition-colors duration-200"
       >
         Login
       </Button>

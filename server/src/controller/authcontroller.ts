@@ -7,6 +7,7 @@ import { DatabaseService } from "../repository/authRepository"
 import { DatabaseManager } from "../configs/databaseManager"
 import { ConnectionError } from "../middleware/customError"
 import { handleOAuthError } from "../middleware/oauthErrorHandler"
+import { allowedOrigins, getJwtSecret, isProduction } from "../configs/runtime"
 
 let dbService: any
 let oauthService: OAuthService
@@ -50,13 +51,14 @@ await initializeServices()
 
 export const OauthController = new Elysia()
 .use(cors({
-  origin: true, // Allow any origin for development
+  // Restrict credentialed CORS to known frontends (never "allow any").
+  origin: allowedOrigins,
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
   .use(jwt({
     name: 'jwt',
-    secret: Bun.env.JWT_SECRET || 'fallback-secret-for-dev'
+    secret: getJwtSecret()
   }))
 
   // Start OAuth flow
@@ -118,16 +120,16 @@ export const OauthController = new Elysia()
   'auth-token': {
     value: token,
     httpOnly: true,
-    secure: false,
+    secure: isProduction, // HTTPS-only cookie in production
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60
   },
-  // 👇 เพิ่มคุกกี้สถานะให้ middleware ใช้ gate หน้า
+  // Non-httpOnly status cookie the Next.js middleware reads to gate pages
   'logged_in': {
     value: '1',
-    httpOnly: false,       // ให้ Next/middleware อ่านได้
-    secure: false,         // dev: false; prod ควร true
+    httpOnly: false,
+    secure: isProduction,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60
@@ -172,8 +174,8 @@ return new Response(null, {
 
 .post('/api/auth/logout', ({ set }) => {
   set.cookie = {
-    'auth-token': { value: '', httpOnly: true, sameSite: 'lax', path: '/', maxAge: 0 },
-    'logged_in':  { value: '', httpOnly: false, sameSite: 'lax', path: '/', maxAge: 0 } // 👈 เพิ่ม
+    'auth-token': { value: '', httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/', maxAge: 0 },
+    'logged_in':  { value: '', httpOnly: false, secure: isProduction, sameSite: 'lax', path: '/', maxAge: 0 }
   }
   return { message: 'Logged out successfully' }
 })

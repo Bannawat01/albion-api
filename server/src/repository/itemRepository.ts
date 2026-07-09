@@ -6,6 +6,10 @@ import { TTLCache, TTL_CONSTANTS } from '../service/timeToLive'
 import { PaginationService } from '../service/paginationService'
 import type { PaginationQuery, PaginatedResponse } from '../interface/paginationInterface'
 import type { ValidatedPaginationParams } from '../types/paginationType'
+import { MAX_BATCH_IDS } from '../service/validation'
+
+// Upstream fetch timeout (ms). Prevents a hung remote from stalling requests.
+const UPSTREAM_TIMEOUT_MS = 10000
 
 
 export class ItemRepository {
@@ -34,7 +38,9 @@ export class ItemRepository {
      */
     async fetchItemsPricesBatch(itemIds: ItemId[], city?: string): Promise<Record<string, Price[]>> {
         const results: Record<string, Price[]> = {}
-        const ids = Array.from(new Set(itemIds.filter(Boolean)))
+        // Bound the batch so a huge id list cannot fan out into thousands of
+        // upstream calls (defense in depth; controller also caps).
+        const ids = Array.from(new Set(itemIds.filter(Boolean))).slice(0, MAX_BATCH_IDS)
 
         // Limit concurrency to avoid upstream throttling
         const concurrency = 4
@@ -145,14 +151,20 @@ export class ItemRepository {
         try {
             const itemsResponse = await fetch(
                 "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/items.json",
-                { headers: { "Accept-Encoding": "gzip" } }
+                { headers: { "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
             )
+            if (!itemsResponse.ok) {
+                throw new ExternalApiError(`Metadata source returned ${itemsResponse.status}`)
+            }
             const itemsData = await itemsResponse.json()
 
             const locationsResponse = await fetch(
                 "https://raw.githubusercontent.com/ao-data/ao-bin-dumps/master/formatted/world.json",
-                { headers: { "Accept-Encoding": "gzip" } }
+                { headers: { "Accept-Encoding": "gzip" }, signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
             )
+            if (!locationsResponse.ok) {
+                throw new ExternalApiError(`Location source returned ${locationsResponse.status}`)
+            }
             const locationsData = await locationsResponse.json()
 
             interface ItemData {
@@ -223,7 +235,10 @@ export class ItemRepository {
                 throw new ExternalApiError("Item not found in game data")
             }
 
-            const response = await fetch(`https://albion-online-data.com/api/v2/stats/prices/${itemId}`)
+            const response = await fetch(
+                `https://albion-online-data.com/api/v2/stats/prices/${itemId}`,
+                { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
+            )
             if (!response.ok) {
                 // negative cache (empty) for 60s to avoid repeated upstream hits
                 this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)
@@ -259,7 +274,8 @@ export class ItemRepository {
         }
         try {
             const response = await fetch(
-                `https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${encodeURIComponent(city)}`
+                `https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${encodeURIComponent(city)}`,
+                { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
               )
             if (!response.ok) {
                 this.priceCache.set(cacheKey, [], TTL_CONSTANTS.ONE_MINUTE)

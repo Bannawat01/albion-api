@@ -149,9 +149,9 @@ export default function ItemSearch() {
   }) => (
     <div className="space-y-1.5">
       {/* label: show on top row on mobile, left-aligned on desktop */}
-      <div className="sm:hidden text-[11px] font-semibold text-slate-300">{label}</div>
+      <div className="sm:hidden text-[11px] font-semibold text-muted-foreground">{label}</div>
       <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
-        <span className="hidden sm:block text-xs font-semibold text-slate-300 w-20 shrink-0">{label}</span>
+        <span className="hidden sm:block text-xs font-semibold text-muted-foreground w-20 shrink-0">{label}</span>
         {/* mobile -> grid 3 columns, desktop -> flex wrap (show only cities with prices and selected) */}
         <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:grid-cols-none sm:flex sm:flex-wrap sm:gap-2">
           {CITY_ORDER.filter(city => selectedCities.has(city) && (map?.[city]?.[metric] ?? null) != null).map(city => {
@@ -166,28 +166,28 @@ export default function ItemSearch() {
   )
 
   const Legend = () => (
-    <div className="glass-card rounded-xl p-4 border border-slate-600/30 space-y-3">
+    <div className="glass-card rounded-xl p-4 border border-border space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="font-semibold text-slate-200 text-sm flex items-center gap-2">
-          <span className="text-cyan-400">🏛️</span>
+        <span className="font-semibold text-foreground text-sm flex items-center gap-2">
+          <span className="text-primary">🏛️</span>
           Filter Cities:
         </span>
         <button
           onClick={selectAllCities}
-          className="cursor-pointer px-3 py-1.5 text-xs bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 rounded-lg border border-cyan-500/30 hover:from-cyan-500/30 hover:to-purple-500/30 hover:border-cyan-400/50 transition-all duration-200 hover:shadow-lg hover:shadow-cyan-500/10 font-medium"
+          className="cursor-pointer px-3 py-1.5 text-xs bg-primary/15 text-primary rounded-lg border border-primary/30 hover:bg-primary/25 hover:border-primary/50 transition-colors duration-200 font-medium"
         >
           Select All
         </button>
         <button
           onClick={clearAllCities}
-          className="cursor-pointer px-3 py-1.5 text-xs glass-card text-slate-400 rounded-lg border border-slate-600/50 hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-200 font-medium"
+          className="cursor-pointer px-3 py-1.5 text-xs text-muted-foreground rounded-lg border border-border hover:bg-secondary hover:text-foreground transition-colors duration-200 font-medium"
         >
           Clear All
         </button>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-medium text-slate-300 text-sm flex items-center gap-2">
-          <span className="text-purple-400">💰</span>
+        <span className="font-medium text-muted-foreground text-sm flex items-center gap-2">
+          <span className="text-primary">💰</span>
           Price Legend:
         </span>
         <div className="flex gap-1.5 flex-wrap">
@@ -199,8 +199,8 @@ export default function ItemSearch() {
                 onClick={() => toggleCity(c)}
                 className={`cursor-pointer px-2 py-1 rounded-lg font-semibold text-xs transition-all duration-200 hover:scale-105 border ${
                   isSelected
-                    ? `${CITY_COLOR[c]} ring-2 ring-cyan-400/60 shadow-lg shadow-cyan-500/20 border-cyan-400/50`
-                    : `${CITY_COLOR[c]} opacity-60 hover:opacity-80 border-transparent hover:border-slate-500/30`
+                    ? `${CITY_COLOR[c]} ring-2 ring-primary/60 shadow-lg shadow-primary/20 border-primary/50`
+                    : `${CITY_COLOR[c]} opacity-55 hover:opacity-85 border-transparent`
                 }`}
               >
                 {c}
@@ -253,11 +253,11 @@ export default function ItemSearch() {
 
       {/* Error */}
       {isError && (
-        <Card className="border-red-500/30 bg-slate-800/50 backdrop-blur-sm">
+        <Card className="border-destructive/40 ring-destructive/10">
           <CardContent className="pt-5 sm:pt-6">
             <div className="flex items-start gap-3">
-              <div className="w-5 h-5 text-red-400"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-              <p className="text-red-300 text-sm sm:text-base font-medium">Error occurred: {error instanceof Error ? error.message : String(error)}</p>
+              <div className="w-5 h-5 text-destructive shrink-0"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+              <p className="text-destructive text-sm sm:text-base font-medium">Error occurred: {error instanceof Error ? error.message : String(error)}</p>
             </div>
           </CardContent>
         </Card>
@@ -266,13 +266,13 @@ export default function ItemSearch() {
       {/* Header */}
       <div id="search-results" className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
         <div>
-          <h2 className="text-lg sm:text-xl font-semibold text-white">{rawSearch ? <>Search results for <span className="text-primary">"{rawSearch}"</span></> : "All items"}</h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-0.5 sm:mt-1">
+          <h2 className="text-lg sm:text-xl font-semibold text-foreground">{rawSearch ? <>Search results for <span className="text-primary">"{rawSearch}"</span></> : "All items"}</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
             Showing {items.length} items {totalItems>0 && `from ${totalItems.toLocaleString()} total`}
             {totalPages>1 && <span className="ml-1.5 sm:ml-2">(page {page} of {totalPages})</span>}
           </p>
         </div>
-        <div className="text-xs sm:text-sm text-slate-300">{itemsPerPage} items per page</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">{itemsPerPage} items per page</div>
       </div>
 
       {/* Legend – show once */}
@@ -282,21 +282,21 @@ export default function ItemSearch() {
       {isFetching && items.length===0 && (
         <div className="flex items-center justify-center py-12">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="w-14 h-14 border-4 border-primary/15 border-t-primary rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-14 h-14 border-4 border-emerald-500/10 border-t-emerald-400/70 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
-          <span className="ml-4 text-slate-300">Loading magical items...</span>
+          <span className="ml-4 text-muted-foreground">Loading market ledger…</span>
         </div>
       )}
       {!isFetching && items.length===0 && !isError && (
-        <Card className="border-slate-700/50 bg-slate-800/50 backdrop-blur-sm border-dashed">
+        <Card className="border-dashed">
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 text-slate-600">
+              <div className="w-14 h-14 mx-auto mb-4 text-muted-foreground/60">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-3-8a8 8 0 018 8 8 8 0 01-8 8 8 8 0 01-8-8 8 8 0 018-8z" /></svg>
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">No items found</h3>
-              <p className="text-slate-400">Try searching with different terms or use shorter search terms</p>
+              <h3 className="text-lg font-medium text-foreground mb-2">No items found</h3>
+              <p className="text-muted-foreground">Try a different or shorter search term.</p>
             </div>
           </CardContent>
         </Card>
@@ -310,31 +310,31 @@ export default function ItemSearch() {
             const isLoadingPrice = !pMap && index >= initialPriceSlice // Price data not loaded yet for lazy loaded items
             const noData = !pMap || CITY_ORDER.every(c => !pMap[c]?.sellMin && !pMap[c]?.sellMax && !pMap[c]?.buyMin && !pMap[c]?.buyMax)
             return (
-              <Card key={`${item.id}-${index}`} className={cn("hover:shadow-lg transition-all duration-200 hover:border-primary/20")}>
+              <Card key={`${item.id}-${index}`} className={cn("hover:shadow-lg transition-all duration-200 hover:ring-primary/25")}>
                 <CardContent className="pt-5 sm:pt-6">
                   <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                     {/* Image */}
                     <div className="relative shrink-0">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-slate-700/30 rounded-xl flex items-center justify-center overflow-hidden">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary/60 border border-border rounded-xl flex items-center justify-center overflow-hidden">
                         <img src={itemApi.getItemImageUrl(item.id, 1, 64)} alt={item.name} className="w-full h-full object-contain" />
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold">
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ring-2 ring-card">
                         {(page-1)*itemsPerPage + index + 1}
                       </div>
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0 w-full">
-                      <h3 className="font-semibold text-base sm:text-lg text-white">{item.name}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg text-foreground">{item.name}</h3>
 
                       <div className="mt-2.5 sm:mt-3 space-y-1.5">
                         {isLoadingPrice ? (
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-cyan-400">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-primary">
                             <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
                             Loading price data...
                           </div>
                         ) : noData ? (
-                          <span className="text-xs sm:text-sm text-slate-400">No price data</span>
+                          <span className="text-xs sm:text-sm text-muted-foreground">No price data</span>
                         ) : (
                           <>
                             <ChipsRow label="Sell Min" metric="sellMin" map={pMap} />
@@ -347,7 +347,7 @@ export default function ItemSearch() {
                     </div>
 
                     {/* Arrow */}
-                    <div className="text-slate-400 self-center sm:self-start sm:mt-1">
+                    <div className="text-muted-foreground self-center sm:self-start sm:mt-1">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                     </div>
                   </div>

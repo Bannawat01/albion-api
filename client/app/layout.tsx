@@ -19,12 +19,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <QueryProvider>
             <AuthProvider>
               <NavBar />
-              <main className="flex-1 mt-4 mb-16">{children}</main>
-              <footer className="w-full bg-card border-t border-border text-center p-4 text-foreground mt-auto">
-                <p>© 2025 Albo. All rights reserved.</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Powered by <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline">Albion Online Data API</a> |
-                  <a href="https://wiki.albiononline.com/wiki/API:Render_service" target="_blank" rel="noopener noreferrer" className="hover:text-primary underline ml-1">Albion Online Wiki API</a>
+              <main className="flex-1">{children}</main>
+              <footer className="w-full bg-card/60 backdrop-blur-sm border-t border-border text-center px-4 py-6 text-foreground mt-auto">
+                <p className="text-sm text-muted-foreground">© 2025 Albo — Albion Online market data.</p>
+                <p className="text-xs text-muted-foreground/80 mt-2">
+                  Powered by <a href="https://www.albion-online-data.com/" target="_blank" rel="noopener noreferrer" className="text-primary/90 hover:text-primary underline underline-offset-2">Albion Online Data API</a>
+                  <span className="mx-1.5">·</span>
+                  <a href="https://wiki.albiononline.com/wiki/API:Render_service" target="_blank" rel="noopener noreferrer" className="text-primary/90 hover:text-primary underline underline-offset-2">Albion Online Wiki API</a>
                 </p>
               </footer>
             </AuthProvider>

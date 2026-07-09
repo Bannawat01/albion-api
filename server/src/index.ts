@@ -11,7 +11,11 @@ import { securityHeaders } from "./middleware/security"
 import { requestLogger } from "./middleware/logger"
 import { performanceMonitor } from "./service/performanceMonitor"
 import { cors } from "@elysiajs/cors"
+import { validateEnv } from "./configs/env"
+import { allowedOrigins } from "./configs/runtime"
 
+// Fail fast on missing/invalid configuration before accepting traffic.
+validateEnv()
 
 await connectToDatabase.connect()
 
@@ -28,9 +32,9 @@ const app = new Elysia()
     .use(requestLogger())
     .use(securityHeaders())
  .use(cors({
-   origin: ['http://localhost:3000', 'https://albion-market-ai.online', 'https://www.albion-market-ai.online'], // frontend ที่อนุญาต
+   origin: allowedOrigins, // allowed frontends (override with CORS_ORIGINS env)
    credentials: true,
-   allowedHeaders: ['Content-Type', 'Authorization'] // ต้องมี Authorization
+   allowedHeaders: ['Content-Type', 'Authorization']
  }))
     .get('/', () => ({
         message: 'Albion API Server',
