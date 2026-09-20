@@ -215,7 +215,8 @@ export const getLoginErrorMessage = (errorCode: string | null): string | null =>
         return loginError.message
     }
 
-    return 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ'
+    return 'Unable to sign in. Please try again.'
+
 }
 
 export const isLoginError = (error: unknown): error is LoginError => {

@@ -131,6 +131,10 @@
 
   body {
     @apply bg-background text-foreground;
+    background-image:
+      linear-gradient(rgba(8, 10, 13, 0.9), rgba(8, 10, 13, 0.96)),
+      radial-gradient(circle at top, rgba(190, 142, 54, 0.22), transparent 45%);
+    background-attachment: fixed;
   }
 }
 
@@ -183,4 +187,97 @@
   .animate-slide-in-up {
     animation: slideInUp 0.6s ease-out;
   }
+
+  .nav-link {
+    @apply inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-muted-foreground font-medium border border-transparent hover:text-foreground hover:bg-secondary hover:border-border transition-colors whitespace-nowrap;
+  }
+
+  .nav-link-primary {
+    @apply bg-primary/15 text-primary font-semibold border-primary/30 hover:bg-primary/25 hover:border-primary/50;
+  }
+
+  .login-shell {
+    @apply min-h-[75vh] flex items-center justify-center px-4 py-12;
+  }
+
+  .login-card {
+    @apply w-full max-w-md flex flex-col items-center rounded-2xl border border-primary/25 bg-card/90 p-8 shadow-2xl shadow-black/40;
+    background-image: linear-gradient(145deg, rgba(216, 180, 90, 0.08), transparent 45%);
+  }
+
+  .google-sign-in {
+    @apply w-full inline-flex items-center justify-center gap-3 rounded-lg border border-border bg-foreground px-4 py-3 font-semibold text-background transition hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .market-search {
+    @apply flex items-center gap-3 rounded-xl border border-primary/25 bg-background/80 px-4 py-3 shadow-inner transition focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15;
+  }
+
+  .market-search input {
+    @apply min-w-0 flex-1 bg-transparent text-base text-foreground outline-none placeholder:text-muted-foreground;
+  }
+
+  .icon-button {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .city-filter {
+    @apply rounded-xl border border-border bg-card/55 p-4;
+  }
+
+  .city-toggle {
+    @apply rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold opacity-45 grayscale transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .city-toggle.is-active {
+    @apply scale-[1.02] opacity-100 grayscale-0 shadow-md;
+  }
+
+  .city-brecilien { @apply bg-violet-700 text-white; }
+  .city-caerleon { @apply bg-neutral-950 text-white ring-1 ring-white/20; }
+  .city-thetford { @apply bg-rose-700 text-white; }
+  .city-fort-sterling { @apply bg-slate-100 text-slate-950; }
+  .city-lymhurst { @apply bg-lime-800 text-white; }
+  .city-bridgewatch { @apply bg-orange-700 text-white; }
+  .city-martlock { @apply bg-sky-700 text-white; }
+  .city-black-market { @apply bg-zinc-800 text-white ring-1 ring-red-500/35; }
+
+  .market-item {
+    @apply rounded-2xl border border-border bg-card/80 p-5 shadow-lg shadow-black/10 transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-black/20;
+  }
+
+  .item-image {
+    @apply flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-primary/15 bg-secondary/50;
+  }
+
+  .item-image img {
+    @apply h-full w-full object-contain;
+  }
+
+  .price-summary {
+    @apply rounded-lg border px-3 py-2;
+  }
+
+  .price-summary p { @apply text-[10px] uppercase tracking-wider text-muted-foreground; }
+  .price-summary strong { @apply mt-0.5 block text-lg leading-tight; }
+  .price-summary span { @apply block truncate text-[11px] text-muted-foreground; }
+  .price-summary.sell { @apply border-emerald-500/20 bg-emerald-500/5; }
+  .price-summary.sell strong { @apply text-emerald-400; }
+  .price-summary.buy { @apply border-primary/20 bg-primary/5; }
+  .price-summary.buy strong { @apply text-primary; }
+
+  .price-row {
+    @apply flex min-w-0 items-center gap-2 rounded-lg bg-secondary/35 px-2.5 py-2;
+  }
+
+  .city-dot {
+    @apply h-2.5 w-2.5 shrink-0 rounded-full p-0 ring-1 ring-white/20;
+  }
+
+  .state-card {
+    @apply rounded-xl border border-dashed border-border bg-card/50 px-6 py-12 text-center;
+  }
+
+  .state-card h3 { @apply text-lg font-semibold; }
+  .state-card p { @apply mt-2 text-sm text-muted-foreground; }
 }

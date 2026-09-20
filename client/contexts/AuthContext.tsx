@@ -1,152 +1,102 @@
 'use client'
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { SafeUser } from '@server/types/UserType'
-import { API_BASE_URL } from '../api/config'
+import { API_BASE_URL } from '@/api/config'
 
-type Ctx = {
+const TOKEN_KEY = 'auth-token'
+const STATUS_COOKIE = 'logged_in'
+
+type AuthContextValue = {
   user: SafeUser | null
   isLoading: boolean
-  login: (redirect?: string) => void
-  logout: () => void
-  checkAuthStatus: () => Promise<void>
   isAuthenticated: boolean
+  login: (redirect?: string) => Promise<void>
+  logout: () => Promise<void>
+  checkAuthStatus: () => Promise<boolean>
 }
 
-type AuthSingleton = {
-  hasChecked: boolean
-  inflight: Promise<void> | null
-  lastAt: number
-  user: SafeUser | null
-  isLoading: boolean
-}
-const GLOBAL_KEY = '__albo_auth_singleton__'
-const g: { val: AuthSingleton } = (globalThis as any)[GLOBAL_KEY] ??= {
-  val: { hasChecked: false, inflight: null, lastAt: 0, user: null, isLoading: true }
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+
+const setStatusCookie = (loggedIn: boolean) => {
+  document.cookie = loggedIn
+    ? STATUS_COOKIE + '=1; path=/; max-age=604800; samesite=lax'
+    : STATUS_COOKIE + '=; path=/; max-age=0; samesite=lax'
 }
 
-const AuthContext = createContext<Ctx | undefined>(undefined)
-const API = API_BASE_URL
-const MIN_INTERVAL_MS = 8000
-
-function getToken() {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth-token')
-}
-
-// helpers สำหรับคุกกี้สถานะ (ใช้กับ middleware)
-const setCookie = (name: string, value: string, maxAgeSec: number) => {
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAgeSec}; samesite=lax`
-}
-const delCookie = (name: string) => {
-  document.cookie = `${name}=; path=/; max-age=0; samesite=lax`
-}
-
-async function _doCheck(setLocal: (u: SafeUser | null, loading: boolean) => void) {
-  const now = Date.now()
-  if (g.val.inflight) return g.val.inflight
-  if (now - g.val.lastAt < MIN_INTERVAL_MS) return
-
-  g.val.lastAt = now
-  g.val.isLoading = true
-  setLocal(g.val.user, true)
-
-  const p = (async () => {
-    try {
-      const token = getToken()
-      if (!token) { g.val.user = null; return }
-      const res = await fetch(`${API}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-        cache: 'no-store',
-      })
-      if (!res.ok) { g.val.user = null; return }
-      const data = await res.json()
-      g.val.user = data as SafeUser
-    } catch {
-      g.val.user = null
-    } finally {
-      g.val.isLoading = false
-      setLocal(g.val.user, false)
-      g.val.inflight = null
-    }
-  })()
-
-  g.val.inflight = p
-  return p
-}
+const safeRedirect = (value?: string) =>
+  value?.startsWith('/') && !value.startsWith('//') ? value : '/'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<SafeUser | null>(g.val.user)
-  const [isLoading, setIsLoading] = useState<boolean>(g.val.isLoading)
-  const setLocal = (u: SafeUser | null, l: boolean) => { setUser(u); setIsLoading(l) }
+  const [user, setUser] = useState<SafeUser | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  useEffect(() => {
-    if (!g.val.hasChecked) {
-      g.val.hasChecked = true
-      void _doCheck(setLocal)
-    } else {
-      setLocal(g.val.user, g.val.isLoading)
+  const checkAuthStatus = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      setUser(null)
+      setStatusCookie(false)
+      return false
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch(API_BASE_URL + '/api/auth/me', {
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        cache: 'no-store',
+      })
+      if (!response.ok) throw new Error('Session expired')
+      setUser(await response.json())
+      setStatusCookie(true)
+      return true
+    } catch {
+      localStorage.removeItem(TOKEN_KEY)
+      setUser(null)
+      setStatusCookie(false)
+      return false
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
-  const checkAuthStatus = async () => { await _doCheck(setLocal) }
+  const login = useCallback(async (redirect?: string) => {
+    localStorage.setItem('postLoginRedirect', safeRedirect(redirect))
+    const response = await fetch(API_BASE_URL + '/api/auth/google')
+    if (!response.ok) throw new Error('Unable to start Google sign-in')
+    const data = await response.json()
+    if (!data?.url) throw new Error('Google sign-in URL was not returned')
+    window.location.assign(data.url)
+  }, [])
 
-  const login = async (redirect?: string) => {
-    const r = await fetch(`${API}/api/auth/google${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`)
-    const d = await r.json()
-    if (d?.url) window.location.href = d.url
-  }
-
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
-      // ให้ฝั่ง server ลบคุกกี้ httpOnly + logged_in
-      await fetch(`${API}/api/auth/logout`, { method: 'POST', credentials: 'include' })
-    } catch {}
-    // กันเหนียว ลบฝั่ง client ด้วย
-    delCookie('logged_in')
-
-    localStorage.removeItem('auth-token')
-    g.val.user = null
-    setLocal(null, false)
-  }
-
-  // หลัง login (user ถูกเซ็ต) → ตั้งคุกกี้สถานะให้ middleware เห็น
-  useEffect(() => {
-    if (user) {
-      setCookie('logged_in', '1', 7 * 24 * 60 * 60) // 7 วัน
-    } else {
-      delCookie('logged_in')
+      await fetch(API_BASE_URL + '/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } finally {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem('postLoginRedirect')
+      setUser(null)
+      setStatusCookie(false)
     }
-  }, [user])
+  }, [])
 
-  // กลับไปหน้า redirect ที่เก็บไว้ (ถ้ามี)
   useEffect(() => {
-    if (user) {
-      // เช็คว่ามาจากการล็อกอินหรือไม่
-      const isFromLogin = localStorage.getItem('isFromLogin')
-      if (isFromLogin) {
-        // ลบค่า flag
-        localStorage.removeItem('isFromLogin')
-        // อัปเดตสถานะการล็อกอินทันที
-        setLocal(user, false)
-      }
-      
-      const to = localStorage.getItem('postLoginRedirect')
-      if (to) {
-        localStorage.removeItem('postLoginRedirect')
-        window.location.replace(to)
-      }
-    }
-  }, [user])
+    void checkAuthStatus()
+  }, [checkAuthStatus])
 
-  const value = useMemo<Ctx>(() => ({
-    user, isLoading, login, logout, checkAuthStatus, isAuthenticated: !!user
-  }), [user, isLoading])
+  const value = useMemo(() => ({
+    user,
+    isLoading,
+    isAuthenticated: Boolean(user),
+    login,
+    logout,
+    checkAuthStatus,
+  }), [user, isLoading, login, logout, checkAuthStatus])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider')
-  return ctx
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (!context) throw new Error('useAuth must be used within an AuthProvider')
+  return context
 }

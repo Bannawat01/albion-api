@@ -76,9 +76,7 @@ export class OAuthService {
         scope: config.scope,
         state,
         code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        access_type: 'offline',
-        prompt: 'consent'
+        code_challenge_method: 'S256'
       })
 
       // Auto-cleanup pending state after 10 minutes

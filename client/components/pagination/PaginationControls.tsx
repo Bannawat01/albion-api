@@ -34,6 +34,8 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 	// Keyboard navigation
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement | null
+			if (target?.matches('input, textarea, select, [contenteditable="true"]')) return
 			if (e.key === 'ArrowLeft' && canPrev) onChange(page - 1)
 			else if (e.key === 'ArrowRight' && canNext) onChange(page + 1)
 		}
@@ -43,8 +45,8 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 
 	const btnBase = "h-10 min-w-[40px] px-3 inline-flex items-center justify-center rounded-xl text-sm font-medium border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed select-none backdrop-blur-sm"
 
-	const renderNumber = (p: number | "...") => {
-		if (p === "...") return <span key={`e-${Math.random()}`} className="px-2 text-muted-foreground">…</span>
+	const renderNumber = (p: number | "...", index: number) => {
+		if (p === "...") return <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">…</span>
 		const active = p === page
 		return (
 			<button

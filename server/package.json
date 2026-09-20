@@ -21,9 +21,9 @@
     "elysia-rate-limit": "^4.4.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.18.0",
-    "mongoose": "^8.16.5",
+    "mongoose": "^8.24.1",
     "redis": "^4.7.0",
-    "validator": "^13.15.15"
+    "validator": "^13.15.35"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

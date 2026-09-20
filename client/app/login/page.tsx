@@ -1,69 +1,46 @@
-// app/login/page.tsx
 'use client'
-import { useAuth } from "@/contexts/AuthContext"
-import { getLoginErrorMessage } from "@/lib/errorMessage"
-import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useEffect } from "react"
 
-const LoginContent: React.FC = () => {
-  const { login, isAuthenticated, isLoading } = useAuth()
-  const router = useRouter()
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { getLoginErrorMessage } from '@/lib/errorMessage'
+
+function LoginContent() {
+  const { login, isLoading } = useAuth()
   const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const [localError, setLocalError] = useState('')
   const redirect = searchParams.get('redirect') || '/'
+  const errorMessage = localError || getLoginErrorMessage(searchParams.get('error'))
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace(redirect)
+  const handleLogin = async () => {
+    setLocalError('')
+    try {
+      await login(redirect)
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Unable to start Google sign-in')
     }
-  }, [isAuthenticated, router, redirect])
-
-  const handleGoogleLogin = () => {
-    localStorage.setItem('postLoginRedirect', redirect)
-    login(redirect)
   }
-
-  const errorMessage = getLoginErrorMessage(error)
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-white text-lg">กำลังโหลด...</div>
-      </div>
-    )
-  }
-
-  if (isAuthenticated) return null
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-20 bg-gradient-to-br from-slate-900 to-slate-700 p-6 rounded-3xl shadow-xl w-full max-w-sm mx-auto mt-20">
-      {errorMessage && <div className="error-message">{errorMessage}</div>}
-
-      <div className="mb-8 h-32 w-32 shadow-lg rounded-full bg-white flex items-center justify-center">
-        <img src="/images/google.webp" alt="Google Logo" width="128" height="128" className="h-full w-full object-contain" />
-      </div>
-
-      <button
-        type="button"
-        onClick={handleGoogleLogin}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 to-blue-500 text-gray-900 font-semibold shadow-md hover:from-yellow-500 hover:via-green-500 hover:to-blue-700 hover:text-white transition-all duration-200"
-      >
-        <span>เข้าสู่ระบบด้วย Google</span>
-      </button>
-    </div>
+    <main className="login-shell">
+      <section className="login-card">
+        <img src="/images/market-ledger-logo.png" alt="Albion Market Ledger" width="128" height="128" className="mb-5 h-28 w-28 object-contain drop-shadow-xl" />
+        <p className="text-xs uppercase tracking-[0.3em] text-primary mb-2">Royal Market Access</p>
+        <h1 className="text-2xl font-semibold text-foreground">Sign in to your ledger</h1>
+        <p className="text-sm text-muted-foreground text-center mt-2 mb-6">
+          Use one Google account across the Albion Market Ledger.
+        </p>
+        {errorMessage && <p role="alert" className="w-full mb-4 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{errorMessage}</p>}
+        <button type="button" onClick={handleLogin} disabled={isLoading} className="google-sign-in">
+          <img src="/images/google.webp" alt="" width="24" height="24" className="h-6 w-6" />
+          {isLoading ? 'Checking session...' : 'Continue with Google'}
+        </button>
+        <p className="mt-5 text-xs text-muted-foreground">Protected with OAuth 2.0, PKCE, and single sign-on.</p>
+      </section>
+    </main>
   )
 }
 
-const LoginPage: React.FC = () => {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-white text-lg">กำลังโหลด...</div>
-      </div>
-    }>
-      <LoginContent />
-    </Suspense>
-  )
+export default function LoginPage() {
+  return <Suspense fallback={<p className="p-8 text-center text-muted-foreground">Loading...</p>}><LoginContent /></Suspense>
 }
-
-export default LoginPage

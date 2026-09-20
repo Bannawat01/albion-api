@@ -139,7 +139,7 @@ export const OauthController = new Elysia()
 return new Response(null, {
   status: 303,
   headers: {
-    Location: `${Bun.env.FRONTEND_URL || 'https://albion-market-ai.online'}/auth/callback?token=${encodeURIComponent(token)}`
+    Location: `${Bun.env.FRONTEND_URL || 'https://albion-market-ai.online'}/auth/callback#token=${encodeURIComponent(token)}`
   }
 })
     } catch (error) {
