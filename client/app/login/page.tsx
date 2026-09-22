@@ -26,7 +26,7 @@ function LoginContent() {
       <section className="login-card">
         <img src="/images/market-ledger-logo.png" alt="Albion Market Ledger" width="128" height="128" className="mb-5 h-28 w-28 object-contain drop-shadow-xl" />
         <p className="text-xs uppercase tracking-[0.3em] text-primary mb-2">Royal Market Access</p>
-        <h1 className="text-2xl font-semibold text-foreground">Sign in to your ledger</h1>
+        <h1 className="font-ledger text-3xl font-semibold text-foreground">Sign in to your ledger</h1>
         <p className="text-sm text-muted-foreground text-center mt-2 mb-6">
           Use one Google account across the Albion Market Ledger.
         </p>

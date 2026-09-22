@@ -54,10 +54,10 @@ export default function GoldChartPage() {
     <main className="container mx-auto max-w-6xl px-4 py-10">
       <header className="mb-8">
         <p className="text-xs uppercase tracking-[0.3em] text-primary">Royal Exchange</p>
-        <h1 className="mt-2 text-4xl font-bold text-gold-gradient">Albion Gold Market</h1>
+        <h1 className="font-ledger mt-2 text-4xl font-bold text-gold-gradient">Albion Gold Market</h1>
         <p className="mt-2 text-muted-foreground">Recent community-reported gold prices.</p>
       </header>
-      <section className="glass-card rounded-2xl p-5 sm:p-8">
+      <section className="ledger-panel p-5 sm:p-8">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div><p className="text-sm text-muted-foreground">Latest price</p><p className="text-3xl font-bold text-primary">{latest.toLocaleString()}</p></div>
           <div className="flex gap-6 text-sm">
@@ -66,7 +66,7 @@ export default function GoldChartPage() {
             <Stat label="Samples" value={prices.length} />
           </div>
         </div>
-        <div className="h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div>
+        <div className="h-[320px] sm:h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div>
       </section>
     </main>
   )

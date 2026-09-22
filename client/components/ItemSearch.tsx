@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
 import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { rowsFrom } from '@/helpers/helperItem'
@@ -203,27 +203,25 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
           <p className={'mt-1 text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>
             {fresh ? 'Fresh' : 'Old'}{latestUpdate ? ` · ${new Date(latestUpdate).toLocaleString()}` : ' · Update time unavailable'}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
             <PriceSummary label="Best sell" result={bestSell} tone="sell" />
             <PriceSummary label="Best buy order" result={bestBuy} tone="buy" />
           </div>
         </div>
       </div>
-      <div className="mt-4 border-t border-border/70 pt-3">
-        {loading && !prices ? <p className="text-sm text-muted-foreground">Loading city prices...</p> :
-          rows.length ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {rows.map((row) => (
-                <div key={row.city} className="price-row">
-                  <span className={'city-dot ' + CITY_STYLE[row.city]} />
-                  <span className="truncate text-xs font-medium">{row.city}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">S <b className="text-foreground">{row.sellMin?.toLocaleString() ?? '-'}</b></span>
-                  <span className="text-xs text-muted-foreground">B <b className="text-foreground">{row.buyMax?.toLocaleString() ?? '-'}</b></span>
-                </div>
-              ))}
+      <details className="market-details">
+        <summary><span>{loading && !prices ? 'Loading city prices...' : `${rows.length} city ${rows.length === 1 ? 'price' : 'prices'}`}</span><ChevronDown className="h-4 w-4" /></summary>
+        <div className="grid gap-2 pt-3 sm:grid-cols-2">
+          {rows.length ? rows.map((row) => (
+            <div key={row.city} className="price-row">
+              <span className={'city-dot ' + CITY_STYLE[row.city]} />
+              <span className="truncate text-xs font-medium">{row.city}</span>
+              <span className="ml-auto text-xs text-muted-foreground">Sell <b className="text-foreground">{row.sellMin?.toLocaleString() ?? '-'}</b></span>
+              <span className="text-xs text-muted-foreground">Buy <b className="text-foreground">{row.buyMax?.toLocaleString() ?? '-'}</b></span>
             </div>
-          ) : <p className="text-sm text-muted-foreground">No recent prices in selected markets.</p>}
-      </div>
+          )) : <p className="text-sm text-muted-foreground">No recent prices in selected markets.</p>}
+        </div>
+      </details>
       <TradeFinder item={item} />
     </article>
   )
@@ -309,7 +307,7 @@ function TradeFinder({ item }: { item: ItemSummary }) {
         className='flex w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20'
       >
         <Sparkles className='h-4 w-4' aria-hidden='true' />
-        {open ? 'Turn off navigation helper.' : 'Find a way to make a profit.'}
+        {open ? 'Hide route planner' : 'Plan a profitable route'}
       </button>
 
       {open && (

@@ -7,15 +7,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        // โทนเข้ม ไล่เฉด + กระจกหมอก
-        "relative flex flex-col gap-6 rounded-2xl border border-slate-700/60",
-        "bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-indigo-900/40",
-        "backdrop-blur-xl text-slate-200 shadow-sm",
-        // เส้นเรืองแสงเบา ๆ + โฮเวอร์
-        "ring-1 ring-indigo-400/10 hover:ring-indigo-400/20",
-        "transition-colors duration-300",
-        // internal padding
-        "py-4 sm:py-6",
+        "relative flex flex-col gap-6 rounded-xl border border-primary/20 bg-card/90 py-4 text-card-foreground shadow-lg shadow-black/25 transition-colors hover:border-primary/35 sm:py-6",
         className
       )}
       {...props}
@@ -30,7 +22,6 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 px-6",
         "has-data-[slot=card-action]:grid-cols-[1fr_auto]",
-        // ถ้ามีเส้นคั่น ให้ดูเนียนกับโทนเข้ม
         "[.border-b]:pb-6",
         className
       )}
@@ -43,7 +34,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("font-semibold leading-none text-slate-100", className)}
+      className={cn("font-ledger font-semibold leading-none text-foreground", className)}
       {...props}
     />
   );
@@ -88,9 +79,8 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
       data-slot="card-footer"
       className={cn(
         "flex items-center px-6",
-        // เส้นคั่นแบบโปร่งใส ไม่ขาว
         "[.border-t]:pt-6",
-        "border-slate-700/60",
+        "border-border",
         className
       )}
       {...props}

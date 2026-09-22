@@ -36,14 +36,14 @@ export default function WatchlistPage() {
     <main className="container mx-auto max-w-5xl px-4 py-10">
       <div className="mb-7">
         <p className="text-xs uppercase tracking-[0.22em] text-primary">Asia Server</p>
-        <h1 className="mt-2 flex items-center gap-3 text-3xl font-bold"><Star className="h-7 w-7 fill-primary text-primary" /> Watchlist</h1>
+        <h1 className="font-ledger mt-2 flex items-center gap-3 text-4xl font-bold text-gold-gradient"><Star className="h-7 w-7 fill-primary text-primary" /> Watchlist</h1>
         <p className="mt-2 text-sm text-muted-foreground">Your saved items and their latest community-uploaded market prices.</p>
       </div>
 
       {!watchlist.items.length ? (
         <section className="state-card">
           <Star className="mx-auto h-8 w-8 text-primary" />
-          <h2 className="mt-3 text-lg font-semibold">Your watchlist is empty</h2>
+          <h2 className="font-ledger mt-3 text-xl font-semibold">Your watchlist is empty</h2>
           <p>Save an item with the star button to check it here later.</p>
           <Link href="/" className="nav-link nav-link-primary mt-5">Browse items</Link>
         </section>

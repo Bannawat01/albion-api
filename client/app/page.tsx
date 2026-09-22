@@ -2,67 +2,38 @@
 
 import React from 'react'
 import ItemSearch from '@/components/ItemSearch'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Sword, BarChart3, Zap, Search } from 'lucide-react'
+import { BarChart3, Search, ShieldCheck } from 'lucide-react'
 
 export default function HomePage() {
 
   return (
     <div className="min-h-screen animated-bg">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden border-b border-primary/15">
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:52px_52px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
-        <div className="relative">
-          <div className="container mx-auto px-4 py-14 lg:py-20">
-            <div className="max-w-3xl mx-auto text-center">
-              <img src="/images/market-ledger-logo.png" alt="" width="112" height="112" className="mx-auto mb-4 h-24 w-24 object-contain drop-shadow-2xl" />
-              <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium tracking-wide">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Asia Server · Live market data
-              </div>
-              <h1 className="text-4xl lg:text-6xl font-bold tracking-tight mb-4">
-                <span className="text-foreground">Albion </span>
-                <span className="text-gold-gradient">Market Ledger</span>
-              </h1>
-              <p className="text-base lg:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
-                Search every item and compare real-time prices across the royal cities and the Black Market.
-              </p>
-              <p className="-mt-5 mb-7 text-xs text-muted-foreground/80">Community-uploaded prices may differ from the current in-game market.</p>
-              <div className="flex flex-wrap justify-center gap-2.5 text-xs">
-                <span className="flex items-center gap-2 bg-card/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-border text-muted-foreground">
-                  <Sword className="w-3.5 h-3.5 text-primary" /> Full item database
-                </span>
-                <span className="flex items-center gap-2 bg-card/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-border text-muted-foreground">
-                  <BarChart3 className="w-3.5 h-3.5 text-emerald-400" /> All-city prices
-                </span>
-                <span className="flex items-center gap-2 bg-card/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-border text-muted-foreground">
-                  <Zap className="w-3.5 h-3.5 text-primary" /> Fast search
-                </span>
-              </div>
+      <section className="ledger-hero">
+        <div className="container mx-auto flex max-w-5xl items-center gap-5 px-4 py-8 sm:py-10">
+          <img src="/images/market-ledger-logo.png" alt="" width="96" height="96" className="hidden h-20 w-20 object-contain drop-shadow-2xl sm:block" />
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Asia market ledger</div>
+            <h1 className="font-ledger text-3xl font-bold tracking-tight sm:text-5xl"><span className="text-foreground">Trade with </span><span className="text-gold-gradient">better prices</span></h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">Search Albion items, compare every city, and plan your next profitable route.</p>
+            <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
+              <span className="hero-proof"><Search /> Fast item search</span>
+              <span className="hero-proof"><BarChart3 /> All-city prices</span>
+              <span className="hero-proof"><ShieldCheck /> Community data</span>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 lg:py-12 relative z-10">
+      <div className="container relative z-10 mx-auto px-4 py-6 lg:py-8">
         <div className="max-w-5xl mx-auto">
-          {/* Search Section */}
-          <Card className="overflow-hidden border-primary/20 shadow-2xl shadow-black/30">
-            <CardHeader className="border-b border-border pb-4">
-              <CardTitle className="text-xl flex items-center gap-2.5 text-foreground font-bold">
-                <span className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/15 border border-primary/25 text-primary"><Search className="h-4 w-4" /></span>
-                Item Search
-              </CardTitle>
-              <CardDescription className="text-muted-foreground text-sm">
-                Type an item name — prices load automatically for every city.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <ItemSearch />
-            </CardContent>
-          </Card>
+          <section className="ledger-panel p-4 sm:p-6" aria-labelledby="item-search-title">
+            <div className="mb-5 flex items-center gap-3 border-b border-border pb-4">
+              <span className="ledger-icon"><Search className="h-4 w-4" /></span>
+              <div><h2 id="item-search-title" className="font-ledger text-xl font-semibold">Market Search</h2><p className="text-xs text-muted-foreground">Community prices can differ from the live in-game market.</p></div>
+            </div>
+            <ItemSearch />
+          </section>
         </div>
       </div>
     </div>

@@ -12,14 +12,14 @@ export default function AboutPage() {
     <main className="container mx-auto max-w-5xl px-4 py-12">
       <header className="mb-10 text-center">
         <p className="text-xs uppercase tracking-[0.3em] text-primary">The Royal Continent</p>
-        <h1 className="mt-3 text-4xl font-bold text-gold-gradient">Albion Market Ledger</h1>
+        <h1 className="font-ledger mt-3 text-4xl font-bold text-gold-gradient">Albion Market Ledger</h1>
         <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
           A focused market companion for checking prices before your next trade route.
         </p>
       </header>
       <section className="grid gap-5 md:grid-cols-3">
         {features.map(({ title, text, icon: Icon }) => (
-          <Card key={title} className="glass-card">
+          <Card key={title}>
             <CardHeader>
               <Icon className="h-7 w-7 text-primary" />
               <CardTitle className="pt-3">{title}</CardTitle>

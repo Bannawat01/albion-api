@@ -2,24 +2,45 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { CircleHelp, Coins, List, Star } from 'lucide-react'
 import { UserProfile } from '@/components/UserProfile'
+
+const links = [
+  { href: '/', label: 'Items', icon: List },
+  { href: '/watchlist', label: 'Watchlist', icon: Star },
+  { href: '/gold', label: 'Gold', icon: Coins },
+  { href: '/about', label: 'About', icon: CircleHelp },
+]
 
 export default function NavBar() {
   useEffect(() => document.documentElement.classList.add('dark'), [])
+  const pathname = usePathname()
 
   return (
-    <nav className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-card/90 backdrop-blur-md border-b border-primary/20 sticky top-0 z-50 shadow-lg shadow-black/30">
-      <Link href="/" className="flex items-center gap-3 group shrink-0" aria-label="Albion Market Ledger home">
-        <img src="/images/market-ledger-logo.png" alt="" width="56" height="56" className="h-11 w-11 object-contain transition-transform group-hover:scale-105" />
-        <span className="hidden md:block font-semibold tracking-wide text-gold">Market Ledger</span>
-      </Link>
-      <div className="nav-scroll flex-1 flex items-center gap-1.5 sm:gap-2 ml-2 sm:ml-6 overflow-x-auto">
-        <Link href="/" className="nav-link">Items</Link>
-        <Link href="/watchlist" className="nav-link">Watchlist</Link>
-        <Link href="/gold" className="nav-link nav-link-primary">Gold Market</Link>
-        <Link href="/about" className="nav-link">About</Link>
-      </div>
-      <div className="shrink-0"><UserProfile /></div>
-    </nav>
+    <>
+      <header className="ledger-nav">
+        <Link href="/" className="flex items-center gap-2.5 group shrink-0" aria-label="Albion Market Ledger home">
+          <img src="/images/market-ledger-logo.png" alt="" width="44" height="44" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
+          <span className="font-ledger hidden sm:block text-lg font-semibold text-gold">Market Ledger</span>
+        </Link>
+        <span className="server-seal"><span /> Asia</span>
+        <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main navigation">
+          {links.map(({ href, label, icon: Icon }) => (
+            <Link key={href} href={href} className={'nav-link ' + (pathname === href ? 'is-active' : '')} aria-current={pathname === href ? 'page' : undefined}>
+              <Icon className="h-4 w-4" /> {label}
+            </Link>
+          ))}
+        </nav>
+        <div className="shrink-0 md:ml-2"><UserProfile /></div>
+      </header>
+      <nav className="mobile-nav" aria-label="Mobile navigation">
+        {links.map(({ href, label, icon: Icon }) => (
+          <Link key={href} href={href} className={pathname === href ? 'is-active' : ''} aria-current={pathname === href ? 'page' : undefined}>
+            <Icon className="h-5 w-5" /><span>{label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   )
 }
