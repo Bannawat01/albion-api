@@ -78,4 +78,21 @@ describe('PriceAdvisoryService', () => {
     expect(distanceFactor('Bridgewatch', 'Martlock')).toBe(1)
     expect(distanceFactor('Bridgewatch', 'Black Market')).toBe(1.2)
   })
+
+  it('calculates arbitrage from source cost without invented transport fees', async () => {
+    const rows = await PriceAdvisoryService.getInstance().recommend(markets, {
+      fromCity: 'Bridgewatch',
+      itemWeight: 1,
+      quantity: 1,
+      taxRate: 0.065,
+      mode: 'profit',
+      scenario: 'arbitrage',
+      strategy: 'list',
+    })
+    const martlock = rows.find(row => row.city === 'Martlock')
+    expect(martlock?.transport).toBe(0)
+    expect(martlock?.purchaseCost).toBe(100)
+    expect(martlock?.netProfit).toBeCloseTo(68.3)
+    expect(martlock?.profitPercent).toBeCloseTo(68.3)
+  })
 })

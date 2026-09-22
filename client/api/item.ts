@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { axiosInstance } from './config'
 import type { AxiosRequestConfig } from 'axios'
 
@@ -41,6 +41,28 @@ export type Price = {
   buyPriceMax: number
   quality: number
   timestamp: string
+}
+
+export type TradeRecommendation = {
+  city: string
+  sourcePrice: number
+  targetPrice: number
+  purchaseCost: number
+  tax: number
+  netProfit: number
+  profitPercent: number
+  riskScore: number
+  sourceUpdatedAt: string
+  targetUpdatedAt: string
+  isStale: boolean
+}
+
+export type TradeRecommendationResponse = {
+  itemId: string
+  fromCity: string
+  mode: 'profit' | 'safe' | 'balanced'
+  generatedAt: string
+  recommendations: TradeRecommendation[]
 }
 
 // API Functions
@@ -99,6 +121,27 @@ const itemApi = {
     const { data } = await axiosInstance.post(`/items/prices/batch`, body, config)
     return data
   },
+  getTradeRecommendations: async (
+    itemId: string,
+    params: { from: string; qty: number; quality: number; strategy: 'list' | 'quick'; mode: 'profit' | 'safe' | 'balanced' },
+    signal?: AbortSignal
+  ): Promise<TradeRecommendationResponse> => {
+    const query = new URLSearchParams({
+      from: params.from,
+      qty: String(params.qty),
+      quality: String(params.quality),
+      strategy: params.strategy,
+      mode: params.mode,
+      scenario: 'arbitrage',
+      taxRate: '0.065',
+      limit: '3',
+    })
+    const { data } = await axiosInstance.get(
+      `/items/${encodeURIComponent(itemId)}/recommendations?${query}`,
+      { signal }
+    )
+    return data
+  },
   getGoldPrice: async () => {
     const { data } = await axiosInstance.get('/gold?count=50')
     return data
@@ -120,6 +163,7 @@ export const useSearchItems = (searchTerm?: string, page = 1, limit = 20) => {
     queryFn: () => itemApi.searchItems(searchTerm, page, limit),
     enabled: true, // Always enabled, will search all items if no searchTerm
     staleTime: 2 * 60 * 1000, // 2 minutes
+    placeholderData: keepPreviousData,
     select: data => data,
   })
 }

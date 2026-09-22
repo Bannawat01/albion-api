@@ -38,32 +38,50 @@ export class ItemRepository {
      */
     async fetchItemsPricesBatch(itemIds: ItemId[], city?: string): Promise<Record<string, Price[]>> {
         const results: Record<string, Price[]> = {}
-        // Bound the batch so a huge id list cannot fan out into thousands of
-        // upstream calls (defense in depth; controller also caps).
         const ids = Array.from(new Set(itemIds.filter(Boolean))).slice(0, MAX_BATCH_IDS)
 
-        // Limit concurrency to avoid upstream throttling
-        const concurrency = 4
-        let cursor = 0
+        const cityKey = city ? encodeURIComponent(city.trim()) : 'ALL'
+        const missing = ids.filter(id => {
+            const cached = this.priceCache.get(`price_${id}_${cityKey}`)
+            if (cached) results[id] = cached
+            return !cached
+        })
+        if (!missing.length) return results
 
-        const worker = async () => {
-            while (true) {
-                const idx = cursor++
-                if (idx >= ids.length) break
-                const id = ids[idx]
-                try {
-                    const prices = city
-                        ? await this.fetchItemPriceAndLocation(id, city)
-                        : await this.fetchItemPrice(id)
-                    results[id] = Array.isArray(prices) ? prices : []
-                } catch (e) {
-                    console.warn(`batch price failed for ${id}:`, e)
+        const metadata = await this.fetchMetadata()
+        // ponytail: chunks only protect URL length; the normal 12-card page is one request.
+        for (let offset = 0; offset < missing.length; offset += 40) {
+            const chunk = missing.slice(offset, offset + 40)
+            const path = chunk.map(encodeURIComponent).join(',')
+            const locations = city ? `?locations=${encodeURIComponent(city)}` : ''
+            try {
+                const response = await fetch(
+                    `https://albion-online-data.com/api/v2/stats/prices/${path}${locations}`,
+                    { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
+                )
+                if (!response.ok) throw new Error(`upstream returned ${response.status}`)
+                const rows = await response.json() as any[]
+                for (const id of chunk) {
+                    const mapped = mapPriceData(
+                        rows.filter(row => row.item_id === id),
+                        metadata.itemsData[id],
+                        id
+                    )
+                    results[id] = mapped
+                    this.priceCache.set(
+                        `price_${id}_${cityKey}`,
+                        mapped,
+                        mapped.length ? TTL_CONSTANTS.TEN_MINUTES : TTL_CONSTANTS.ONE_MINUTE
+                    )
+                }
+            } catch (error) {
+                console.warn('batch price request failed:', error)
+                for (const id of chunk) {
                     results[id] = []
+                    this.priceCache.set(`price_${id}_${cityKey}`, [], TTL_CONSTANTS.ONE_MINUTE)
                 }
             }
         }
-
-        await Promise.all(Array.from({ length: Math.min(concurrency, ids.length) }, () => worker()))
         return results
     }
 

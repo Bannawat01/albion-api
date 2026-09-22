@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'lh3.googleusercontent.com' }],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'render.albiononline.com' },
+    ],
   },
   turbopack: {},
 }

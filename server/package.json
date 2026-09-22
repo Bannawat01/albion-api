@@ -7,28 +7,29 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "bun test",
     "dev": "bun run --watch src/index.ts",
     "benchmark": "node benchmark.js",
     "benchmark:production": "BASE_URL=https://your-production-url.com node benchmark.js"
   },
   "dependencies": {
-    "@elysiajs/cors": "^1.3.3",
-    "@elysiajs/jwt": "^1.3.2",
-    "@elysiajs/swagger": "^1.3.1",
+    "@elysiajs/cors": "^1.4.2",
+    "@elysiajs/jwt": "^1.4.2",
     "bcrypt": "^6.0.0",
-    "elysia": "^1.3.8",
-    "elysia-rate-limit": "^4.4.0",
-    "jsonwebtoken": "^9.0.2",
-    "mongodb": "^6.18.0",
-    "mongoose": "^8.24.1",
-    "redis": "^4.7.0",
+    "elysia": "^1.4.30",
+    "elysia-rate-limit": "^4.6.3",
+    "fflate": "^0.8.3",
+    "file-type": "^21.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^6.21.0",
+    "mongoose": "^8.24.4",
+    "redis": "^4.7.1",
     "validator": "^13.15.35"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/bun": "latest",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

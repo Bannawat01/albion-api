@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
-import { itemApi, useSearchItems, type ItemSummary } from '@/api'
+import Image from 'next/image'
+import { useQuery } from '@tanstack/react-query'
+import { ArrowRight, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react'
+import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { rowsFrom } from '@/helpers/helperItem'
 import PaginationControls from '@/components/pagination/PaginationControls'
@@ -42,8 +44,6 @@ export default function ItemSearch() {
   const search = useDebounce(query.trim(), 250)
   const [page, setPage] = useState(1)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
-  const [prices, setPrices] = useState<PriceMap>({})
-  const [pricesLoading, setPricesLoading] = useState(false)
   const { data, isFetching, isError, error } = useSearchItems(search || undefined, page, 12)
 
   const items = useMemo(() => data?.data ?? [], [data?.data])
@@ -52,27 +52,32 @@ export default function ItemSearch() {
 
   useEffect(() => setPage(1), [search])
 
+  const itemIds = useMemo(() => items.map((item) => item.uniqueName), [items])
+  const priceQuery = useQuery({
+    queryKey: ['items', 'prices', 'batch', itemIds],
+    queryFn: ({ signal }) => itemApi.getItemsPricesBatch(itemIds, CITIES.join(','), signal),
+    enabled: itemIds.length > 0,
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
+  })
+  const prices = useMemo<PriceMap>(() => {
+    const next: PriceMap = {}
+    for (const item of items) {
+      next[item.uniqueName] = cityMap(rowsFrom({ data: priceQuery.data?.data?.[item.uniqueName] ?? [] }))
+    }
+    return next
+  }, [items, priceQuery.data])
+  const pricesLoading = priceQuery.isFetching
+  const [slowLoading, setSlowLoading] = useState(false)
+
   useEffect(() => {
-    if (!items.length) {
-      setPrices({})
+    if (!isFetching && !pricesLoading) {
+      setSlowLoading(false)
       return
     }
-    const controller = new AbortController()
-    setPricesLoading(true)
-    void itemApi.getItemsPricesBatch(items.map((item) => item.uniqueName), CITIES.join(','), controller.signal)
-      .then((response) => {
-        const next: PriceMap = {}
-        for (const item of items) next[item.uniqueName] = cityMap(rowsFrom({ data: response.data?.[item.uniqueName] ?? [] }))
-        setPrices(next)
-      })
-      .catch((reason) => {
-        if (reason?.name !== 'CanceledError') setPrices({})
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setPricesLoading(false)
-      })
-    return () => controller.abort()
-  }, [items])
+    const timer = window.setTimeout(() => setSlowLoading(true), 2000)
+    return () => window.clearTimeout(timer)
+  }, [isFetching, pricesLoading])
 
   const visibleCities = useMemo(() => CITIES.filter((city) => selectedCities.has(city)), [selectedCities])
 
@@ -147,12 +152,13 @@ export default function ItemSearch() {
       </div>
 
       {isError && <StateCard title="Could not load the market" detail={error instanceof Error ? error.message : 'Please try again.'} />}
+      {slowLoading && <p className='text-sm text-amber-300' role='status'>The free market server is waking up. Please wait a moment.</p>}
       {isFetching && !items.length && <ItemSkeletons />}
       {!isFetching && !isError && !items.length && <StateCard title="No items found" detail="Try a shorter name or a different spelling." />}
 
       {!!items.length && (
         <div className="grid gap-4 lg:grid-cols-2" aria-busy={pricesLoading}>
-          {items.map((item) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} />)}
+          {items.map((item, index) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} imagePriority={index < 2} />)}
         </div>
       )}
 
@@ -161,7 +167,7 @@ export default function ItemSearch() {
   )
 }
 
-function ItemCard({ item, prices, cities, loading }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean }) {
+function ItemCard({ item, prices, cities, loading, imagePriority }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean; imagePriority: boolean }) {
   const rows = cities.flatMap((city) => {
     const metric = prices?.[city]
     return metric && (metric.sellMin || metric.buyMax) ? [{ city, ...metric }] : []
@@ -174,7 +180,7 @@ function ItemCard({ item, prices, cities, loading }: { item: ItemSummary; prices
   return (
     <article className="market-item">
       <div className="flex items-start gap-4">
-        <div className="item-image"><img src={itemApi.getItemImageUrl(item.id, 1, 96)} alt="" loading="lazy" /></div>
+        <ItemImage item={item} priority={imagePriority} />
         <div className="min-w-0 flex-1">
           <h3 className="truncate text-lg font-semibold">{item.name}</h3>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
@@ -199,7 +205,177 @@ function ItemCard({ item, prices, cities, loading }: { item: ItemSummary; prices
             </div>
           ) : <p className="text-sm text-muted-foreground">No recent prices in selected markets.</p>}
       </div>
+      <TradeFinder item={item} />
     </article>
+  )
+}
+
+function ItemImage({ item, priority }: { item: ItemSummary; priority: boolean }) {
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
+  const [attempt, setAttempt] = useState(0)
+  const source = itemApi.getItemImageUrl(item.id, 1, 96) + (attempt ? '&retry=' + attempt : '')
+
+  const retry = () => {
+    setStatus('loading')
+    setAttempt((value) => value + 1)
+  }
+
+  return (
+    <div className="item-image" aria-busy={status === 'loading'}>
+      {status === 'loading' && (
+        <div className="item-image-loading" role="status">
+          <span className="item-image-spinner" />
+          <span className="sr-only">Loading image for {item.name}</span>
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="item-image-error">
+          <ImageOff className="h-6 w-6" aria-hidden="true" />
+          <button type="button" onClick={retry} aria-label={'Retry image for ' + item.name}>
+            <RefreshCw className="h-3 w-3" aria-hidden="true" /> Retry
+          </button>
+        </div>
+      )}
+      <Image
+        key={attempt}
+        src={source}
+        alt={item.name}
+        width={96}
+        height={96}
+        priority={priority}
+        decoding="async"
+        onLoad={() => setStatus('loaded')}
+        onError={() => setStatus('error')}
+        className={status === 'loaded' ? 'is-loaded' : ''}
+      />
+    </div>
+  )
+}
+
+function TradeFinder({ item }: { item: ItemSummary }) {
+  const [open, setOpen] = useState(false)
+  const [from, setFrom] = useState('Bridgewatch')
+  const [qty, setQty] = useState(1)
+  const [quality, setQuality] = useState(1)
+  const [strategy, setStrategy] = useState<'list' | 'quick'>('list')
+  const [mode, setMode] = useState<'profit' | 'safe' | 'balanced'>('profit')
+  const tradeQuery = useQuery({
+    queryKey: ['trade-routes', item.uniqueName, from, qty, quality, strategy, mode],
+    queryFn: ({ signal }) => itemApi.getTradeRecommendations(
+      item.uniqueName,
+      { from, qty, quality, strategy, mode },
+      signal
+    ),
+    enabled: open,
+    staleTime: 60 * 1000,
+    retry: 1,
+  })
+  const routes = tradeQuery.data?.recommendations ?? []
+
+  return (
+    <div className='mt-4 border-t border-primary/20 pt-3'>
+      <button
+        type='button'
+        onClick={() => setOpen(value => !value)}
+        aria-expanded={open}
+        className='flex w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20'
+      >
+        <Sparkles className='h-4 w-4' aria-hidden='true' />
+        {open ? 'Turn off navigation helper.' : 'Find a way to make a profit.'}
+      </button>
+
+      {open && (
+        <div className='mt-3 space-y-3 rounded-lg bg-background/45 p-3'>
+          <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+            <TradeField label='Origin city'>
+              <select value={from} onChange={event => setFrom(event.target.value)} className='trade-control'>
+                {CITIES.map(city => <option key={city} value={city}>{city}</option>)}
+              </select>
+            </TradeField>
+            <TradeField label='quantity'>
+              <input
+                type='number'
+                min={1}
+                max={10000}
+                value={qty}
+                onChange={event => setQty(Math.min(10000, Math.max(1, Number(event.target.value) || 1)))}
+                className='trade-control'
+              />
+            </TradeField>
+            <TradeField label='quality'>
+              <select value={quality} onChange={event => setQuality(Number(event.target.value))} className='trade-control'>
+                <option value={1}>1 Normal</option>
+                <option value={2}>2 Good</option>
+                <option value={3}>3 Outstanding</option>
+                <option value={4}>4 Excellent</option>
+                <option value={5}>5 Masterpiece</option>
+              </select>
+            </TradeField>
+            <TradeField label='How to sell'>
+              <select value={strategy} onChange={event => setStrategy(event.target.value as 'list' | 'quick')} className='trade-control'>
+                <option value='list'>ตั้งขาย</option>
+                <option value='quick'>ขายทันที</option>
+              </select>
+            </TradeField>
+          </div>
+          <div className='flex flex-wrap gap-2' aria-label='Ranking format'>
+            {([
+              ['profit', 'Maximum profit'],
+              ['balanced', 'balance'],
+              ['safe', 'safe'],
+            ] as const).map(([value, label]) => (
+              <button
+                type='button'
+                key={value}
+                onClick={() => setMode(value)}
+                aria-pressed={mode === value}
+                className={`rounded-full border px-3 py-1 text-xs ${mode === value ? 'border-primary bg-primary/20 text-primary' : 'border-border text-muted-foreground'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tradeQuery.isFetching && <p className='text-sm text-muted-foreground' role='status'>Calculating the latest price....</p>}
+          {tradeQuery.isError && <p className='text-sm text-red-300'>It's not yet possible to calculate. The city of origin may not have a price for this quality.</p>}
+          {!tradeQuery.isFetching && !tradeQuery.isError && routes.length === 0 && (
+            <p className='text-sm text-muted-foreground'>No profitable routes were found based on the latest data.</p>
+          )}
+          {!!routes.length && (
+            <div className='space-y-2'>
+              {routes.map((route, index) => <TradeRoute key={route.city} route={route} rank={index + 1} from={from} />)}
+              <p className='text-[11px] text-muted-foreground'>Estimated after-tax price: 6.5% • Please check in-game prices before purchasing.</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TradeField({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className='space-y-1 text-xs text-muted-foreground'><span>{label}</span>{children}</label>
+}
+
+function TradeRoute({ route, rank, from }: { route: TradeRecommendation; rank: number; from: string }) {
+  const risk = route.riskScore >= 0.5 ? 'High risk' : route.riskScore >= 0.3 ? 'Medium risk' : 'Low risk'
+  return (
+    <div className='rounded-lg border border-border/80 bg-card/70 p-3'>
+      <div className='flex flex-wrap items-center gap-2'>
+        <span className='flex h-6 w-6 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary'>{rank}</span>
+        <span className='text-xs text-muted-foreground'>{from}</span>
+        <ArrowRight className='h-3.5 w-3.5 text-primary' aria-hidden='true' />
+        <strong className='text-sm'>{route.city}</strong>
+        <strong className='ml-auto text-emerald-400'>+{Math.round(route.netProfit).toLocaleString()} silver</strong>
+      </div>
+      <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
+        <span>buy {route.sourcePrice.toLocaleString()}</span>
+        <span>sell {route.targetPrice.toLocaleString()}</span>
+        <span className='text-emerald-300'>{route.profitPercent.toFixed(1)}%</span>
+        <span>{risk}</span>
+        {route.isStale && <span className='text-amber-300'>The information may be outdated.</span>}
+      </div>
+    </div>
   )
 }
 

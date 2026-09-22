@@ -7,6 +7,8 @@ export interface CityMarketStat {
   buyPrice: number
   sampleSize: number
   lastUpdated: string
+  sellUpdatedAt?: string
+  buyUpdatedAt?: string
 }
 
 export interface TransportContext {
@@ -27,6 +29,14 @@ export interface CityRecommendation {
   riskPenalty: number
   net: number
   riskScore: number
+  sourcePrice: number
+  targetPrice: number
+  purchaseCost: number
+  netProfit: number
+  profitPercent: number
+  sourceUpdatedAt: string
+  targetUpdatedAt: string
+  isStale: boolean
   score?: number // สำหรับ balanced
 }
 
@@ -51,8 +61,7 @@ const MODE_WEIGHTS: Record<TransportContext['mode'], { profit: number; safety: n
   balanced: { profit: 0.6, safety: 0.4 }
 }
 
-const BASE_TRANSPORT_UNIT = 12 // ปรับใหม่ให้สมดุลมากขึ้น
-const RISK_PENALTY_WEIGHT = 0.15 // portion of gross used in risk penalty for non-profit modes
+const STALE_AFTER_MS = 30 * 60 * 1000
 
 // ---------------- Internal Helpers ----------------
 
@@ -76,13 +85,27 @@ function computeRecommendations(markets: CityMarketStat[], ctx: TransportContext
     const qty = ctx.quantity
     const grossRevenue = targetSell * qty
     const tax = grossRevenue * ctx.taxRate
-    const transport = BASE_TRANSPORT_UNIT * distanceFactor(ctx.fromCity, m.city) * Math.max(0.01, ctx.itemWeight) * qty
     const riskScore = CITY_RISK[m.city] ?? 0.5
-    const riskPenalty = ctx.mode === 'profit' ? 0 : grossRevenue * (riskScore * RISK_PENALTY_WEIGHT)
     const costBasisTotal = costBasisPerUnit * qty
-    const net = grossRevenue - tax - transport - riskPenalty - costBasisTotal
+    const net = grossRevenue - tax - costBasisTotal
+    const sourceUpdatedAt = from.sellUpdatedAt || from.lastUpdated
+    const targetUpdatedAt = strategy === 'quick'
+      ? (m.buyUpdatedAt || m.lastUpdated)
+      : (m.sellUpdatedAt || m.lastUpdated)
+    const timestamps = [sourceUpdatedAt, targetUpdatedAt].map(value => new Date(value).getTime())
+    const isStale = timestamps.some(value => !Number.isFinite(value) || Date.now() - value > STALE_AFTER_MS)
     maxNet = Math.max(maxNet, net)
-    rows.push({ city: m.city, gross: grossRevenue, tax, transport, riskPenalty, net, riskScore })
+    rows.push({
+      city: m.city, gross: grossRevenue, tax, transport: 0, riskPenalty: 0, net, riskScore,
+      sourcePrice: from.sellPrice,
+      targetPrice: targetSell,
+      purchaseCost: costBasisTotal,
+      netProfit: net,
+      profitPercent: costBasisTotal > 0 ? (net / costBasisTotal) * 100 : 0,
+      sourceUpdatedAt,
+      targetUpdatedAt,
+      isStale,
+    })
   }
 
   const weights = MODE_WEIGHTS[ctx.mode]
@@ -115,7 +138,7 @@ export class PriceAdvisoryService {
         }
         return PriceAdvisoryService.instance
     }
-    async getMarketSnapshot(itemId:string): Promise<CityMarketStat[]> {
+    async getMarketSnapshot(itemId:string, quality = 1): Promise<CityMarketStat[]> {
         const pricesRaw = await ItemRepository.getInstance().fetchItemPrice(itemId)
 
         // ถ้า fetch คืนค่าเป็น string (error message) หรือไม่ใช่ array ให้คืนว่าง
@@ -124,47 +147,40 @@ export class PriceAdvisoryService {
         const prices: Price[] = pricesRaw
         const cityMap: Record<string, {
             city: string,
-            sellTotal: number,
-            buyTotal: number,
+            sellPrice: number,
+            buyPrice: number,
             sampleSize: number,
-            lastUpdated: string | null
+            sellUpdatedAt: string,
+            buyUpdatedAt: string
         }> = {}
 
-    prices.forEach(p => {
+    prices.filter(p => Number(p.quantity) === quality).forEach(p => {
             const city = p.city ?? 'Unknown'
             if (!cityMap[city]) {
-                cityMap[city] = { city, sellTotal: 0, buyTotal: 0, sampleSize: 0, lastUpdated: null }
+                cityMap[city] = { city, sellPrice: 0, buyPrice: 0, sampleSize: 0, sellUpdatedAt: '', buyUpdatedAt: '' }
             }
             const entry = cityMap[city]
 
-            if (typeof p.sell_Price_Max === 'number') entry.sellTotal += p.sell_Price_Max
-            if (typeof p.buy_Price_max === 'number') entry.buyTotal += p.buy_Price_max
+            if (p.sell_Price_Min > 0 && (!entry.sellPrice || p.sell_Price_Min < entry.sellPrice)) {
+              entry.sellPrice = p.sell_Price_Min
+              entry.sellUpdatedAt = p.sell_Price_Min_Date
+            }
+            if (p.buy_Price_max > entry.buyPrice) {
+              entry.buyPrice = p.buy_Price_max
+              entry.buyUpdatedAt = p.buy_Price_Max_Date
+            }
             entry.sampleSize += 1
 
-            // หา timestamp ล่าสุดจากฟิลด์วันที่ที่มีใน record
-            const dateCandidates: (string | undefined)[] = [
-              (p as any).sell_Price_Max_Date,
-              (p as any).sell_Price_Min_Date,
-              (p as any).buy_Price_Max_Date,
-              (p as any).buy_Price_Min_Date
-            ]
-            for (const raw of dateCandidates) {
-              if (!raw) continue
-              const dt = new Date(raw)
-              if (Number.isNaN(dt.getTime())) continue
-              if (!entry.lastUpdated || dt > new Date(entry.lastUpdated)) {
-                entry.lastUpdated = dt.toISOString()
-              }
-            }
         })
 
         return Object.values(cityMap).map(m => ({
             city: m.city,
-            // คำนวณค่าเฉลี่ย (ปัดเป็นจำนวนเต็ม) — ปรับตามต้องการ (median, weighted, ฯลฯ)
-            sellPrice: m.sampleSize ? Math.round(m.sellTotal / m.sampleSize) : 0,
-            buyPrice: m.sampleSize ? Math.round(m.buyTotal / m.sampleSize) : 0,
+            sellPrice: m.sellPrice,
+            buyPrice: m.buyPrice,
             sampleSize: m.sampleSize,
-            lastUpdated: m.lastUpdated ?? ''
+            lastUpdated: m.sellUpdatedAt || m.buyUpdatedAt,
+            sellUpdatedAt: m.sellUpdatedAt,
+            buyUpdatedAt: m.buyUpdatedAt,
         }))
     }
   async recommend(markets: CityMarketStat[], ctx: TransportContext): Promise<CityRecommendation[]> {

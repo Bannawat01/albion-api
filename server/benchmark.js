@@ -21,7 +21,7 @@ class BenchmarkRunner {
             new http.Agent({ keepAlive: true, maxSockets: 50 });
     }
 
-    async makeRequest(endpoint, method = 'GET') {
+    async makeRequest(endpoint, method = 'GET', body) {
         return new Promise((resolve, reject) => {
             const url = `${this.baseUrl}${endpoint}`;
             const startTime = process.hrtime.bigint();
@@ -31,7 +31,11 @@ class BenchmarkRunner {
                 agent: this.agent,
                 headers: {
                     'User-Agent': 'Albion-API-Benchmark/1.0',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    ...(body ? {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(body)
+                    } : {})
                 }
             }, (res) => {
                 let data = '';
@@ -56,7 +60,7 @@ class BenchmarkRunner {
                 reject(new Error('Request timeout'));
             });
 
-            req.end();
+            req.end(body);
         });
     }
 
@@ -139,8 +143,9 @@ class BenchmarkRunner {
             '/health/database',
             '/health/performance',
             '/metrics/connections',
-            '/api/items?page=1&limit=10',
-            '/api/gold'
+            '/api/items/paginated?page=1&limit=12',
+            '/api/items/paginated?page=1&limit=12&search=bag',
+            '/api/gold?count=50'
         ];
 
         // Warmup phase
@@ -151,6 +156,13 @@ class BenchmarkRunner {
 
         // Main benchmark
         console.log('🏃 Running benchmark...');
+        const batchBody = JSON.stringify({
+            ids: ['T4_BAG', 'T4_CAPE', 'T4_MAIN_SWORD'],
+            city: 'Bridgewatch,Martlock,Lymhurst,Fort Sterling,Thetford,Caerleon,Black Market'
+        });
+        const batchResult = await this.makeRequest('/api/items/prices/batch', 'POST', batchBody);
+        console.log(`Batch price smoke: ${batchResult.statusCode} in ${batchResult.responseTime.toFixed(2)}ms`);
+
         const testEndpoints = [];
         for (let i = 0; i < TOTAL_REQUESTS; i++) {
             testEndpoints.push(endpoints[i % endpoints.length]);
