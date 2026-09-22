@@ -196,6 +196,9 @@
     @apply bg-primary/15 text-primary font-semibold border-primary/30 hover:bg-primary/25 hover:border-primary/50;
   }
 
+  .nav-scroll { scrollbar-width: none; }
+  .nav-scroll::-webkit-scrollbar { display: none; }
+
   .login-shell {
     @apply min-h-[75vh] flex items-center justify-center px-4 py-12;
   }
@@ -244,6 +247,14 @@
 
   .market-item {
     @apply rounded-2xl border border-border bg-card/80 p-5 shadow-lg shadow-black/10 transition duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-xl hover:shadow-black/20;
+  }
+
+  .watchlist-button {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground transition hover:border-primary/50 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  .watchlist-button.is-active {
+    @apply border-primary/40 bg-primary/15 text-primary;
   }
 
   .item-image {

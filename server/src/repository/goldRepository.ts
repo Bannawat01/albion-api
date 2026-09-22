@@ -2,6 +2,7 @@ import type { GoldPrice, GoldPriceOptions } from "../interface/goldInterface"
 import { BadRequestError, ExternalApiError } from "../middleware/customError"
 import { HttpClient } from "../service/httpClient"
 import { TTLCache, TTL_CONSTANTS } from '../service/timeToLive'
+import { albionDataBaseUrl } from '../configs/runtime'
 export class GoldRepository {
     private goldPriceCache = new TTLCache<GoldPrice[]>()
     private httpClient: HttpClient
@@ -48,7 +49,7 @@ export class GoldRepository {
                 return cacheData
             }
 
-            const response = await this.httpClient.get(`https://east.albion-online-data.com/api/v2/stats/gold.json?count=${count}`, {
+            const response = await this.httpClient.get(`${albionDataBaseUrl}/api/v2/stats/gold.json?count=${count}`, {
                 signal: AbortSignal.timeout(5000), // 5 second timeout
                 headers: {
                     'Accept': 'application/json',

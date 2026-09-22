@@ -4,6 +4,7 @@
  */
 
 export const isProduction = Bun.env.NODE_ENV === 'production'
+export const albionDataBaseUrl = (Bun.env.ALBION_DATA_BASE_URL || 'https://east.albion-online-data.com').replace(/\/$/, '')
 
 const DEFAULT_ORIGINS = [
     'http://localhost:3000',

@@ -13,8 +13,9 @@ export default function NavBar() {
         <img src="/images/market-ledger-logo.png" alt="" width="56" height="56" className="h-11 w-11 object-contain transition-transform group-hover:scale-105" />
         <span className="hidden md:block font-semibold tracking-wide text-gold">Market Ledger</span>
       </Link>
-      <div className="flex-1 flex items-center gap-1.5 sm:gap-2 ml-2 sm:ml-6 overflow-x-auto">
+      <div className="nav-scroll flex-1 flex items-center gap-1.5 sm:gap-2 ml-2 sm:ml-6 overflow-x-auto">
         <Link href="/" className="nav-link">Items</Link>
+        <Link href="/watchlist" className="nav-link">Watchlist</Link>
         <Link href="/gold" className="nav-link nav-link-primary">Gold Market</Link>
         <Link href="/about" className="nav-link">About</Link>
       </div>

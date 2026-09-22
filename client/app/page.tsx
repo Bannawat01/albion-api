@@ -19,7 +19,7 @@ export default function HomePage() {
               <img src="/images/market-ledger-logo.png" alt="" width="112" height="112" className="mx-auto mb-4 h-24 w-24 object-contain drop-shadow-2xl" />
               <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-medium tracking-wide">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live Albion market data
+                Asia Server · Live market data
               </div>
               <h1 className="text-4xl lg:text-6xl font-bold tracking-tight mb-4">
                 <span className="text-foreground">Albion </span>
@@ -28,6 +28,7 @@ export default function HomePage() {
               <p className="text-base lg:text-lg text-muted-foreground mb-8 leading-relaxed max-w-2xl mx-auto">
                 Search every item and compare real-time prices across the royal cities and the Black Market.
               </p>
+              <p className="-mt-5 mb-7 text-xs text-muted-foreground/80">Community-uploaded prices may differ from the current in-game market.</p>
               <div className="flex flex-wrap justify-center gap-2.5 text-xs">
                 <span className="flex items-center gap-2 bg-card/60 px-3 py-1.5 rounded-full backdrop-blur-sm border border-border text-muted-foreground">
                   <Sword className="w-3.5 h-3.5 text-primary" /> Full item database

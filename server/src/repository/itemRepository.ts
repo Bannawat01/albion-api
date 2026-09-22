@@ -7,6 +7,7 @@ import { PaginationService } from '../service/paginationService'
 import type { PaginationQuery, PaginatedResponse } from '../interface/paginationInterface'
 import type { ValidatedPaginationParams } from '../types/paginationType'
 import { MAX_BATCH_IDS } from '../service/validation'
+import { albionDataBaseUrl } from '../configs/runtime'
 
 // Upstream fetch timeout (ms). Prevents a hung remote from stalling requests.
 const UPSTREAM_TIMEOUT_MS = 10000
@@ -56,7 +57,7 @@ export class ItemRepository {
             const locations = city ? `?locations=${encodeURIComponent(city)}` : ''
             try {
                 const response = await fetch(
-                    `https://albion-online-data.com/api/v2/stats/prices/${path}${locations}`,
+                    `${albionDataBaseUrl}/api/v2/stats/prices/${path}${locations}`,
                     { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
                 )
                 if (!response.ok) throw new Error(`upstream returned ${response.status}`)
@@ -254,7 +255,7 @@ export class ItemRepository {
             }
 
             const response = await fetch(
-                `https://albion-online-data.com/api/v2/stats/prices/${itemId}`,
+                `${albionDataBaseUrl}/api/v2/stats/prices/${itemId}`,
                 { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
             )
             if (!response.ok) {
@@ -292,7 +293,7 @@ export class ItemRepository {
         }
         try {
             const response = await fetch(
-                `https://albion-online-data.com/api/v2/stats/prices/${itemId}?locations=${encodeURIComponent(city)}`,
+                `${albionDataBaseUrl}/api/v2/stats/prices/${itemId}?locations=${encodeURIComponent(city)}`,
                 { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS) }
               )
             if (!response.ok) {

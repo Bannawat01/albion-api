@@ -3,17 +3,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react'
+import { ArrowRight, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
 import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { rowsFrom } from '@/helpers/helperItem'
 import PaginationControls from '@/components/pagination/PaginationControls'
+import { useWatchlist } from '@/hooks/useWatchlist'
 
-type Metric = { sellMin: number | null; buyMax: number | null }
-type CityMap = Record<string, Metric>
+type Metric = { sellMin: number | null; buyMax: number | null; updatedAt: string | null }
+export type CityMap = Record<string, Metric>
 type PriceMap = Record<string, CityMap>
 
-const CITIES = ['Brecilien', 'Caerleon', 'Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Black Market'] as const
+export const CITIES = ['Brecilien', 'Caerleon', 'Thetford', 'Fort Sterling', 'Lymhurst', 'Bridgewatch', 'Martlock', 'Black Market'] as const
 const CITY_STYLE: Record<string, string> = {
   Brecilien: 'city-brecilien',
   Caerleon: 'city-caerleon',
@@ -25,16 +26,21 @@ const CITY_STYLE: Record<string, string> = {
   'Black Market': 'city-black-market',
 }
 
-function cityMap(rows: any[]): CityMap {
+export function cityMap(rows: any[]): CityMap {
   const result: CityMap = {}
   for (const row of rows) {
     const city = String(row.city || '').trim()
     if (!city) continue
     const sell = Number(row.sell_Price_Min)
     const buy = Number(row.buy_Price_max)
-    const current = result[city] ||= { sellMin: null, buyMax: null }
+    const current = result[city] ||= { sellMin: null, buyMax: null, updatedAt: null }
     if (sell > 0) current.sellMin = current.sellMin == null ? sell : Math.min(current.sellMin, sell)
     if (buy > 0) current.buyMax = current.buyMax == null ? buy : Math.max(current.buyMax, buy)
+    const updatedAt = [row.sell_Price_Min_Date, row.buy_Price_Max_Date]
+      .filter(Boolean)
+      .sort()
+      .at(-1)
+    if (updatedAt && (!current.updatedAt || updatedAt > current.updatedAt)) current.updatedAt = updatedAt
   }
   return result
 }
@@ -44,6 +50,7 @@ export default function ItemSearch() {
   const search = useDebounce(query.trim(), 250)
   const [page, setPage] = useState(1)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
+  const watchlist = useWatchlist()
   const { data, isFetching, isError, error } = useSearchItems(search || undefined, page, 12)
 
   const items = useMemo(() => data?.data ?? [], [data?.data])
@@ -158,7 +165,7 @@ export default function ItemSearch() {
 
       {!!items.length && (
         <div className="grid gap-4 lg:grid-cols-2" aria-busy={pricesLoading}>
-          {items.map((item, index) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} imagePriority={index < 2} />)}
+          {items.map((item, index) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} imagePriority={index < 2} watched={watchlist.items.some(saved => saved.uniqueName === item.uniqueName)} onToggleWatchlist={watchlist.toggle} />)}
         </div>
       )}
 
@@ -167,7 +174,7 @@ export default function ItemSearch() {
   )
 }
 
-function ItemCard({ item, prices, cities, loading, imagePriority }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean; imagePriority: boolean }) {
+export function ItemCard({ item, prices, cities, loading, imagePriority, watched = false, onToggleWatchlist }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean; imagePriority: boolean; watched?: boolean; onToggleWatchlist?: (item: ItemSummary) => void }) {
   const rows = cities.flatMap((city) => {
     const metric = prices?.[city]
     return metric && (metric.sellMin || metric.buyMax) ? [{ city, ...metric }] : []
@@ -176,14 +183,26 @@ function ItemCard({ item, prices, cities, loading, imagePriority }: { item: Item
     row.sellMin && (!best || row.sellMin < best.value) ? { city: row.city, value: row.sellMin } : best, null)
   const bestBuy = rows.reduce<{ city: string; value: number } | null>((best, row) =>
     row.buyMax && (!best || row.buyMax > best.value) ? { city: row.city, value: row.buyMax } : best, null)
+  const latestUpdate = rows.map(row => row.updatedAt).filter(Boolean).sort().at(-1) ?? null
+  const fresh = latestUpdate ? Date.now() - new Date(latestUpdate).getTime() <= 30 * 60 * 1000 : false
 
   return (
     <article className="market-item">
       <div className="flex items-start gap-4">
         <ItemImage item={item} priority={imagePriority} />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-lg font-semibold">{item.name}</h3>
+          <div className="flex items-start gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-lg font-semibold">{item.name}</h3>
+            {onToggleWatchlist && (
+              <button type="button" onClick={() => onToggleWatchlist(item)} className={'watchlist-button' + (watched ? ' is-active' : '')} aria-label={watched ? `Remove ${item.name} from watchlist` : `Add ${item.name} to watchlist`} aria-pressed={watched}>
+                <Star className="h-4 w-4" fill={watched ? 'currentColor' : 'none'} />
+              </button>
+            )}
+          </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
+          <p className={'mt-1 text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>
+            {fresh ? 'Fresh' : 'Old'}{latestUpdate ? ` · ${new Date(latestUpdate).toLocaleString()}` : ' · Update time unavailable'}
+          </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             <PriceSummary label="Best sell" result={bestSell} tone="sell" />
             <PriceSummary label="Best buy order" result={bestBuy} tone="buy" />
