@@ -313,8 +313,8 @@ function TradeFinder({ item }: { item: ItemSummary }) {
             </TradeField>
             <TradeField label='How to sell'>
               <select value={strategy} onChange={event => setStrategy(event.target.value as 'list' | 'quick')} className='trade-control'>
-                <option value='list'>ตั้งขาย</option>
-                <option value='quick'>ขายทันที</option>
+                <option value='list'>List for sale</option>
+                <option value='quick'>Sell ​​immediately</option>
               </select>
             </TradeField>
           </div>
