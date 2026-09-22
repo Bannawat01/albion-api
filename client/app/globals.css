@@ -299,7 +299,19 @@
   }
 
   .trade-control {
-    @apply block h-9 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary;
+    @apply block h-10 w-full rounded-lg border border-primary/25 bg-card/80 px-3 text-xs font-medium text-foreground shadow-inner shadow-black/15 outline-none transition hover:border-primary/50 hover:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  select.trade-control {
+    @apply cursor-pointer appearance-none pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d8b45a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.7rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem;
+  }
+
+  select.trade-control option {
+    @apply bg-card text-foreground;
   }
 
   .city-dot {

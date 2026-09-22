@@ -65,6 +65,12 @@ export type TradeRecommendationResponse = {
   recommendations: TradeRecommendation[]
 }
 
+export type MarketSnapshot = {
+  city: string
+  sellPrice: number
+  buyPrice: number
+}
+
 // API Functions
 const itemApi = {
   getItemImageUrl: (itemId: string, quality: number = 1, size: number = 64): string => {
@@ -141,6 +147,13 @@ const itemApi = {
       { signal }
     )
     return data
+  },
+  getItemMarkets: async (itemId: string, quality: number, signal?: AbortSignal): Promise<MarketSnapshot[]> => {
+    const { data } = await axiosInstance.get(
+      `/items/${encodeURIComponent(itemId)}/markets?quality=${quality}`,
+      { signal }
+    )
+    return data.markets
   },
   getGoldPrice: async () => {
     const { data } = await axiosInstance.get('/gold?count=50')

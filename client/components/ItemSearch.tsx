@@ -259,14 +259,23 @@ function TradeFinder({ item }: { item: ItemSummary }) {
   const [quality, setQuality] = useState(1)
   const [strategy, setStrategy] = useState<'list' | 'quick'>('list')
   const [mode, setMode] = useState<'profit' | 'safe' | 'balanced'>('profit')
+  const marketsQuery = useQuery({
+    queryKey: ['item-markets', item.uniqueName, quality],
+    queryFn: ({ signal }) => itemApi.getItemMarkets(item.uniqueName, quality, signal),
+    enabled: open,
+    staleTime: 60 * 1000,
+    retry: 1,
+  })
+  const sourceCities = marketsQuery.data?.filter(market => market.sellPrice > 0).map(market => market.city) ?? []
+  const selectedFrom = sourceCities.includes(from) ? from : sourceCities[0] ?? ''
   const tradeQuery = useQuery({
-    queryKey: ['trade-routes', item.uniqueName, from, qty, quality, strategy, mode],
+    queryKey: ['trade-routes', item.uniqueName, selectedFrom, qty, quality, strategy, mode],
     queryFn: ({ signal }) => itemApi.getTradeRecommendations(
       item.uniqueName,
-      { from, qty, quality, strategy, mode },
+      { from: selectedFrom, qty, quality, strategy, mode },
       signal
     ),
-    enabled: open,
+    enabled: open && !!selectedFrom,
     staleTime: 60 * 1000,
     retry: 1,
   })
@@ -288,8 +297,8 @@ function TradeFinder({ item }: { item: ItemSummary }) {
         <div className='mt-3 space-y-3 rounded-lg bg-background/45 p-3'>
           <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
             <TradeField label='Origin city'>
-              <select value={from} onChange={event => setFrom(event.target.value)} className='trade-control'>
-                {CITIES.map(city => <option key={city} value={city}>{city}</option>)}
+              <select value={selectedFrom} onChange={event => setFrom(event.target.value)} className='trade-control' disabled={!sourceCities.length}>
+                {sourceCities.map(city => <option key={city} value={city}>{city}</option>)}
               </select>
             </TradeField>
             <TradeField label='quantity'>
@@ -336,14 +345,18 @@ function TradeFinder({ item }: { item: ItemSummary }) {
             ))}
           </div>
 
-          {tradeQuery.isFetching && <p className='text-sm text-muted-foreground' role='status'>Calculating the latest price....</p>}
-          {tradeQuery.isError && <p className='text-sm text-red-300'>It's not yet possible to calculate. The city of origin may not have a price for this quality.</p>}
-          {!tradeQuery.isFetching && !tradeQuery.isError && routes.length === 0 && (
+          {(marketsQuery.isFetching || tradeQuery.isFetching) && <p className='text-sm text-muted-foreground' role='status'>Calculating the latest prices...</p>}
+          {marketsQuery.isError && <p className='text-sm text-red-300'>No market data is available for this quality yet.</p>}
+          {tradeQuery.isError && <p className='text-sm text-red-300'>The route could not be calculated. Please try again.</p>}
+          {!marketsQuery.isFetching && !marketsQuery.isError && !sourceCities.length && (
+            <p className='text-sm text-muted-foreground'>No city has a recent sell price for this quality.</p>
+          )}
+          {!marketsQuery.isFetching && !tradeQuery.isFetching && !marketsQuery.isError && !tradeQuery.isError && !!sourceCities.length && routes.length === 0 && (
             <p className='text-sm text-muted-foreground'>No profitable routes were found based on the latest data.</p>
           )}
           {!!routes.length && (
             <div className='space-y-2'>
-              {routes.map((route, index) => <TradeRoute key={route.city} route={route} rank={index + 1} from={from} />)}
+              {routes.map((route, index) => <TradeRoute key={route.city} route={route} rank={index + 1} from={selectedFrom} />)}
               <p className='text-[11px] text-muted-foreground'>Estimated after-tax price: 6.5% • Please check in-game prices before purchasing.</p>
             </div>
           )}
