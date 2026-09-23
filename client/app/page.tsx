@@ -39,7 +39,11 @@ export default function HomePage() {
             </div>
             <ItemSearch initialQuery={initialQuery} />
             <a href="https://pow.east.albion-online-data.com/" target="_blank" rel="noopener noreferrer" onClick={() => track('aodp_click')} className="aodp-cta">
-              <ShieldCheck className="h-5 w-5" /><span><b>{th ? 'ช่วยให้ราคา Asia สดขึ้น' : 'Help keep Asia prices fresh'}</b><small>{th ? 'เปิด AODP Client ขณะเล่น และเข้าดูตลาดในเกม' : 'Run the AODP Client while playing and browsing markets.'}</small></span>
+              <ShieldCheck className="h-5 w-5 shrink-0" />
+              <span className="flex min-w-0 flex-col">
+                <b>{th ? 'ช่วยให้ราคา Asia สดขึ้น' : 'Help keep Asia prices fresh'}</b>
+                <small className="mt-1 block text-xs font-normal leading-relaxed text-muted-foreground">{th ? 'เปิด AODP Client ขณะเล่น และเข้าดูตลาดในเกม' : 'Run the AODP Client while playing and browsing markets.'}</small>
+              </span>
             </a>
           </section>
         </div>
