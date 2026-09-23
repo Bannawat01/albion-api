@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { cn } from "@/lib/utils"
+import Link from 'next/link'
 
 interface PaginationControlsProps {
 	page: number
@@ -10,6 +11,7 @@ interface PaginationControlsProps {
 	onChange: (page: number) => void
 	showEdges?: boolean
 	siblingCount?: number
+	hrefForPage?: (page: number) => string
 }
 
 // Generate page numbers with ellipsis
@@ -25,7 +27,7 @@ function buildPages(current: number, total: number, siblingCount: number): (numb
 	return pages
 }
 
-export function PaginationControls({ page, totalPages, isFetching, onChange, showEdges = true, siblingCount = 1 }: PaginationControlsProps) {
+export function PaginationControls({ page, totalPages, isFetching, onChange, showEdges = true, siblingCount = 1, hrefForPage }: PaginationControlsProps) {
 	const pages = buildPages(page, totalPages, siblingCount)
 
 	const canPrev = page > 1
@@ -48,7 +50,9 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 	const renderNumber = (p: number | "...", index: number) => {
 		if (p === "...") return <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">…</span>
 		const active = p === page
-		return (
+		return hrefForPage ? (
+			<Link key={p} href={hrefForPage(p)} aria-label={`Go to page ${p}`} aria-current={active ? 'page' : undefined} onClick={() => onChange(p)} className={cn(btnBase, active ? "bg-primary text-primary-foreground border-primary/50 shadow-lg shadow-primary/25" : "glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground hover:shadow-md")}>{p}</Link>
+		) : (
 			<button
 				key={p}
 				type="button"

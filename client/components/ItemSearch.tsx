@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, BarChart3, ChevronDown, ImageOff, RefreshCw, Search, Share2, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
 import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
@@ -11,6 +12,7 @@ import PaginationControls from '@/components/pagination/PaginationControls'
 import { useWatchlist } from '@/hooks/useWatchlist'
 import { track } from '@/lib/analytics'
 import { useLanguage } from '@/hooks/useLanguage'
+import { usePathname } from 'next/navigation'
 
 type Metric = { sellMin: number | null; buyMax: number | null; updatedAt: string | null }
 export type CityMap = Record<string, Metric>
@@ -47,11 +49,12 @@ export function cityMap(rows: any[]): CityMap {
   return result
 }
 
-export default function ItemSearch({ initialQuery = '' }: { initialQuery?: string }) {
-  const { th } = useLanguage()
+export default function ItemSearch({ initialQuery = '', initialPage = 1, locale }: { initialQuery?: string; initialPage?: number; locale?: 'th' | 'en' }) {
+  const storedLanguage = useLanguage()
+  const th = locale ? locale === 'th' : storedLanguage.th
   const [query, setQuery] = useState(initialQuery)
   const search = useDebounce(query.trim(), 250)
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(initialPage)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
   const watchlist = useWatchlist()
   const { data, isFetching, isError, error } = useSearchItems(search || undefined, page, 12)
@@ -175,12 +178,13 @@ export default function ItemSearch({ initialQuery = '' }: { initialQuery?: strin
         </div>
       )}
 
-      {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} isFetching={isFetching} onChange={changePage} />}
+      {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} isFetching={isFetching} onChange={changePage} hrefForPage={(value) => `/${locale || (th ? 'th' : 'en')}?page=${value}${search ? `&q=${encodeURIComponent(search)}` : ''}`} />}
     </div>
   )
 }
 
 export function ItemCard({ item, prices, cities, loading, imagePriority, watched = false, onToggleWatchlist }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean; imagePriority: boolean; watched?: boolean; onToggleWatchlist?: (item: ItemSummary) => void }) {
+  const locale = usePathname().startsWith('/en') ? 'en' : 'th'
   const rows = cities.flatMap((city) => {
     const metric = prices?.[city]
     return metric && (metric.sellMin || metric.buyMax) ? [{ city, ...metric }] : []
@@ -198,7 +202,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
         <ItemImage item={item} priority={imagePriority} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
-            <h3 className="min-w-0 flex-1 truncate text-lg font-semibold">{item.name}</h3>
+            <h3 className="min-w-0 flex-1 truncate text-lg font-semibold"><Link href={`/${locale}/item/${encodeURIComponent(item.uniqueName)}`} className="hover:text-primary">{item.name}</Link></h3>
             {onToggleWatchlist && (
               <button type="button" onClick={() => onToggleWatchlist(item)} className={'watchlist-button' + (watched ? ' is-active' : '')} aria-label={watched ? `Remove ${item.name} from watchlist` : `Add ${item.name} to watchlist`} aria-pressed={watched}>
                 <Star className="h-4 w-4" fill={watched ? 'currentColor' : 'none'} />
