@@ -9,8 +9,7 @@ export function validAnalyticsEvent(body: unknown): body is { event: string; vis
   return !!value && EVENTS.has(String(value.event)) && ID_RE.test(String(value.visitorId)) && String(value.path || '').length <= 200
 }
 
-export const analyticsController = new Elysia({ prefix: '/api/analytics' })
-  .post('/event', async ({ body, set }) => {
+const saveEvent = async ({ body, set }: { body: unknown; set: { status?: number | string } }) => {
     if (!validAnalyticsEvent(body)) {
       set.status = 400
       return { success: false }
@@ -24,8 +23,12 @@ export const analyticsController = new Elysia({ prefix: '/api/analytics' })
       expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     })
     set.status = 204
-  })
-  .get('/weekly', async ({ request, set }) => {
+}
+
+export const analyticsController = new Elysia({ prefix: '/api' })
+  .post('/events', saveEvent)
+  .post('/analytics/event', saveEvent)
+  .get('/analytics/weekly', async ({ request, set }) => {
     const key = Bun.env.ANALYTICS_KEY
     if (!key || request.headers.get('x-analytics-key') !== key) {
       set.status = 404

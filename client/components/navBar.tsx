@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CircleHelp, Coins, List, Star, TrendingUp } from 'lucide-react'
 const links = [
-  { path: '', en: 'Items', th: 'สินค้า', icon: List },
-  { path: '/opportunities', en: 'Opportunities', th: 'โอกาสวันนี้', icon: TrendingUp },
-  { path: '/watchlist', en: 'Watchlist', th: 'รายการโปรด', icon: Star },
-  { path: '/gold', en: 'Gold', th: 'ตลาดทอง', icon: Coins },
-  { path: '/about', en: 'About', th: 'เกี่ยวกับเรา', icon: CircleHelp },
+  { path: '', en: 'Items', th: 'สินค้า', mobileEn: 'Items', mobileTh: 'สินค้า', icon: List },
+  { path: '/opportunities', en: 'Opportunities', th: 'โอกาสวันนี้', mobileEn: 'Deals', mobileTh: 'โอกาส', icon: TrendingUp },
+  { path: '/watchlist', en: 'Watchlist', th: 'รายการโปรด', mobileEn: 'Saved', mobileTh: 'โปรด', icon: Star },
+  { path: '/gold', en: 'Gold', th: 'ตลาดทอง', mobileEn: 'Gold', mobileTh: 'ทอง', icon: Coins },
+  { path: '/about', en: 'About', th: 'เกี่ยวกับเรา', mobileEn: 'About', mobileTh: 'ข้อมูล', icon: CircleHelp },
 ]
 
 export default function NavBar() {
@@ -37,10 +37,10 @@ export default function NavBar() {
         <Link href={`/${locale === 'th' ? 'en' : 'th'}${localizedPath}`} className="language-toggle" aria-label="Switch language">{locale === 'th' ? 'EN' : 'ไทย'}</Link>
       </header>
       <nav className="mobile-nav" aria-label="Mobile navigation">
-        {links.map(({ path, en, th, icon: Icon }) => {
+        {links.map(({ path, mobileEn, mobileTh, icon: Icon }) => {
           const href = `/${locale}${path}`
           return <Link key={path} href={href} className={pathname === href ? 'is-active' : ''} aria-current={pathname === href ? 'page' : undefined}>
-            <Icon className="h-5 w-5" /><span>{locale === 'th' ? th : en}</span>
+            <Icon className="h-5 w-5" /><span>{locale === 'th' ? mobileTh : mobileEn}</span>
           </Link>
         })}
       </nav>

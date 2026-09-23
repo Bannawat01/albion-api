@@ -12,6 +12,6 @@ export function track(event: 'page_view' | 'search' | 'history_open' | 'route_op
       localStorage.setItem(VISITOR_KEY, visitorId)
     }
     const payload = JSON.stringify({ event, visitorId, path: location.pathname })
-    fetch(createApiUrl('/analytics/event'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {})
+    fetch(createApiUrl('/events'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(() => {})
   } catch {}
 }

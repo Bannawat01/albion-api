@@ -13,6 +13,7 @@ import { useWatchlist } from '@/hooks/useWatchlist'
 import { track } from '@/lib/analytics'
 import { useLanguage } from '@/hooks/useLanguage'
 import { usePathname } from 'next/navigation'
+import PrettySelect from './PrettySelect'
 
 type Metric = { sellMin: number | null; buyMax: number | null; updatedAt: string | null }
 export type CityMap = Record<string, Metric>
@@ -377,34 +378,24 @@ function TradeFinder({ item }: { item: ItemSummary }) {
         <div className='mt-3 space-y-3 rounded-lg bg-background/45 p-3'>
           <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
             <TradeField label='Origin city'>
-              <select value={selectedFrom} onChange={event => setFrom(event.target.value)} className='trade-control' disabled={!sourceCities.length}>
-                {sourceCities.map(city => <option key={city} value={city}>{city}</option>)}
-              </select>
+              <PrettySelect label='Origin city' value={selectedFrom} onChange={setFrom} disabled={!sourceCities.length} options={sourceCities.map(city => ({ value: city, label: city }))} />
             </TradeField>
             <TradeField label='quantity'>
               <input
                 type='number'
                 min={1}
                 max={10000}
+                aria-label='Quantity'
                 value={qty}
                 onChange={event => setQty(Math.min(10000, Math.max(1, Number(event.target.value) || 1)))}
                 className='trade-control'
               />
             </TradeField>
             <TradeField label='quality'>
-              <select value={quality} onChange={event => setQuality(Number(event.target.value))} className='trade-control'>
-                <option value={1}>1 Normal</option>
-                <option value={2}>2 Good</option>
-                <option value={3}>3 Outstanding</option>
-                <option value={4}>4 Excellent</option>
-                <option value={5}>5 Masterpiece</option>
-              </select>
+              <PrettySelect label='Quality' value={String(quality)} onChange={value => setQuality(Number(value))} options={['Normal', 'Good', 'Outstanding', 'Excellent', 'Masterpiece'].map((label, index) => ({ value: String(index + 1), label: `${index + 1} ${label}` }))} />
             </TradeField>
             <TradeField label='How to sell'>
-              <select value={strategy} onChange={event => setStrategy(event.target.value as 'list' | 'quick')} className='trade-control'>
-                <option value='list'>List for sale</option>
-                <option value='quick'>Sell ​​immediately</option>
-              </select>
+              <PrettySelect label='How to sell' value={strategy} onChange={value => setStrategy(value as 'list' | 'quick')} options={[{ value: 'list', label: 'List for sale' }, { value: 'quick', label: 'Sell immediately' }]} />
             </TradeField>
           </div>
           <div className='flex flex-wrap gap-2' aria-label='Ranking format'>
@@ -457,7 +448,7 @@ async function shareItem(item: ItemSummary) {
 }
 
 function TradeField({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className='space-y-1 text-xs text-muted-foreground'><span>{label}</span>{children}</label>
+  return <div className='space-y-1 text-xs text-muted-foreground'><span>{label}</span>{children}</div>
 }
 
 function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation; rank: number; from: string; locale: 'th' | 'en' }) {
