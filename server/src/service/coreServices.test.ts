@@ -3,6 +3,7 @@ import { PaginationService } from './paginationService'
 import { TTLCache } from './timeToLive'
 import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './priceAdvisoryService'
 import { summarizeHistory } from '../controller/recommendationController'
+import { validAnalyticsEvent } from '../controller/analyticsController'
 
 describe('PaginationService', () => {
   it('normalizes unsafe pagination values', () => {
@@ -109,5 +110,12 @@ describe('market history', () => {
     expect(result.totalVolume).toBe(50)
     expect(result.averageDailyVolume).toBe(25)
     expect(result.averagePrice).toBe(260)
+  })
+})
+
+describe('analytics privacy boundary', () => {
+  it('accepts only known events with anonymous browser ids', () => {
+    expect(validAnalyticsEvent({ event: 'search', visitorId: '12345678-1234-1234-1234-123456789abc', path: '/' })).toBe(true)
+    expect(validAnalyticsEvent({ event: 'email', visitorId: 'me@example.com' })).toBe(false)
   })
 })

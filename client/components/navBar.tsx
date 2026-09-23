@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CircleHelp, Coins, List, Star } from 'lucide-react'
 import { UserProfile } from '@/components/UserProfile'
+import { useLanguage } from '@/hooks/useLanguage'
 
 const links = [
   { href: '/', label: 'Items', icon: List },
@@ -16,6 +17,7 @@ const links = [
 export default function NavBar() {
   useEffect(() => document.documentElement.classList.add('dark'), [])
   const pathname = usePathname()
+  const { th, toggle } = useLanguage()
 
   return (
     <>
@@ -28,16 +30,17 @@ export default function NavBar() {
         <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main navigation">
           {links.map(({ href, label, icon: Icon }) => (
             <Link key={href} href={href} className={'nav-link ' + (pathname === href ? 'is-active' : '')} aria-current={pathname === href ? 'page' : undefined}>
-              <Icon className="h-4 w-4" /> {label}
+              <Icon className="h-4 w-4" /> {th ? ({ Items: 'สินค้า', Watchlist: 'รายการโปรด', Gold: 'ตลาดทอง', About: 'เกี่ยวกับเรา' }[label] || label) : label}
             </Link>
           ))}
         </nav>
+        <button type="button" onClick={toggle} className="language-toggle" aria-label="Switch language">{th ? 'EN' : 'ไทย'}</button>
         <div className="shrink-0 md:ml-2"><UserProfile /></div>
       </header>
       <nav className="mobile-nav" aria-label="Mobile navigation">
         {links.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className={pathname === href ? 'is-active' : ''} aria-current={pathname === href ? 'page' : undefined}>
-            <Icon className="h-5 w-5" /><span>{label}</span>
+            <Icon className="h-5 w-5" /><span>{th ? ({ Items: 'สินค้า', Watchlist: 'โปรด', Gold: 'ทอง', About: 'ข้อมูล' }[label] || label) : label}</span>
           </Link>
         ))}
       </nav>

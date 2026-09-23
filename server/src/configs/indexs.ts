@@ -6,5 +6,9 @@ export const INDEX_DEFINITIONS = {
     oauth_states: [
         { fields: { state: 1 }, options: { unique: true } },
         { fields: { expiresAt: 1 }, options: { expireAfterSeconds: 0 } }
+    ],
+    analytics_events: [
+        { fields: { createdAt: 1, visitorId: 1 }, options: {} },
+        { fields: { expiresAt: 1 }, options: { expireAfterSeconds: 0 } }
     ]
 }

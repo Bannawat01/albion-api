@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import type { ItemSummary } from '@/api'
+import { track } from '@/lib/analytics'
 
 const STORAGE_KEY = 'albion-market-watchlist-v1'
 const CHANGE_EVENT = 'albion-watchlist-change'
@@ -41,6 +42,7 @@ export function useWatchlist() {
   const toggle = useCallback((item: ItemSummary) => {
     const current = parseWatchlist(localStorage.getItem(STORAGE_KEY))
     const exists = current.some(saved => saved.uniqueName === item.uniqueName)
+    if (!exists) track('watchlist_add')
     const next = exists ? current.filter(saved => saved.uniqueName !== item.uniqueName) : [item, ...current].slice(0, WATCHLIST_LIMIT)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     window.dispatchEvent(new Event(CHANGE_EVENT))

@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, BarChart3, ChevronDown, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, BarChart3, ChevronDown, ImageOff, RefreshCw, Search, Share2, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
 import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { rowsFrom } from '@/helpers/helperItem'
 import PaginationControls from '@/components/pagination/PaginationControls'
 import { useWatchlist } from '@/hooks/useWatchlist'
+import { track } from '@/lib/analytics'
+import { useLanguage } from '@/hooks/useLanguage'
 
 type Metric = { sellMin: number | null; buyMax: number | null; updatedAt: string | null }
 export type CityMap = Record<string, Metric>
@@ -45,8 +47,9 @@ export function cityMap(rows: any[]): CityMap {
   return result
 }
 
-export default function ItemSearch() {
-  const [query, setQuery] = useState('')
+export default function ItemSearch({ initialQuery = '' }: { initialQuery?: string }) {
+  const { th } = useLanguage()
+  const [query, setQuery] = useState(initialQuery)
   const search = useDebounce(query.trim(), 250)
   const [page, setPage] = useState(1)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
@@ -58,6 +61,9 @@ export default function ItemSearch() {
   const totalPages = pagination?.totalPages ?? 1
 
   useEffect(() => setPage(1), [search])
+  useEffect(() => {
+    if (search.length >= 2) track('search')
+  }, [search])
 
   const itemIds = useMemo(() => items.map((item) => item.uniqueName), [items])
   const priceQuery = useQuery({
@@ -109,8 +115,8 @@ export default function ItemSearch() {
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search: sword, bag, potion..."
-          aria-label="Search Albion items"
+          placeholder={th ? 'ค้นหา: ดาบ กระเป๋า โพชัน...' : 'Search: sword, bag, potion...'}
+          aria-label={th ? 'ค้นหาไอเทม Albion' : 'Search Albion items'}
           autoComplete="off"
         />
         {query && (
@@ -124,12 +130,12 @@ export default function ItemSearch() {
       <section className="city-filter" aria-labelledby="city-filter-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="city-filter-title" className="flex items-center gap-2 text-sm font-semibold">
-            <SlidersHorizontal className="h-4 w-4 text-primary" /> Markets
+            <SlidersHorizontal className="h-4 w-4 text-primary" /> {th ? 'เมืองที่ต้องการดู' : 'Markets'}
           </h2>
           <div className="flex gap-2 text-xs">
-            <button type="button" onClick={() => setSelectedCities(new Set(CITIES))} className="text-primary hover:underline">Select all</button>
+            <button type="button" onClick={() => setSelectedCities(new Set(CITIES))} className="text-primary hover:underline">{th ? 'เลือกทั้งหมด' : 'Select all'}</button>
             <span className="text-border">|</span>
-            <button type="button" onClick={() => setSelectedCities(new Set())} className="text-muted-foreground hover:text-foreground">Clear</button>
+            <button type="button" onClick={() => setSelectedCities(new Set())} className="text-muted-foreground hover:text-foreground">{th ? 'ล้าง' : 'Clear'}</button>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -152,8 +158,8 @@ export default function ItemSearch() {
 
       <div id="market-results" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-primary">Market results</p>
-          <h2 className="mt-1 text-xl font-semibold">{search ? 'Matches for "' + search + '"' : 'Browse all items'}</h2>
+          <p className="text-xs uppercase tracking-[0.22em] text-primary">{th ? 'ผลการค้นหา' : 'Market results'}</p>
+          <h2 className="mt-1 text-xl font-semibold">{search ? (th ? `ผลลัพธ์สำหรับ “${search}”` : `Matches for "${search}"`) : (th ? 'เลือกดูสินค้าทั้งหมด' : 'Browse all items')}</h2>
         </div>
         {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString()} items | Page {page} of {totalPages}</p>}
       </div>
@@ -198,6 +204,9 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
                 <Star className="h-4 w-4" fill={watched ? 'currentColor' : 'none'} />
               </button>
             )}
+            <button type="button" onClick={() => shareItem(item)} className="watchlist-button" aria-label={`Share ${item.name}`}>
+              <Share2 className="h-4 w-4" />
+            </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
           <p className={'mt-1 text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>
@@ -241,7 +250,7 @@ function MarketHistory({ item, city }: { item: ItemSummary; city: string }) {
 
   return (
     <div className="market-history">
-      <button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open}>
+      <button type="button" onClick={() => setOpen(value => { if (!value) track('history_open'); return !value })} aria-expanded={open}>
         <BarChart3 className="h-4 w-4" aria-hidden="true" />
         {open ? 'Hide 7-day market pulse' : 'View 7-day market pulse'}
         <ChevronDown className="ml-auto h-4 w-4" aria-hidden="true" />
@@ -350,7 +359,7 @@ function TradeFinder({ item }: { item: ItemSummary }) {
     <div className='mt-4 border-t border-primary/20 pt-3'>
       <button
         type='button'
-        onClick={() => setOpen(value => !value)}
+        onClick={() => setOpen(value => { if (!value) track('route_open'); return !value })}
         aria-expanded={open}
         className='flex w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20'
       >
@@ -429,6 +438,15 @@ function TradeFinder({ item }: { item: ItemSummary }) {
       )}
     </div>
   )
+}
+
+async function shareItem(item: ItemSummary) {
+  const url = new URL(`/item/${encodeURIComponent(item.uniqueName)}`, location.origin)
+  try {
+    if (navigator.share) await navigator.share({ title: item.name, text: `Albion Asia price: ${item.name}`, url: url.toString() })
+    else await navigator.clipboard.writeText(url.toString())
+    track('share')
+  } catch {}
 }
 
 function TradeField({ label, children }: { label: string; children: React.ReactNode }) {

@@ -195,6 +195,10 @@
   }
 
   .server-seal { @apply inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary; }
+  .language-toggle { @apply inline-flex h-8 min-w-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 px-2 text-xs font-bold text-primary transition hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring; }
+  .aodp-cta { @apply mt-5 flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-emerald-300 transition hover:border-emerald-500/40 hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400; }
+  .aodp-cta span { @apply flex flex-col; }
+  .aodp-cta small { @apply mt-0.5 text-xs font-normal text-muted-foreground; }
   .server-seal span { @apply h-1.5 w-1.5 rounded-full bg-emerald-400; }
 
   .mobile-nav {

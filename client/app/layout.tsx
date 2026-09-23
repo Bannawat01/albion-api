@@ -4,6 +4,7 @@ import QueryProvider from '../hooks/QueryProvider'
 import { AuthProvider } from '@/contexts/AuthContext'
 import NavBar from '@/components/navBar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import Analytics from '@/components/Analytics'
 
 export const metadata: Metadata = {
   title: 'Albion Market Ledger',
@@ -17,12 +18,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="th" className="dark">
       <body className="bg-background text-foreground flex min-h-screen flex-col pb-16 font-sans antialiased md:pb-0">
         <ErrorBoundary>
           <QueryProvider>
             <AuthProvider>
               <NavBar />
+              <Analytics />
               <main className="flex-1">{children}</main>
               <footer className="mt-auto w-full border-t border-primary/15 bg-card/60 px-4 py-6 text-center">
                 <p className="text-sm text-muted-foreground">&copy; 2026 Albion Market Ledger · Asia Server</p>

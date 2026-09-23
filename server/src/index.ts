@@ -4,6 +4,7 @@ import { tlsConfig } from "./configs/tls"
 import { itemController } from "./controller/itemController"
 import { goldController } from "./controller/goldController"
 import { recommendationController } from "./controller/recommendationController"
+import { analyticsController } from "./controller/analyticsController"
 import { errorHandler } from "./middleware/errorHandler"
 import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
@@ -49,6 +50,7 @@ const app = new Elysia()
     .use(goldController)
     .use(OauthController)
     .use(recommendationController)
+    .use(analyticsController)
     .get('/health/database', async () => {
         const healthStatus = await DatabaseManager.getInstance().healthCheck()
         return healthStatus
