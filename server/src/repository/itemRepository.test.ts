@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
-import { ItemRepository } from './itemRepository'
+import { ItemRepository, rankByPopularity } from './itemRepository'
 
 const realFetch = globalThis.fetch
 let priceCalls = 0
@@ -54,4 +54,8 @@ describe('ItemRepository batch prices', () => {
     expect(first.T4_CAPE[0]?.sell_Price_Min).toBe(200)
     expect(second).toEqual(first)
   })
+})
+
+it('ranks popular items first without changing ties', () => {
+  expect(rankByPopularity(['A', 'B', 'C'], new Map([['B', 3]]))).toEqual(['B', 'A', 'C'])
 })

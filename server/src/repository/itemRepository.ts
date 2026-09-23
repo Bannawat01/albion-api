@@ -9,6 +9,12 @@ import type { ValidatedPaginationParams } from '../types/paginationType'
 import { MAX_BATCH_IDS } from '../service/validation'
 import { albionDataBaseUrl } from '../configs/runtime'
 
+export function rankByPopularity(items: string[], counts: Map<string, number>): string[] {
+    return items.map((id, index) => ({ id, index }))
+        .sort((a, b) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0) || a.index - b.index)
+        .map(item => item.id)
+}
+
 // Upstream fetch timeout (ms). Prevents a hung remote from stalling requests.
 const UPSTREAM_TIMEOUT_MS = 10000
 
@@ -362,6 +368,12 @@ export class ItemRepository {
                     items = this.lowercaseIndex.filter(e => e.nameLower.includes(q) || e.uniqueLower.includes(q)).map(e => e.id)
                 }
             }
+            if (searchTerm && items.length <= params.limit) {
+                for (const itemId of items) this.popularItems.set(itemId, this.getItemSearchCount(itemId) + 1)
+                this.pageCache.clear()
+            }
+            // ponytail: popularity is process-local; move counts to Mongo only when restarts measurably distort rankings.
+            items = rankByPopularity(items, this.popularItems)
             // คำนวณ total items
             const totalItems = items.length
 
