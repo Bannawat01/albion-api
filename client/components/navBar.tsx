@@ -36,7 +36,7 @@ export default function NavBar() {
         </nav>
         <Link href={`/${locale === 'th' ? 'en' : 'th'}${localizedPath}`} className="language-toggle" aria-label="Switch language">{locale === 'th' ? 'EN' : 'ไทย'}</Link>
       </header>
-      <nav className="mobile-nav" aria-label="Mobile navigation">
+      <nav className="mobile-nav" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }} aria-label="Mobile navigation">
         {links.map(({ path, mobileEn, mobileTh, icon: Icon }) => {
           const href = `/${locale}${path}`
           return <Link key={path} href={href} className={pathname === href ? 'is-active' : ''} aria-current={pathname === href ? 'page' : undefined}>
