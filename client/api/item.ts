@@ -71,6 +71,16 @@ export type MarketSnapshot = {
   buyPrice: number
 }
 
+export type MarketHistory = {
+  itemId: string
+  city: string
+  quality: number
+  totalVolume: number
+  averageDailyVolume: number
+  averagePrice: number
+  points: { date: string; volume: number; averagePrice: number }[]
+}
+
 // API Functions
 const itemApi = {
   getItemImageUrl: (itemId: string, quality: number = 1, size: number = 64): string => {
@@ -154,6 +164,11 @@ const itemApi = {
       { signal }
     )
     return data.markets
+  },
+  getItemHistory: async (itemId: string, city: string, signal?: AbortSignal): Promise<MarketHistory> => {
+    const query = new URLSearchParams({ city, quality: '1', days: '7' })
+    const { data } = await axiosInstance.get(`/items/${encodeURIComponent(itemId)}/history?${query}`, { signal })
+    return data
   },
   getGoldPrice: async () => {
     const { data } = await axiosInstance.get('/gold?count=50')

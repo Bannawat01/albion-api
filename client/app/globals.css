@@ -340,6 +340,20 @@
   .market-details summary svg { @apply transition-transform; }
   .market-details[open] summary svg { transform: rotate(180deg); }
 
+  .market-history { @apply mt-3 border-t border-border/70 pt-3; }
+  .market-history > button { @apply flex w-full items-center gap-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring; }
+  .market-history > button[aria-expanded="true"] { @apply text-primary; }
+  .market-history > button[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+  .market-history-panel { @apply mt-3 rounded-lg border border-primary/15 bg-background/40 p-3 text-xs text-muted-foreground; }
+  .history-stats { @apply grid grid-cols-3 gap-2 text-center; }
+  .history-stats span { @apply rounded-md bg-secondary/40 px-1 py-2; }
+  .history-stats b { @apply mt-1 block text-sm text-foreground; }
+  .history-bars { @apply mt-4 flex h-20 items-end gap-2 border-b border-primary/20 px-1; }
+  .history-bars > div { @apply flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1; }
+  .history-bars i { @apply block w-full max-w-8 rounded-t-sm bg-emerald-500/70; }
+  .history-bars small { @apply text-[9px] text-muted-foreground; }
+  .history-note { @apply mt-2 text-center text-[10px]; }
+
   .trade-control {
     @apply block h-10 w-full rounded-lg border border-primary/25 bg-card/80 px-3 text-xs font-medium text-foreground shadow-inner shadow-black/15 outline-none transition hover:border-primary/50 hover:bg-card focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50;
   }

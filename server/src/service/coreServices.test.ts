@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { PaginationService } from './paginationService'
 import { TTLCache } from './timeToLive'
 import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './priceAdvisoryService'
+import { summarizeHistory } from '../controller/recommendationController'
 
 describe('PaginationService', () => {
   it('normalizes unsafe pagination values', () => {
@@ -94,5 +95,19 @@ describe('PriceAdvisoryService', () => {
     expect(martlock?.purchaseCost).toBe(100)
     expect(martlock?.netProfit).toBeCloseTo(68.3)
     expect(martlock?.profitPercent).toBeCloseTo(68.3)
+  })
+})
+
+describe('market history', () => {
+  it('keeps the latest days and calculates volume-weighted totals', () => {
+    const result = summarizeHistory([
+      { item_count: 10, avg_price: 100, timestamp: '2026-09-20T00:00:00' },
+      { item_count: 20, avg_price: 200, timestamp: '2026-09-21T00:00:00' },
+      { item_count: 30, avg_price: 300, timestamp: '2026-09-22T00:00:00' },
+    ], 2)
+    expect(result.points.map(point => point.date)).toEqual(['2026-09-21T00:00:00', '2026-09-22T00:00:00'])
+    expect(result.totalVolume).toBe(50)
+    expect(result.averageDailyVolume).toBe(25)
+    expect(result.averagePrice).toBe(260)
   })
 })

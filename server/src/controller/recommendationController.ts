@@ -1,6 +1,26 @@
 import Elysia from 'elysia'
 import { PriceAdvisoryService } from '../service/priceAdvisoryService'
-import { assertValidItemId } from '../service/validation'
+import { assertValidItemId, validateCities } from '../service/validation'
+import { albionDataBaseUrl } from '../configs/runtime'
+import { ExternalApiError } from '../middleware/customError'
+
+type HistoryPoint = { item_count: number; avg_price: number; timestamp: string }
+
+export function summarizeHistory(points: HistoryPoint[], days: number) {
+  const data = points
+    .filter(point => point.item_count >= 0 && point.avg_price >= 0 && point.timestamp)
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    .slice(-days)
+    .map(point => ({ date: point.timestamp, volume: point.item_count, averagePrice: point.avg_price }))
+  const totalVolume = data.reduce((sum, point) => sum + point.volume, 0)
+  const pricedVolume = data.reduce((sum, point) => sum + (point.averagePrice * point.volume), 0)
+  return {
+    points: data,
+    totalVolume,
+    averageDailyVolume: data.length ? Math.round(totalVolume / data.length) : 0,
+    averagePrice: totalVolume ? Math.round(pricedVolume / totalVolume) : 0,
+  }
+}
 
 // Simple in-memory cache (optional initial) for market snapshots
 interface CacheEntry<T> { data: T; expires: number }
@@ -18,6 +38,28 @@ function setCached<T>(key: string, data: T, ttl = MARKET_TTL_MS) {
 }
 
 export const recommendationController = new Elysia({ prefix: '/api' })
+  .get('/items/:id/history', async ({ params, query }) => {
+    const { id } = params as { id: string }
+    assertValidItemId(id)
+    const city = validateCities(query.city) || 'Bridgewatch'
+    const quality = Math.min(5, Math.max(1, parseInt(query.quality as string) || 1))
+    const days = Math.min(30, Math.max(1, parseInt(query.days as string) || 7))
+    const cacheKey = `history:${id}:${city}:${quality}:${days}`
+    const cached = getCached<ReturnType<typeof summarizeHistory>>(cacheKey)
+    if (cached) return { itemId: id, city, quality, ...cached }
+
+    try {
+      const url = `${albionDataBaseUrl}/api/v2/stats/history/${encodeURIComponent(id)}.json?locations=${encodeURIComponent(city)}&qualities=${quality}&time-scale=24`
+      const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
+      if (!response.ok) throw new Error(`History API returned ${response.status}`)
+      const rows = await response.json() as Array<{ data?: HistoryPoint[] }>
+      const summary = summarizeHistory(rows[0]?.data ?? [], days)
+      setCached(cacheKey, summary)
+      return { itemId: id, city, quality, ...summary }
+    } catch (error) {
+      throw new ExternalApiError(error instanceof Error ? error.message : 'Unable to fetch market history')
+    }
+  })
   .get('/items/:id/markets', async ({ params, query, set }) => {
     const { id } = params as { id: string }
     assertValidItemId(id)

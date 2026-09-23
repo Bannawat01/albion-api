@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, ChevronDown, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
+import { ArrowRight, BarChart3, ChevronDown, ImageOff, RefreshCw, Search, SlidersHorizontal, Sparkles, Star, X } from 'lucide-react'
 import { itemApi, useSearchItems, type ItemSummary, type TradeRecommendation } from '@/api'
 import { useDebounce } from '@/hooks/useDebounce'
 import { rowsFrom } from '@/helpers/helperItem'
@@ -222,8 +222,56 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
           )) : <p className="text-sm text-muted-foreground">No recent prices in selected markets.</p>}
         </div>
       </details>
+      <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} />
       <TradeFinder item={item} />
     </article>
+  )
+}
+
+function MarketHistory({ item, city }: { item: ItemSummary; city: string }) {
+  const [open, setOpen] = useState(false)
+  const history = useQuery({
+    queryKey: ['item-history', item.uniqueName, city],
+    queryFn: ({ signal }) => itemApi.getItemHistory(item.uniqueName, city, signal),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+  const maxVolume = Math.max(...(history.data?.points.map(point => point.volume) ?? [1]), 1)
+
+  return (
+    <div className="market-history">
+      <button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open}>
+        <BarChart3 className="h-4 w-4" aria-hidden="true" />
+        {open ? 'Hide 7-day market pulse' : 'View 7-day market pulse'}
+        <ChevronDown className="ml-auto h-4 w-4" aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="market-history-panel">
+          {history.isFetching && <p role="status">Loading history...</p>}
+          {history.isError && <p className="text-red-300">Price history is unavailable right now.</p>}
+          {history.data && history.data.points.length > 0 && (
+            <>
+              <div className="history-stats">
+                <span>7-day volume <b>{history.data.totalVolume.toLocaleString()}</b></span>
+                <span>Sold / day <b>{history.data.averageDailyVolume.toLocaleString()}</b></span>
+                <span>Average price <b>{history.data.averagePrice.toLocaleString()}</b></span>
+              </div>
+              <div className="history-bars" aria-label={`Daily sales volume in ${city}`}>
+                {history.data.points.map(point => (
+                  <div key={point.date} title={`${new Date(point.date).toLocaleDateString()}: ${point.volume.toLocaleString()} sold at ${point.averagePrice.toLocaleString()} average`}>
+                    <i style={{ height: `${Math.max(8, point.volume / maxVolume * 100)}%` }} />
+                    <small>{new Date(point.date).toLocaleDateString(undefined, { weekday: 'short' })}</small>
+                  </div>
+                ))}
+              </div>
+              <p className="history-note">{city} · Daily player-reported sales</p>
+            </>
+          )}
+          {history.data && history.data.points.length === 0 && <p>No sales history found for {city}.</p>}
+        </div>
+      )}
+    </div>
   )
 }
 
