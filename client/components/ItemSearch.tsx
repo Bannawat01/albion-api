@@ -347,7 +347,7 @@ function TradeFinder({ item }: { item: ItemSummary }) {
     staleTime: 60 * 1000,
     retry: 1,
   })
-  const sourceCities = marketsQuery.data?.filter(market => market.sellPrice > 0).map(market => market.city) ?? []
+  const sourceCities = marketsQuery.data?.filter(source => source.sellPrice > 0 && marketsQuery.data?.some(target => target.city !== source.city && (strategy === 'quick' ? target.buyPrice > 0 : target.sellPrice > 0))).map(market => market.city) ?? []
   const selectedFrom = sourceCities.includes(from) ? from : sourceCities[0] ?? ''
   const tradeQuery = useQuery({
     queryKey: ['trade-routes', item.uniqueName, selectedFrom, qty, quality, strategy, mode, includeOld],
@@ -421,7 +421,7 @@ function TradeFinder({ item }: { item: ItemSummary }) {
           {marketsQuery.isError && <p className='text-sm text-red-300'>No market data is available for this quality yet.</p>}
           {tradeQuery.isError && <p className='text-sm text-red-300'>The route could not be calculated. Please try again.</p>}
           {!marketsQuery.isFetching && !marketsQuery.isError && !sourceCities.length && (
-            <p className='text-sm text-muted-foreground'>No city has a recent sell price for this quality.</p>
+            <p className='text-sm text-muted-foreground'>{th ? 'ยังไม่มีคู่เมืองที่มีทั้งราคาซื้อและราคาขายสำหรับคุณภาพนี้' : 'No city pair has both the required buy and sell prices for this quality.'}</p>
           )}
           {!marketsQuery.isFetching && !tradeQuery.isFetching && !marketsQuery.isError && !tradeQuery.isError && !!sourceCities.length && routes.length === 0 && (
             <p className='text-sm text-muted-foreground'>No profitable routes were found based on the latest data.</p>
