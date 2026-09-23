@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   },
   description: 'เช็กราคา Albion Online Asia ทุกเมือง ดูประวัติราคา ปริมาณซื้อขาย และหาเส้นทางซื้อขายทำกำไร อัปเดตจากข้อมูลผู้เล่น',
   keywords: ['Albion Online market', 'Albion Asia price', 'ราคา Albion Online', 'ตลาด Albion', 'Albion trade route'],
+  verification: { other: { 'msvalidate.01': '7E2B98BB58F4B63AE79EC39D08F4D4D6' } },
   openGraph: {
     type: 'website',
     locale: 'th_TH',
