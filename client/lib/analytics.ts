@@ -4,7 +4,7 @@ import { createApiUrl } from '@/api'
 
 const VISITOR_KEY = 'albion-market-anonymous-id-v1'
 
-export function track(event: 'page_view' | 'search' | 'history_open' | 'route_open' | 'watchlist_add' | 'share' | 'aodp_click' | 'donate_click') {
+export function track(event: 'page_view' | 'search' | 'history_open' | 'route_open' | 'watchlist_add' | 'share' | 'aodp_click' | 'donate_click' | 'opportunities_view' | 'opportunity_filter' | 'opportunity_open') {
   try {
     let visitorId = localStorage.getItem(VISITOR_KEY)
     if (!visitorId) {

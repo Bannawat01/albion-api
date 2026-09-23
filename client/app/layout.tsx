@@ -1,10 +1,13 @@
 import type { Metadata } from 'next'
+import { Noto_Sans_Thai, Noto_Serif_Thai } from 'next/font/google'
 import './globals.css'
 import QueryProvider from '../hooks/QueryProvider'
-import { AuthProvider } from '@/contexts/AuthContext'
 import NavBar from '@/components/navBar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import Analytics from '@/components/Analytics'
+
+const sans = Noto_Sans_Thai({ subsets: ['thai', 'latin'], variable: '--font-app', display: 'swap' })
+const serif = Noto_Serif_Thai({ subsets: ['thai', 'latin'], variable: '--font-ledger', display: 'swap' })
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.albion-market-ai.online'),
@@ -62,12 +65,11 @@ const applicationData = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className="dark">
+    <html lang="th" className={`dark ${sans.variable} ${serif.variable}`}>
       <head><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(applicationData) }} /></head>
       <body className="bg-background text-foreground flex min-h-screen flex-col pb-16 font-sans antialiased md:pb-0">
         <ErrorBoundary>
           <QueryProvider>
-            <AuthProvider>
               <NavBar />
               <Analytics />
               <main className="flex-1">{children}</main>
@@ -79,7 +81,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <a href="https://wiki.albiononline.com/wiki/API:Render_service" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline underline-offset-2">Albion Online Render Service</a>
                 </p>
               </footer>
-            </AuthProvider>
           </QueryProvider>
         </ErrorBoundary>
       </body>

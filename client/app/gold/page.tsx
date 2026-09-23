@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import type { GoldPrice } from '@server/interface/goldInterface'
-import { Chart as ChartJS, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js'
 import { itemApi } from '@/api/item'
 import GoldLineChart from './GoldLineChart'
-
-ChartJS.register(LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
 
 export default function GoldChartPage() {
   const [goldData, setGoldData] = useState<GoldPrice[]>([])

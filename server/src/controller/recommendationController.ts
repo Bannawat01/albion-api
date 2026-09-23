@@ -3,24 +3,9 @@ import { PriceAdvisoryService } from '../service/priceAdvisoryService'
 import { assertValidItemId, validateCities } from '../service/validation'
 import { albionDataBaseUrl } from '../configs/runtime'
 import { ExternalApiError } from '../middleware/customError'
-
-type HistoryPoint = { item_count: number; avg_price: number; timestamp: string }
-
-export function summarizeHistory(points: HistoryPoint[], days: number) {
-  const data = points
-    .filter(point => point.item_count >= 0 && point.avg_price >= 0 && point.timestamp)
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-    .slice(-days)
-    .map(point => ({ date: point.timestamp, volume: point.item_count, averagePrice: point.avg_price }))
-  const totalVolume = data.reduce((sum, point) => sum + point.volume, 0)
-  const pricedVolume = data.reduce((sum, point) => sum + (point.averagePrice * point.volume), 0)
-  return {
-    points: data,
-    totalVolume,
-    averageDailyVolume: data.length ? Math.round(totalVolume / data.length) : 0,
-    averagePrice: totalVolume ? Math.round(pricedVolume / totalVolume) : 0,
-  }
-}
+import { fetchHistorySummary, summarizeHistory } from '../service/marketHistory'
+import { routeConfidence } from '../service/priceAdvisoryService'
+export { summarizeHistory } from '../service/marketHistory'
 
 // Simple in-memory cache (optional initial) for market snapshots
 interface CacheEntry<T> { data: T; expires: number }
@@ -49,11 +34,7 @@ export const recommendationController = new Elysia({ prefix: '/api' })
     if (cached) return { itemId: id, city, quality, ...cached }
 
     try {
-      const url = `${albionDataBaseUrl}/api/v2/stats/history/${encodeURIComponent(id)}.json?locations=${encodeURIComponent(city)}&qualities=${quality}&time-scale=24`
-      const response = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-      if (!response.ok) throw new Error(`History API returned ${response.status}`)
-      const rows = await response.json() as Array<{ data?: HistoryPoint[] }>
-      const summary = summarizeHistory(rows[0]?.data ?? [], days)
+      const summary = await fetchHistorySummary(id, city, quality, days)
       setCached(cacheKey, summary)
       return { itemId: id, city, quality, ...summary }
     } catch (error) {
@@ -90,6 +71,7 @@ export const recommendationController = new Elysia({ prefix: '/api' })
     const strategy = query.strategy === 'quick' ? 'quick' : 'list'
     const scenario = query.scenario === 'arbitrage' ? 'arbitrage' : 'haveStock'
     const quality = Math.min(5, Math.max(1, parseInt(query.quality as string) || 1))
+    const includeOld = query.includeOld === 'true'
 
     if (!from) {
       set.status = 400
@@ -122,12 +104,20 @@ export const recommendationController = new Elysia({ prefix: '/api' })
       scenario
     })
 
+    const visible = recs.filter(route => includeOld || !route.isStale).slice(0, limit)
+    const enriched = await Promise.all(visible.map(async route => {
+      try {
+        const history = await fetchHistorySummary(id, route.city, quality, 7)
+        const trust = routeConfidence(route.sourceUpdatedAt, route.targetUpdatedAt, route.coverage, history.averageDailyVolume)
+        return { ...route, dailyVolume: history.averageDailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
+      } catch { return route }
+    }))
     return {
       itemId: id,
       fromCity: from,
       mode,
       params: { qty, weight, taxRate, strategy, scenario, quality },
       generatedAt: new Date().toISOString(),
-      recommendations: recs.slice(0, limit)
+      recommendations: enriched
     }
   })

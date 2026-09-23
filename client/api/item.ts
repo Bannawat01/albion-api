@@ -55,7 +55,20 @@ export type TradeRecommendation = {
   sourceUpdatedAt: string
   targetUpdatedAt: string
   isStale: boolean
+  confidence: 'high' | 'medium' | 'low'
+  coverage: number
+  dailyVolume: number | null
+  staleReasons: string[]
 }
+
+export type Opportunity = {
+  itemId: string; itemName: string; sourceCity: string; targetCity: string; quantity: number
+  buyPrice: number; sellPrice: number; investment: number; tax: number; netProfit: number; margin: number
+  dailyVolume: number | null; sourceUpdatedAt: string; targetUpdatedAt: string; coverage: number
+  confidence: 'high' | 'medium' | 'low'; staleReasons: string[]
+}
+export type OpportunityFilters = { origin?: string; budget?: number; minProfit?: number; minVolume?: number; maxAgeMinutes?: number; strategy?: 'list' | 'quick'; limit?: number }
+export type OpportunityResponse = { generatedAt: string; partial: boolean; filters: Required<Omit<OpportunityFilters, 'origin'>> & { origin?: string }; items: Opportunity[] }
 
 export type TradeRecommendationResponse = {
   itemId: string
@@ -139,7 +152,7 @@ const itemApi = {
   },
   getTradeRecommendations: async (
     itemId: string,
-    params: { from: string; qty: number; quality: number; strategy: 'list' | 'quick'; mode: 'profit' | 'safe' | 'balanced' },
+    params: { from: string; qty: number; quality: number; strategy: 'list' | 'quick'; mode: 'profit' | 'safe' | 'balanced'; includeOld?: boolean },
     signal?: AbortSignal
   ): Promise<TradeRecommendationResponse> => {
     const query = new URLSearchParams({
@@ -151,6 +164,7 @@ const itemApi = {
       scenario: 'arbitrage',
       taxRate: '0.065',
       limit: '3',
+      includeOld: String(!!params.includeOld),
     })
     const { data } = await axiosInstance.get(
       `/items/${encodeURIComponent(itemId)}/recommendations?${query}`,
@@ -172,6 +186,12 @@ const itemApi = {
   },
   getGoldPrice: async () => {
     const { data } = await axiosInstance.get('/gold?count=50')
+    return data
+  },
+  getOpportunities: async (filters: OpportunityFilters, signal?: AbortSignal): Promise<OpportunityResponse> => {
+    const query = new URLSearchParams()
+    for (const [key, value] of Object.entries(filters)) if (value !== undefined && value !== '') query.set(key, String(value))
+    const { data } = await axiosInstance.get(`/opportunities?${query}`, { signal })
     return data
   }
 }

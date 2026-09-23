@@ -195,6 +195,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
     row.buyMax && (!best || row.buyMax > best.value) ? { city: row.city, value: row.buyMax } : best, null)
   const latestUpdate = rows.map(row => row.updatedAt).filter(Boolean).sort().at(-1) ?? null
   const fresh = latestUpdate ? Date.now() - new Date(latestUpdate).getTime() <= 30 * 60 * 1000 : false
+  const confidence = fresh && rows.length >= 4 ? 'medium' : 'low'
 
   return (
     <article className="market-item">
@@ -213,9 +214,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
             </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
-          <p className={'mt-1 text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>
-            {fresh ? 'Fresh' : 'Old'}{latestUpdate ? ` · ${new Date(latestUpdate).toLocaleString()}` : ' · Update time unavailable'}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2"><p className={'text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>{fresh ? 'Fresh' : 'Old'}{latestUpdate ? ` · ${formatMarketTime(latestUpdate, locale)}` : ' · Update time unavailable'}</p><span className={`confidence-badge confidence-${confidence}`}>{confidence} confidence</span></div>
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
             <PriceSummary label="Best sell" result={bestSell} tone="sell" />
             <PriceSummary label="Best buy order" result={bestBuy} tone="buy" />
@@ -331,12 +330,15 @@ function ItemImage({ item, priority }: { item: ItemSummary; priority: boolean })
 }
 
 function TradeFinder({ item }: { item: ItemSummary }) {
+  const locale = usePathname().startsWith('/en') ? 'en' : 'th'
+  const th = locale === 'th'
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState('Bridgewatch')
   const [qty, setQty] = useState(1)
   const [quality, setQuality] = useState(1)
   const [strategy, setStrategy] = useState<'list' | 'quick'>('list')
   const [mode, setMode] = useState<'profit' | 'safe' | 'balanced'>('profit')
+  const [includeOld, setIncludeOld] = useState(false)
   const marketsQuery = useQuery({
     queryKey: ['item-markets', item.uniqueName, quality],
     queryFn: ({ signal }) => itemApi.getItemMarkets(item.uniqueName, quality, signal),
@@ -347,10 +349,10 @@ function TradeFinder({ item }: { item: ItemSummary }) {
   const sourceCities = marketsQuery.data?.filter(market => market.sellPrice > 0).map(market => market.city) ?? []
   const selectedFrom = sourceCities.includes(from) ? from : sourceCities[0] ?? ''
   const tradeQuery = useQuery({
-    queryKey: ['trade-routes', item.uniqueName, selectedFrom, qty, quality, strategy, mode],
+    queryKey: ['trade-routes', item.uniqueName, selectedFrom, qty, quality, strategy, mode, includeOld],
     queryFn: ({ signal }) => itemApi.getTradeRecommendations(
       item.uniqueName,
-      { from: selectedFrom, qty, quality, strategy, mode },
+      { from: selectedFrom, qty, quality, strategy, mode, includeOld },
       signal
     ),
     enabled: open && !!selectedFrom,
@@ -422,6 +424,7 @@ function TradeFinder({ item }: { item: ItemSummary }) {
               </button>
             ))}
           </div>
+          <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={includeOld} onChange={event => setIncludeOld(event.target.checked)} /><span>{th ? 'รวมข้อมูลที่เก่ากว่า 30 นาที (แต่ไม่เกิน 24 ชั่วโมง)' : 'Include data older than 30 minutes (up to 24 hours)'}</span></label>
 
           {(marketsQuery.isFetching || tradeQuery.isFetching) && <p className='text-sm text-muted-foreground' role='status'>Calculating the latest prices...</p>}
           {marketsQuery.isError && <p className='text-sm text-red-300'>No market data is available for this quality yet.</p>}
@@ -434,8 +437,8 @@ function TradeFinder({ item }: { item: ItemSummary }) {
           )}
           {!!routes.length && (
             <div className='space-y-2'>
-              {routes.map((route, index) => <TradeRoute key={route.city} route={route} rank={index + 1} from={selectedFrom} />)}
-              <p className='text-[11px] text-muted-foreground'>Estimated after-tax price: 6.5% • Please check in-game prices before purchasing.</p>
+              {routes.map((route, index) => <TradeRoute key={route.city} route={route} rank={index + 1} from={selectedFrom} locale={locale} />)}
+              <p className='text-[11px] text-muted-foreground'>{th ? 'ประมาณการหลังหักภาษี 6.5% • ราคาตั้งขายไม่รับประกันว่าจะขายได้ โปรดตรวจราคาในเกมก่อนซื้อ' : 'Estimated after 6.5% tax • A listing price does not guarantee a sale. Check in-game prices before buying.'}</p>
             </div>
           )}
         </div>
@@ -457,7 +460,7 @@ function TradeField({ label, children }: { label: string; children: React.ReactN
   return <label className='space-y-1 text-xs text-muted-foreground'><span>{label}</span>{children}</label>
 }
 
-function TradeRoute({ route, rank, from }: { route: TradeRecommendation; rank: number; from: string }) {
+function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation; rank: number; from: string; locale: 'th' | 'en' }) {
   const risk = route.riskScore >= 0.5 ? 'High risk' : route.riskScore >= 0.3 ? 'Medium risk' : 'Low risk'
   return (
     <div className='rounded-lg border border-border/80 bg-card/70 p-3'>
@@ -466,17 +469,27 @@ function TradeRoute({ route, rank, from }: { route: TradeRecommendation; rank: n
         <span className='text-xs text-muted-foreground'>{from}</span>
         <ArrowRight className='h-3.5 w-3.5 text-primary' aria-hidden='true' />
         <strong className='text-sm'>{route.city}</strong>
-        <strong className='ml-auto text-emerald-400'>+{Math.round(route.netProfit).toLocaleString()} silver</strong>
+        <strong className={route.confidence === 'high' ? 'ml-auto text-emerald-400' : 'ml-auto text-amber-300'}>+{Math.round(route.netProfit).toLocaleString()} silver</strong>
       </div>
       <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
         <span>buy {route.sourcePrice.toLocaleString()}</span>
         <span>sell {route.targetPrice.toLocaleString()}</span>
         <span className='text-emerald-300'>{route.profitPercent.toFixed(1)}%</span>
         <span>{risk}</span>
-        {route.isStale && <span className='text-amber-300'>The information may be outdated.</span>}
+        <span className={`confidence-badge confidence-${route.confidence}`}>{route.confidence} confidence</span>
+        <span>{route.coverage}/8 cities</span>
+        <span>{route.dailyVolume == null ? 'volume unavailable' : `${route.dailyVolume.toLocaleString()} sold/day`}</span>
       </div>
+      <p className="mt-2 text-[11px] text-muted-foreground">{formatMarketTime(route.sourceUpdatedAt, locale)} → {formatMarketTime(route.targetUpdatedAt, locale)}</p>
+      {route.staleReasons.length > 0 && <p className='mt-1 text-xs text-amber-300'>{route.staleReasons.join(' · ')}</p>}
     </div>
   )
+}
+
+function formatMarketTime(value: string, locale: 'th' | 'en') {
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return locale === 'th' ? 'ไม่ทราบเวลา' : 'Time unavailable'
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'short', timeStyle: 'short', timeZone: locale === 'th' ? 'Asia/Bangkok' : undefined }).format(date)
 }
 
 function PriceSummary({ label, result, tone }: { label: string; result: { city: string; value: number } | null; tone: 'sell' | 'buy' }) {

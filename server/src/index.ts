@@ -5,6 +5,7 @@ import { itemController } from "./controller/itemController"
 import { goldController } from "./controller/goldController"
 import { recommendationController } from "./controller/recommendationController"
 import { analyticsController } from "./controller/analyticsController"
+import { opportunitiesController } from "./controller/opportunitiesController"
 import { errorHandler } from "./middleware/errorHandler"
 import { OauthController } from "./controller/authcontroller"
 import { DatabaseManager } from "./configs/databaseManager"
@@ -51,6 +52,7 @@ const app = new Elysia()
     .use(OauthController)
     .use(recommendationController)
     .use(analyticsController)
+    .use(opportunitiesController)
     .get('/health/database', async () => {
         const healthStatus = await DatabaseManager.getInstance().healthCheck()
         return healthStatus

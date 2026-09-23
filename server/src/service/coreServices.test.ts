@@ -50,10 +50,11 @@ describe('TTLCache', () => {
 })
 
 describe('PriceAdvisoryService', () => {
+  const updated = new Date().toISOString()
   const markets: CityMarketStat[] = [
-    { city: 'Bridgewatch', sellPrice: 100, buyPrice: 90, sampleSize: 1, lastUpdated: '' },
-    { city: 'Martlock', sellPrice: 180, buyPrice: 160, sampleSize: 1, lastUpdated: '' },
-    { city: 'Black Market', sellPrice: 240, buyPrice: 220, sampleSize: 1, lastUpdated: '' },
+    { city: 'Bridgewatch', sellPrice: 100, buyPrice: 90, sampleSize: 1, lastUpdated: updated, sellUpdatedAt: updated, buyUpdatedAt: updated },
+    { city: 'Martlock', sellPrice: 180, buyPrice: 160, sampleSize: 1, lastUpdated: updated, sellUpdatedAt: updated, buyUpdatedAt: updated },
+    { city: 'Black Market', sellPrice: 240, buyPrice: 220, sampleSize: 1, lastUpdated: updated, sellUpdatedAt: updated, buyUpdatedAt: updated },
   ]
 
   it('ranks the most profitable destination first', async () => {

@@ -37,6 +37,10 @@ export interface CityRecommendation {
   sourceUpdatedAt: string
   targetUpdatedAt: string
   isStale: boolean
+  confidence: 'high' | 'medium' | 'low'
+  coverage: number
+  dailyVolume: number | null
+  staleReasons: string[]
   score?: number // สำหรับ balanced
 }
 
@@ -61,7 +65,23 @@ const MODE_WEIGHTS: Record<TransportContext['mode'], { profit: number; safety: n
   balanced: { profit: 0.6, safety: 0.4 }
 }
 
-const STALE_AFTER_MS = 30 * 60 * 1000
+export const FRESH_AFTER_MS = 30 * 60 * 1000
+export const MAX_ROUTE_AGE_MS = 24 * 60 * 60 * 1000
+
+export function routeConfidence(sourceUpdatedAt: string, targetUpdatedAt: string, coverage: number, dailyVolume: number | null, now = Date.now()) {
+  const ages = [sourceUpdatedAt, targetUpdatedAt].map(value => now - new Date(value).getTime())
+  const invalid = ages.some(age => !Number.isFinite(age) || age < 0)
+  const staleReasons = invalid ? ['Missing or invalid update time'] : [
+    ...(ages.some(age => age > FRESH_AFTER_MS) ? ['Price data is older than 30 minutes'] : []),
+    ...(coverage < 4 ? ['Few cities have usable prices'] : []),
+    ...(dailyVolume !== null && dailyVolume < 10 ? ['Low recent sales volume'] : []),
+  ]
+  const tooOld = invalid || ages.some(age => age > MAX_ROUTE_AGE_MS)
+  const confidence = !tooOld && ages.every(age => age <= FRESH_AFTER_MS) && coverage >= 4 && dailyVolume !== null && dailyVolume >= 10
+    ? 'high'
+    : !tooOld && ages.every(age => age <= FRESH_AFTER_MS) && coverage >= 2 && (dailyVolume === null || dailyVolume >= 1) ? 'medium' : 'low'
+  return { confidence: confidence as 'high' | 'medium' | 'low', staleReasons, tooOld, isStale: invalid || ages.some(age => age > FRESH_AFTER_MS) }
+}
 
 // ---------------- Internal Helpers ----------------
 
@@ -92,8 +112,8 @@ function computeRecommendations(markets: CityMarketStat[], ctx: TransportContext
     const targetUpdatedAt = strategy === 'quick'
       ? (m.buyUpdatedAt || m.lastUpdated)
       : (m.sellUpdatedAt || m.lastUpdated)
-    const timestamps = [sourceUpdatedAt, targetUpdatedAt].map(value => new Date(value).getTime())
-    const isStale = timestamps.some(value => !Number.isFinite(value) || Date.now() - value > STALE_AFTER_MS)
+    const trust = routeConfidence(sourceUpdatedAt, targetUpdatedAt, markets.length, null)
+    if (trust.tooOld) continue
     maxNet = Math.max(maxNet, net)
     rows.push({
       city: m.city, gross: grossRevenue, tax, transport: 0, riskPenalty: 0, net, riskScore,
@@ -104,7 +124,11 @@ function computeRecommendations(markets: CityMarketStat[], ctx: TransportContext
       profitPercent: costBasisTotal > 0 ? (net / costBasisTotal) * 100 : 0,
       sourceUpdatedAt,
       targetUpdatedAt,
-      isStale,
+      isStale: trust.isStale,
+      confidence: trust.confidence,
+      coverage: markets.length,
+      dailyVolume: null,
+      staleReasons: trust.staleReasons,
     })
   }
 

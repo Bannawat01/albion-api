@@ -1,7 +1,7 @@
 import Elysia from 'elysia'
 import { connectToDatabase } from '../configs/database'
 
-const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'donate_click'])
+const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'donate_click', 'opportunities_view', 'opportunity_filter', 'opportunity_open'])
 const ID_RE = /^[a-f0-9-]{20,64}$/i
 
 export function validAnalyticsEvent(body: unknown): body is { event: string; visitorId: string; path?: string } {

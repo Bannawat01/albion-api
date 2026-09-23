@@ -19,7 +19,7 @@ export default async function LocalizedHome({ params, searchParams }: { params: 
   const query = await searchParams
   const initialPage = Math.max(1, Number.parseInt(query.page || '1') || 1)
   return <div className="min-h-screen animated-bg" lang={locale}>
-    <section className="ledger-hero"><div className="container mx-auto flex max-w-5xl items-center gap-5 px-4 py-8 sm:py-10">
+    <section className="ledger-hero"><div className="container mx-auto flex max-w-5xl items-center gap-5 px-4 py-6 sm:py-8">
       <img src="/images/market-ledger-logo.png" alt="" width="96" height="96" className="hidden h-20 w-20 object-contain drop-shadow-2xl sm:block" />
       <div><p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary">{c.eyebrow}</p><h1 className="font-ledger text-3xl font-bold tracking-tight sm:text-5xl">{c.title}</h1><p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">{c.lead}</p><div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground"><span className="hero-proof"><Search /> Search</span><span className="hero-proof"><BarChart3 /> All cities</span><span className="hero-proof"><ShieldCheck /> Player-reported</span></div></div>
     </div></section>

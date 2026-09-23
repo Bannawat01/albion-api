@@ -3,9 +3,10 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CircleHelp, Coins, List, Star } from 'lucide-react'
+import { CircleHelp, Coins, List, Star, TrendingUp } from 'lucide-react'
 const links = [
   { path: '', en: 'Items', th: 'สินค้า', icon: List },
+  { path: '/opportunities', en: 'Opportunities', th: 'โอกาสวันนี้', icon: TrendingUp },
   { path: '/watchlist', en: 'Watchlist', th: 'รายการโปรด', icon: Star },
   { path: '/gold', en: 'Gold', th: 'ตลาดทอง', icon: Coins },
   { path: '/about', en: 'About', th: 'เกี่ยวกับเรา', icon: CircleHelp },

@@ -43,8 +43,9 @@ export class ItemRepository {
     /**
      * ดึงราคาหลาย item แบบ batch พร้อมกัน (มีตัวเลือกระบุเมือง)
      */
-    async fetchItemsPricesBatch(itemIds: ItemId[], city?: string): Promise<Record<string, Price[]>> {
+    async fetchItemsPricesBatchWithStatus(itemIds: ItemId[], city?: string): Promise<{ data: Record<string, Price[]>; partial: boolean }> {
         const results: Record<string, Price[]> = {}
+        let partial = false
         const ids = Array.from(new Set(itemIds.filter(Boolean))).slice(0, MAX_BATCH_IDS)
 
         const cityKey = city ? encodeURIComponent(city.trim()) : 'ALL'
@@ -53,7 +54,7 @@ export class ItemRepository {
             if (cached) results[id] = cached
             return !cached
         })
-        if (!missing.length) return results
+        if (!missing.length) return { data: results, partial }
 
         const metadata = await this.fetchMetadata()
         // ponytail: chunks only protect URL length; the normal 12-card page is one request.
@@ -82,6 +83,7 @@ export class ItemRepository {
                     )
                 }
             } catch (error) {
+                partial = true
                 console.warn('batch price request failed:', error)
                 for (const id of chunk) {
                     results[id] = []
@@ -89,7 +91,11 @@ export class ItemRepository {
                 }
             }
         }
-        return results
+        return { data: results, partial }
+    }
+
+    async fetchItemsPricesBatch(itemIds: ItemId[], city?: string): Promise<Record<string, Price[]>> {
+        return (await this.fetchItemsPricesBatchWithStatus(itemIds, city)).data
     }
 
     private responseTimeStats = {
