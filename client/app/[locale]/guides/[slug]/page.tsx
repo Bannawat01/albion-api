@@ -21,5 +21,9 @@ export default async function GuidePage({ params }: { params: Promise<{ locale: 
     {g.sections.map(section => <section key={section.title} className="ledger-panel mt-7 p-5"><h2 className="font-ledger text-xl font-semibold">{section.title}</h2><p className="mt-3 leading-7 text-muted-foreground">{section.body}</p></section>)}
     <section className="mt-8"><h2 className="font-ledger text-2xl font-semibold">FAQ</h2>{g.faq.map(item => <details key={item.q} className="market-details mt-3"><summary>{item.q}</summary><p className="pb-4 text-muted-foreground">{item.a}</p></details>)}</section>
     <Link href={g.href} className="nav-link nav-link-primary mt-8 inline-flex">{g.cta}</Link>
+    <nav className="mt-8 border-t border-border pt-6" aria-label={locale === 'th' ? 'คู่มือที่เกี่ยวข้อง' : 'Related guides'}>
+      <h2 className="font-ledger text-xl font-semibold">{locale === 'th' ? 'อ่านต่อ' : 'Read next'}</h2>
+      <ul className="mt-3 flex flex-wrap gap-3">{GUIDE_SLUGS.filter(other => other !== slug).map(other => <li key={other}><Link className="text-primary underline underline-offset-2" href={`/${locale}/guides/${other}`}>{guides[locale][other].title}</Link></li>)}</ul>
+    </nav>
   </article>
 }
