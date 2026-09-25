@@ -128,18 +128,18 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
           autoComplete="off"
         />
         {query && (
-          <button type="button" onClick={() => setQuery('')} className="icon-button" aria-label="Clear search">
+          <button type="button" onClick={() => setQuery('')} className="icon-button" aria-label={th ? 'ล้างคำค้นหา' : 'Clear search'}>
             <X className="h-4 w-4" />
           </button>
         )}
-        <span className="hidden sm:block text-xs text-muted-foreground">{isFetching ? 'Searching...' : 'Live results'}</span>
+        <span className="hidden sm:block text-xs text-muted-foreground">{isFetching ? (th ? 'กำลังค้นหา...' : 'Searching...') : (th ? 'ผลลัพธ์ล่าสุด' : 'Latest results')}</span>
       </div>
 
-      <section className="city-filter" aria-labelledby="city-filter-title">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="city-filter-title" className="flex items-center gap-2 text-sm font-semibold">
-            <SlidersHorizontal className="h-4 w-4 text-primary" /> {th ? 'เมืองที่ต้องการดู' : 'Markets'}
-          </h2>
+      <details className="city-filter" open>
+        <summary id="city-filter-title" className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold">
+          <SlidersHorizontal className="h-4 w-4 text-primary" /> {th ? 'เมืองที่ต้องการดู' : 'Markets'} <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
+        </summary>
+        <div className="mt-3 flex justify-end">
           <div className="flex gap-2 text-xs">
             <button type="button" onClick={() => setSelectedCities(new Set(CITIES))} className="text-primary hover:underline">{th ? 'เลือกทั้งหมด' : 'Select all'}</button>
             <span className="text-border">|</span>
@@ -162,20 +162,20 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
             )
           })}
         </div>
-      </section>
+      </details>
 
       <div id="market-results" className="scroll-mt-24 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-primary">{th ? 'ผลการค้นหา' : 'Market results'}</p>
           <h2 className="mt-1 text-xl font-semibold">{search ? (th ? `ผลลัพธ์สำหรับ “${search}”` : `Matches for "${search}"`) : (th ? 'เลือกดูสินค้าทั้งหมด' : 'Browse all items')}</h2>
         </div>
-        {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString()} items | Page {page} of {totalPages}</p>}
+        {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
       </div>
 
-      {isError && <StateCard title="Could not load the market" detail={error instanceof Error ? error.message : 'Please try again.'} />}
-      {slowLoading && <p className='text-sm text-amber-300' role='status'>The free market server is waking up. Please wait a moment.</p>}
+      {isError && <StateCard title={th ? 'โหลดข้อมูลตลาดไม่ได้' : 'Could not load the market'} detail={error instanceof Error ? error.message : (th ? 'โปรดลองใหม่' : 'Please try again.')} />}
+      {slowLoading && <p className='text-sm text-amber-300' role='status'>{th ? 'เซิร์ฟเวอร์กำลังเริ่มทำงาน กรุณารอสักครู่' : 'The free market server is waking up. Please wait a moment.'}</p>}
       {isFetching && !items.length && <ItemSkeletons />}
-      {!isFetching && !isError && !items.length && <StateCard title="No items found" detail="Try a shorter name or a different spelling." />}
+      {!isFetching && !isError && !items.length && <StateCard title={th ? 'ไม่พบสินค้า' : 'No items found'} detail={th ? 'ลองใช้ชื่อที่สั้นลงหรือสะกดใหม่' : 'Try a shorter name or a different spelling.'} />}
 
       {!!items.length && (
         <div className="grid gap-4 lg:grid-cols-2" aria-busy={pricesLoading}>
@@ -183,13 +183,14 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         </div>
       )}
 
-      {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} isFetching={isFetching} onChange={changePage} hrefForPage={(value) => `/${locale || (th ? 'th' : 'en')}?page=${value}${search ? `&q=${encodeURIComponent(search)}` : ''}`} />}
+      {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} isFetching={isFetching} onChange={changePage} locale={th ? 'th' : 'en'} hrefForPage={(value) => `/${locale || (th ? 'th' : 'en')}?page=${value}${search ? `&q=${encodeURIComponent(search)}` : ''}`} />}
     </div>
   )
 }
 
 export function ItemCard({ item, prices, cities, loading, imagePriority, watched = false, onToggleWatchlist }: { item: ItemSummary; prices?: CityMap; cities: readonly string[]; loading: boolean; imagePriority: boolean; watched?: boolean; onToggleWatchlist?: (item: ItemSummary) => void }) {
   const locale = usePathname().startsWith('/en') ? 'en' : 'th'
+  const th = locale === 'th'
   const rows = cities.flatMap((city) => {
     const metric = prices?.[city]
     return metric && (metric.sellMin || metric.buyMax) ? [{ city, ...metric }] : []
@@ -210,42 +211,43 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
           <div className="flex items-start gap-2">
             <h3 className="min-w-0 flex-1 truncate text-lg font-semibold"><Link href={`/${locale}/item/${encodeURIComponent(item.uniqueName)}`} className="hover:text-primary">{item.name}</Link></h3>
             {onToggleWatchlist && (
-              <button type="button" onClick={() => onToggleWatchlist(item)} className={'watchlist-button' + (watched ? ' is-active' : '')} aria-label={watched ? `Remove ${item.name} from watchlist` : `Add ${item.name} to watchlist`} aria-pressed={watched}>
+              <button type="button" onClick={() => onToggleWatchlist(item)} className={'watchlist-button' + (watched ? ' is-active' : '')} aria-label={watched ? (th ? `นำ ${item.name} ออกจากรายการโปรด` : `Remove ${item.name} from watchlist`) : (th ? `เพิ่ม ${item.name} ในรายการโปรด` : `Add ${item.name} to watchlist`)} aria-pressed={watched}>
                 <Star className="h-4 w-4" fill={watched ? 'currentColor' : 'none'} />
               </button>
             )}
-            <button type="button" onClick={() => shareItem(item)} className="watchlist-button" aria-label={`Share ${item.name}`}>
+            <button type="button" onClick={() => shareItem(item, locale)} className="watchlist-button" aria-label={th ? `แชร์ ${item.name}` : `Share ${item.name}`}>
               <Share2 className="h-4 w-4" />
             </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2"><p className={'text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>{fresh ? 'Fresh' : 'Old'}{latestUpdate ? ` · ${formatMarketTime(latestUpdate, locale)}` : ' · Update time unavailable'}</p><span className={`confidence-badge confidence-${confidence}`}>{confidence} confidence</span></div>
+          <div className="mt-1 flex flex-wrap items-center gap-2"><p className={'text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>{fresh ? (th ? 'ใหม่ (Fresh)' : 'Fresh') : (th ? 'เก่า (Old)' : 'Old')}{latestUpdate ? ` · ${formatMarketTime(latestUpdate, locale)}` : ` · ${th ? 'ไม่ทราบเวลาอัปเดต' : 'Update time unavailable'}`}</p><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ความน่าเชื่อถือปานกลาง' : 'ความน่าเชื่อถือต่ำ') : `${confidence} confidence`}</span></div>
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
-            <PriceSummary label="Best sell" result={bestSell} tone="sell" />
-            <PriceSummary label="Best buy order" result={bestBuy} tone="buy" />
+            <PriceSummary label={th ? 'ราคาตั้งขายต่ำสุด' : 'Best sell'} result={bestSell} tone="sell" locale={locale} />
+            <PriceSummary label={th ? 'คำสั่งซื้อสูงสุด' : 'Best buy order'} result={bestBuy} tone="buy" locale={locale} />
           </div>
         </div>
       </div>
       <details className="market-details">
-        <summary><span>{loading && !prices ? 'Loading city prices...' : `${rows.length} city ${rows.length === 1 ? 'price' : 'prices'}`}</span><ChevronDown className="h-4 w-4" /></summary>
+        <summary><span>{loading && !prices ? (th ? 'กำลังโหลดราคาแต่ละเมือง...' : 'Loading city prices...') : (th ? `ราคา ${rows.length} เมือง` : `${rows.length} city ${rows.length === 1 ? 'price' : 'prices'}`)}</span><ChevronDown className="h-4 w-4" /></summary>
         <div className="grid gap-2 pt-3 sm:grid-cols-2">
           {rows.length ? rows.map((row) => (
             <div key={row.city} className="price-row">
               <span className={'city-dot ' + CITY_STYLE[row.city]} />
               <span className="truncate text-xs font-medium">{row.city}</span>
-              <span className="ml-auto text-xs text-muted-foreground">Sell <b className="text-foreground">{row.sellMin?.toLocaleString() ?? '-'}</b></span>
-              <span className="text-xs text-muted-foreground">Buy <b className="text-foreground">{row.buyMax?.toLocaleString() ?? '-'}</b></span>
+              <span className="ml-auto text-xs text-muted-foreground">{th ? 'ขาย' : 'Sell'} <b className="text-foreground">{row.sellMin?.toLocaleString() ?? '-'}</b></span>
+              <span className="text-xs text-muted-foreground">{th ? 'รับซื้อ' : 'Buy'} <b className="text-foreground">{row.buyMax?.toLocaleString() ?? '-'}</b></span>
             </div>
-          )) : <p className="text-sm text-muted-foreground">No recent prices in selected markets.</p>}
+          )) : <p className="text-sm text-muted-foreground">{th ? 'ไม่มีราคาล่าสุดในเมืองที่เลือก' : 'No recent prices in selected markets.'}</p>}
         </div>
       </details>
-      <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} />
+      <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} locale={locale} />
       <TradeFinder item={item} />
     </article>
   )
 }
 
-function MarketHistory({ item, city }: { item: ItemSummary; city: string }) {
+function MarketHistory({ item, city, locale }: { item: ItemSummary; city: string; locale: 'th' | 'en' }) {
+  const th = locale === 'th'
   const [open, setOpen] = useState(false)
   const history = useQuery({
     queryKey: ['item-history', item.uniqueName, city],
@@ -260,32 +262,32 @@ function MarketHistory({ item, city }: { item: ItemSummary; city: string }) {
     <div className="market-history">
       <button type="button" onClick={() => setOpen(value => { if (!value) track('history_open'); return !value })} aria-expanded={open}>
         <BarChart3 className="h-4 w-4" aria-hidden="true" />
-        {open ? 'Hide 7-day market pulse' : 'View 7-day market pulse'}
+        {open ? (th ? 'ซ่อนสถิติย้อนหลัง 7 วัน' : 'Hide 7-day market pulse') : (th ? 'ดูสถิติย้อนหลัง 7 วัน' : 'View 7-day market pulse')}
         <ChevronDown className="ml-auto h-4 w-4" aria-hidden="true" />
       </button>
       {open && (
         <div className="market-history-panel">
-          {history.isFetching && <p role="status">Loading history...</p>}
-          {history.isError && <p className="text-red-300">Price history is unavailable right now.</p>}
+          {history.isFetching && <p role="status">{th ? 'กำลังโหลดประวัติราคา...' : 'Loading history...'}</p>}
+          {history.isError && <p className="text-red-300">{th ? 'ยังโหลดประวัติราคาไม่ได้' : 'Price history is unavailable right now.'}</p>}
           {history.data && history.data.points.length > 0 && (
             <>
               <div className="history-stats">
-                <span>7-day volume <b>{history.data.totalVolume.toLocaleString()}</b></span>
-                <span>Sold / day <b>{history.data.averageDailyVolume.toLocaleString()}</b></span>
-                <span>Average price <b>{history.data.averagePrice.toLocaleString()}</b></span>
+                <span>{th ? 'ยอดขาย 7 วัน' : '7-day volume'} <b>{history.data.totalVolume.toLocaleString()}</b></span>
+                <span>{th ? 'ขายต่อวัน' : 'Sold / day'} <b>{history.data.averageDailyVolume.toLocaleString()}</b></span>
+                <span>{th ? 'ราคาเฉลี่ย' : 'Average price'} <b>{history.data.averagePrice.toLocaleString()}</b></span>
               </div>
-              <div className="history-bars" aria-label={`Daily sales volume in ${city}`}>
+              <div className="history-bars" aria-label={th ? `ยอดขายรายวันใน ${city}` : `Daily sales volume in ${city}`}>
                 {history.data.points.map(point => (
                   <div key={point.date} title={`${new Date(point.date).toLocaleDateString()}: ${point.volume.toLocaleString()} sold at ${point.averagePrice.toLocaleString()} average`}>
                     <i style={{ height: `${Math.max(8, point.volume / maxVolume * 100)}%` }} />
-                    <small>{new Date(point.date).toLocaleDateString(undefined, { weekday: 'short' })}</small>
+                    <small>{new Date(point.date).toLocaleDateString(th ? 'th-TH' : 'en-US', { weekday: 'short' })}</small>
                   </div>
                 ))}
               </div>
-              <p className="history-note">{city} · Daily player-reported sales</p>
+              <p className="history-note">{city} · {th ? 'ยอดขายรายวันที่ผู้เล่นรายงาน' : 'Daily player-reported sales'}</p>
             </>
           )}
-          {history.data && history.data.points.length === 0 && <p>No sales history found for {city}.</p>}
+          {history.data && history.data.points.length === 0 && <p>{th ? `ไม่พบประวัติการขายใน ${city}` : `No sales history found for ${city}.`}</p>}
         </div>
       )}
     </div>
@@ -375,38 +377,38 @@ function TradeFinder({ item }: { item: ItemSummary }) {
         className='flex w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-primary/20'
       >
         <Sparkles className='h-4 w-4' aria-hidden='true' />
-        {open ? 'Hide route planner' : 'Plan a profitable route'}
+        {open ? (th ? 'ซ่อนตัววางแผนเส้นทาง' : 'Hide route planner') : (th ? 'วางแผนเส้นทางทำกำไร' : 'Plan a profitable route')}
       </button>
 
       {open && (
         <div className='mt-3 space-y-3 rounded-lg bg-background/45 p-3'>
           <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
-            <TradeField label='Origin city'>
-              <PrettySelect label='Origin city' value={selectedFrom} onChange={setFrom} disabled={!sourceCities.length} options={sourceCities.map(city => ({ value: city, label: city }))} />
+            <TradeField label={th ? 'เมืองต้นทาง' : 'Origin city'}>
+              <PrettySelect label={th ? 'เมืองต้นทาง' : 'Origin city'} value={selectedFrom} onChange={setFrom} disabled={!sourceCities.length} options={sourceCities.map(city => ({ value: city, label: city }))} />
             </TradeField>
-            <TradeField label='quantity'>
+            <TradeField label={th ? 'จำนวน' : 'Quantity'}>
               <input
                 type='number'
                 min={1}
                 max={10000}
-                aria-label='Quantity'
+                aria-label={th ? 'จำนวน' : 'Quantity'}
                 value={qty}
                 onChange={event => setQty(Math.min(10000, Math.max(1, Number(event.target.value) || 1)))}
                 className='trade-control'
               />
             </TradeField>
-            <TradeField label='quality'>
-              <PrettySelect label='Quality' value={String(quality)} onChange={value => setQuality(Number(value))} options={['Normal', 'Good', 'Outstanding', 'Excellent', 'Masterpiece'].map((label, index) => ({ value: String(index + 1), label: `${index + 1} ${label}` }))} />
+            <TradeField label={th ? 'คุณภาพ' : 'Quality'}>
+              <PrettySelect label={th ? 'คุณภาพ' : 'Quality'} value={String(quality)} onChange={value => setQuality(Number(value))} options={['Normal', 'Good', 'Outstanding', 'Excellent', 'Masterpiece'].map((label, index) => ({ value: String(index + 1), label: `${index + 1} ${label}` }))} />
             </TradeField>
-            <TradeField label='How to sell'>
-              <PrettySelect label='How to sell' value={strategy} onChange={value => setStrategy(value as 'list' | 'quick')} options={[{ value: 'list', label: 'List for sale' }, { value: 'quick', label: 'Sell immediately' }]} />
+            <TradeField label={th ? 'วิธีขาย' : 'How to sell'}>
+              <PrettySelect label={th ? 'วิธีขาย' : 'How to sell'} value={strategy} onChange={value => setStrategy(value as 'list' | 'quick')} options={[{ value: 'list', label: th ? 'ตั้งขาย — รอผู้เล่นซื้อ' : 'List for sale' }, { value: 'quick', label: th ? 'ขายทันที — เข้า Buy Order' : 'Sell immediately' }]} />
             </TradeField>
           </div>
-          <div className='flex flex-wrap gap-2' aria-label='Ranking format'>
+          <div className='flex flex-wrap gap-2' aria-label={th ? 'วิธีเรียงเส้นทาง' : 'Ranking format'}>
             {([
-              ['profit', 'Maximum profit'],
-              ['balanced', 'balance'],
-              ['safe', 'safe'],
+              ['profit', th ? 'กำไรสูงสุด' : 'Maximum profit'],
+              ['balanced', th ? 'สมดุล' : 'Balanced'],
+              ['safe', th ? 'เสี่ยงน้อย' : 'Safer'],
             ] as const).map(([value, label]) => (
               <button
                 type='button'
@@ -421,14 +423,14 @@ function TradeFinder({ item }: { item: ItemSummary }) {
           </div>
           <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground"><input type="checkbox" checked={includeOld} onChange={event => setIncludeOld(event.target.checked)} /><span>{th ? 'รวมข้อมูลที่เก่ากว่า 30 นาที (แต่ไม่เกิน 24 ชั่วโมง)' : 'Include data older than 30 minutes (up to 24 hours)'}</span></label>
 
-          {(marketsQuery.isFetching || tradeQuery.isFetching) && <p className='text-sm text-muted-foreground' role='status'>Calculating the latest prices...</p>}
-          {marketsQuery.isError && <p className='text-sm text-red-300'>No market data is available for this quality yet.</p>}
-          {tradeQuery.isError && <p className='text-sm text-red-300'>The route could not be calculated. Please try again.</p>}
+          {(marketsQuery.isFetching || tradeQuery.isFetching) && <p className='text-sm text-muted-foreground' role='status'>{th ? 'กำลังคำนวณจากราคาล่าสุด...' : 'Calculating the latest prices...'}</p>}
+          {marketsQuery.isError && <p className='text-sm text-red-300'>{th ? 'ยังไม่มีข้อมูลตลาดสำหรับคุณภาพนี้' : 'No market data is available for this quality yet.'}</p>}
+          {tradeQuery.isError && <p className='text-sm text-red-300'>{th ? 'คำนวณเส้นทางไม่ได้ โปรดลองใหม่' : 'The route could not be calculated. Please try again.'}</p>}
           {!marketsQuery.isFetching && !marketsQuery.isError && !sourceCities.length && (
             <p className='text-sm text-muted-foreground'>{th ? 'ยังไม่มีคู่เมืองที่มีทั้งราคาซื้อและราคาขายสำหรับคุณภาพนี้' : 'No city pair has both the required buy and sell prices for this quality.'}</p>
           )}
           {!marketsQuery.isFetching && !tradeQuery.isFetching && !marketsQuery.isError && !tradeQuery.isError && !!sourceCities.length && routes.length === 0 && (
-            <p className='text-sm text-muted-foreground'>No profitable routes were found based on the latest data.</p>
+            <p className='text-sm text-muted-foreground'>{th ? 'ยังไม่พบเส้นทางที่มีกำไร ราคาอาจไม่สดพอหรือกำไรหลังภาษีติดลบ' : 'No profitable route was found. Prices may be too old or profit may be negative after tax.'}</p>
           )}
           {!!routes.length && (
             <div className='space-y-2'>
@@ -442,10 +444,10 @@ function TradeFinder({ item }: { item: ItemSummary }) {
   )
 }
 
-async function shareItem(item: ItemSummary) {
-  const url = new URL(`/item/${encodeURIComponent(item.uniqueName)}`, location.origin)
+async function shareItem(item: ItemSummary, locale: 'th' | 'en') {
+  const url = new URL(`/${locale}/item/${encodeURIComponent(item.uniqueName)}`, location.origin)
   try {
-    if (navigator.share) await navigator.share({ title: item.name, text: `Albion Asia price: ${item.name}`, url: url.toString() })
+    if (navigator.share) await navigator.share({ title: item.name, text: locale === 'th' ? `ราคา Albion Asia: ${item.name}` : `Albion Asia price: ${item.name}`, url: url.toString() })
     else await navigator.clipboard.writeText(url.toString())
     track('share')
   } catch {}
@@ -456,7 +458,8 @@ function TradeField({ label, children }: { label: string; children: React.ReactN
 }
 
 function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation; rank: number; from: string; locale: 'th' | 'en' }) {
-  const risk = route.riskScore >= 0.5 ? 'High risk' : route.riskScore >= 0.3 ? 'Medium risk' : 'Low risk'
+  const th = locale === 'th'
+  const risk = route.riskScore >= 0.5 ? (th ? 'เสี่ยงสูง' : 'High risk') : route.riskScore >= 0.3 ? (th ? 'เสี่ยงปานกลาง' : 'Medium risk') : (th ? 'เสี่ยงต่ำ' : 'Low risk')
   return (
     <div className='rounded-lg border border-border/80 bg-card/70 p-3'>
       <div className='flex flex-wrap items-center gap-2'>
@@ -464,16 +467,16 @@ function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation;
         <span className='text-xs text-muted-foreground'>{from}</span>
         <ArrowRight className='h-3.5 w-3.5 text-primary' aria-hidden='true' />
         <strong className='text-sm'>{route.city}</strong>
-        <strong className={route.confidence === 'high' ? 'ml-auto text-emerald-400' : 'ml-auto text-amber-300'}>+{Math.round(route.netProfit).toLocaleString()} silver</strong>
+        <strong className={route.confidence === 'high' ? 'ml-auto text-emerald-400' : 'ml-auto text-amber-300'}>+{Math.round(route.netProfit).toLocaleString()} {th ? 'ซิลเวอร์' : 'silver'}</strong>
       </div>
       <div className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground'>
-        <span>buy {route.sourcePrice.toLocaleString()}</span>
-        <span>sell {route.targetPrice.toLocaleString()}</span>
+        <span>{th ? 'ซื้อ' : 'buy'} {route.sourcePrice.toLocaleString()}</span>
+        <span>{th ? 'ขาย' : 'sell'} {route.targetPrice.toLocaleString()}</span>
         <span className='text-emerald-300'>{route.profitPercent.toFixed(1)}%</span>
         <span>{risk}</span>
-        <span className={`confidence-badge confidence-${route.confidence}`}>{route.confidence} confidence</span>
-        <span>{route.coverage}/8 cities</span>
-        <span>{route.dailyVolume == null ? 'volume unavailable' : `${route.dailyVolume.toLocaleString()} sold/day`}</span>
+        <span className={`confidence-badge confidence-${route.confidence}`}>{th ? `ความน่าเชื่อถือ${route.confidence === 'high' ? 'สูง' : route.confidence === 'medium' ? 'ปานกลาง' : 'ต่ำ'}` : `${route.confidence} confidence`}</span>
+        <span>{route.coverage}/8 {th ? 'เมือง' : 'cities'}</span>
+        <span>{route.dailyVolume == null ? (th ? 'ไม่มีข้อมูลยอดขาย' : 'volume unavailable') : `${route.dailyVolume.toLocaleString()} ${th ? 'ชิ้น/วัน' : 'sold/day'}`}</span>
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">{formatMarketTime(route.sourceUpdatedAt, locale)} → {formatMarketTime(route.targetUpdatedAt, locale)}</p>
       {route.staleReasons.length > 0 && <p className='mt-1 text-xs text-amber-300'>{route.staleReasons.join(' · ')}</p>}
@@ -487,12 +490,12 @@ function formatMarketTime(value: string, locale: 'th' | 'en') {
   return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'short', timeStyle: 'short', timeZone: locale === 'th' ? 'Asia/Bangkok' : undefined }).format(date)
 }
 
-function PriceSummary({ label, result, tone }: { label: string; result: { city: string; value: number } | null; tone: 'sell' | 'buy' }) {
+function PriceSummary({ label, result, tone, locale }: { label: string; result: { city: string; value: number } | null; tone: 'sell' | 'buy'; locale: 'th' | 'en' }) {
   return (
     <div className={'price-summary ' + tone}>
       <p>{label}</p>
       <strong>{result?.value.toLocaleString() ?? '-'}</strong>
-      <span>{result?.city ?? 'No data'}</span>
+      <span>{result?.city ?? (locale === 'th' ? 'ไม่มีข้อมูล' : 'No data')}</span>
     </div>
   )
 }

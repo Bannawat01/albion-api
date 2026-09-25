@@ -12,6 +12,7 @@ interface PaginationControlsProps {
 	showEdges?: boolean
 	siblingCount?: number
 	hrefForPage?: (page: number) => string
+	locale?: 'th' | 'en'
 }
 
 // Generate page numbers with ellipsis
@@ -27,7 +28,8 @@ function buildPages(current: number, total: number, siblingCount: number): (numb
 	return pages
 }
 
-export function PaginationControls({ page, totalPages, isFetching, onChange, showEdges = true, siblingCount = 1, hrefForPage }: PaginationControlsProps) {
+export function PaginationControls({ page, totalPages, isFetching, onChange, showEdges = true, siblingCount = 1, hrefForPage, locale = 'en' }: PaginationControlsProps) {
+	const th = locale === 'th'
 	const pages = buildPages(page, totalPages, siblingCount)
 
 	const canPrev = page > 1
@@ -51,12 +53,12 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 		if (p === "...") return <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">…</span>
 		const active = p === page
 		return hrefForPage ? (
-			<Link key={p} href={hrefForPage(p)} aria-label={`Go to page ${p}`} aria-current={active ? 'page' : undefined} onClick={() => onChange(p)} className={cn(btnBase, active ? "bg-primary text-primary-foreground border-primary/50 shadow-lg shadow-primary/25" : "glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground hover:shadow-md")}>{p}</Link>
+			<Link key={p} href={hrefForPage(p)} aria-label={th ? `ไปหน้าที่ ${p}` : `Go to page ${p}`} aria-current={active ? 'page' : undefined} onClick={() => onChange(p)} className={cn(btnBase, active ? "bg-primary text-primary-foreground border-primary/50 shadow-lg shadow-primary/25" : "glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground hover:shadow-md")}>{p}</Link>
 		) : (
 			<button
 				key={p}
 				type="button"
-				aria-label={`Go to page ${p}`}
+				aria-label={th ? `ไปหน้าที่ ${p}` : `Go to page ${p}`}
 				aria-current={active ? 'page' : undefined}
 				disabled={isFetching && active}
 				onClick={() => onChange(p)}
@@ -69,7 +71,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 
 	const iconCls = "w-4 h-4"
 	return (
-		<nav aria-label="Pagination" className="w-full">
+		<nav aria-label={th ? 'เปลี่ยนหน้า' : 'Pagination'} className="w-full">
 			<div className="flex flex-wrap items-center gap-2">
 				{showEdges && (
 					<button
@@ -77,7 +79,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						onClick={() => canPrev && onChange(1)}
 						disabled={!canPrev || isFetching}
 						className={cn(btnBase, "w-10", canPrev?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
-						aria-label="First page"
+						aria-label={th ? 'หน้าแรก' : 'First page'}
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
 					</button>
@@ -87,7 +89,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					onClick={() => canPrev && onChange(page - 1)}
 					disabled={!canPrev || isFetching}
 					className={cn(btnBase, canPrev?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
-					aria-label="Previous page"
+					aria-label={th ? 'หน้าก่อนหน้า' : 'Previous page'}
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
 				</button>
@@ -97,7 +99,7 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 					onClick={() => canNext && onChange(page + 1)}
 					disabled={!canNext || isFetching}
 					className={cn(btnBase, canNext?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
-					aria-label="Next page"
+					aria-label={th ? 'หน้าถัดไป' : 'Next page'}
 				>
 					<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
 				</button>
@@ -107,13 +109,13 @@ export function PaginationControls({ page, totalPages, isFetching, onChange, sho
 						onClick={() => canNext && onChange(totalPages)}
 						disabled={!canNext || isFetching}
 						className={cn(btnBase, "w-10", canNext?"glass-card hover:bg-secondary border-border hover:border-primary/50 text-foreground":"bg-secondary/50 border-border text-muted-foreground/60")}
-						aria-label="Last page"
+						aria-label={th ? 'หน้าสุดท้าย' : 'Last page'}
 					>
 						<svg className={iconCls} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
 					</button>
 				)}
 			</div>
-			<p className="mt-3 text-sm text-muted-foreground font-medium text-center bg-secondary/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-border">Page {page} of {totalPages}</p>
+			<p className="mt-3 text-sm text-muted-foreground font-medium text-center bg-secondary/30 rounded-lg px-3 py-2 backdrop-blur-sm border border-border">{th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>
 		</nav>
 	)
 }

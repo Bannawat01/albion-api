@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { GUIDE_SLUGS, LOCALES, SITE_URL } from '@/lib/seo'
+import { GUIDE_SLUGS, LOCALES, POPULAR_ITEM_IDS, SITE_URL } from '@/lib/seo'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return LOCALES.flatMap(locale => [
@@ -8,5 +8,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/${locale}/opportunities`, changeFrequency: 'daily' as const, priority: .9 },
     { url: `${SITE_URL}/${locale}/about`, changeFrequency: 'monthly' as const, priority: .6 },
     ...GUIDE_SLUGS.map(slug => ({ url: `${SITE_URL}/${locale}/guides/${slug}`, changeFrequency: 'monthly' as const, priority: .7 })),
+    ...POPULAR_ITEM_IDS.map(id => ({ url: `${SITE_URL}/${locale}/item/${id}`, changeFrequency: 'daily' as const, priority: .65 })),
   ])
 }

@@ -1,6 +1,7 @@
 <div align="center">
-  <h1>🏰 Albion Online Database</h1>
-  <p><em>Beautiful full-stack application for Albion Online market data and analytics</em></p>
+  <h1>🏰 Albion Market Ledger</h1>
+  <p><em>Thai/English Albion Online Asia price and trade finder using player-reported data</em></p>
+  <p><a href="https://www.albion-market-ai.online/th"><strong>Open Albion Market Ledger</strong></a></p>
 
   ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
   ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
@@ -36,10 +37,10 @@
 
 📊 **Market Data**
 
-- Real-time Albion Online item prices
+- Player-reported Albion Online Asia prices with freshness timestamps
 - Historical price data and trends
 - Gold price tracking
-- Advanced filtering and pagination
+- Trade routes, daily opportunities, watchlist, filtering, and pagination
 
 🔐 **Authentication & Security**
 

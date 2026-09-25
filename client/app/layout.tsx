@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     title: 'ราคา Albion Online Asia วันนี้',
     description: 'เปรียบเทียบราคาทุกเมือง ดูประวัติราคา และหาเส้นทางทำกำไรบน Asia Server',
     url: '/',
-    images: [{ url: '/icon.png', width: 512, height: 512, alt: 'Albion Market Ledger' }],
+    images: [{ url: '/images/albion-market-hero.webp', width: 1600, height: 600, alt: 'Albion Market Ledger — Asia price and trade finder' }],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'ราคา Albion Online Asia วันนี้',
     description: 'เปรียบเทียบราคาทุกเมืองและหาเส้นทางทำกำไรบน Asia Server',
-    images: ['/icon.png'],
+    images: ['/images/albion-market-hero.webp'],
   },
   icons: {
     icon: [{ url: '/favicon.ico', sizes: 'any' }, { url: '/icon.png', type: 'image/png', sizes: '512x512' }],
@@ -80,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <span className="mx-1.5">|</span>
                   <a href="https://wiki.albiononline.com/wiki/API:Render_service" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80 underline underline-offset-2">Albion Online Render Service</a>
                 </p>
+                <p className="mx-auto mt-2 max-w-3xl text-[11px] text-muted-foreground/70">Hero image © Sandbox Interactive GmbH, from the official Albion Online Press Kit. Albion Market Ledger is an independent fan tool and is not affiliated with or endorsed by Sandbox Interactive.</p>
               </footer>
           </QueryProvider>
         </ErrorBoundary>
