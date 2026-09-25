@@ -32,6 +32,14 @@ describe('opportunity ranking', () => {
     expect(rows[0].sourceCity).toBe('Lymhurst')
     expect(rows[0].targetCity).toBe('Thetford')
   })
+  test('keeps backup targets when volume filtering is requested', () => {
+    const rows = rankOpportunityCandidates({ T4_BAG: [
+      price('Bridgewatch', 1000, 0, 5),
+      price('Martlock', 0, 1600, 5),
+      price('Thetford', 0, 1500, 5),
+    ] }, { ...filters, minVolume: 1 }, now)
+    expect(rows.map(row => row.targetCity)).toEqual(['Martlock', 'Thetford'])
+  })
   test('confidence uses freshness, coverage and volume', () => {
     const fresh = new Date(now - 5 * 60_000).toISOString()
     expect(routeConfidence(fresh, fresh, 5, 20, now).confidence).toBe('high')

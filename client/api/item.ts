@@ -208,7 +208,7 @@ export const useItems = () => {
 export const useSearchItems = (searchTerm?: string, page = 1, limit = 20) => {
   return useQuery({
     queryKey: ['items', 'search', searchTerm, page, limit],
-    queryFn: () => itemApi.searchItems(searchTerm, page, limit),
+    queryFn: ({ signal }) => itemApi.searchItems(searchTerm, page, limit, signal),
     enabled: true, // Always enabled, will search all items if no searchTerm
     staleTime: 2 * 60 * 1000, // 2 minutes
     placeholderData: keepPreviousData,

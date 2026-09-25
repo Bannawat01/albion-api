@@ -4,6 +4,8 @@ export class TTLCache<T> {
 
     private cache = new Map<string, { data: T; expiry: number }>()
 
+    constructor(private readonly maxEntries = Infinity) {}
+
     /**
      * เก็บข้อมูลใน cache พร้อมกำหนด TTL
      * @param key - คีย์สำหรับเก็บข้อมูล
@@ -11,7 +13,13 @@ export class TTLCache<T> {
      * @param ttlMs - เวลาหมดอายุในหน่วย milliseconds
      */
     set(key: string, value: T, ttlMs: number): void {
+        this.cleanup()
+        if (!this.cache.has(key) && this.cache.size >= this.maxEntries) {
+            const oldest = this.cache.keys().next().value
+            if (oldest !== undefined) this.cache.delete(oldest)
+        }
         const expiry = Date.now() + ttlMs
+        this.cache.delete(key)
         this.cache.set(key, { data: value, expiry })
     }
 

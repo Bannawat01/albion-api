@@ -210,7 +210,7 @@ export class PriceAdvisoryService {
   async recommend(markets: CityMarketStat[], ctx: TransportContext): Promise<CityRecommendation[]> {
     // Basic input validation (could be expanded)
     if (!ctx.fromCity || !ctx.mode) return []
-    if (ctx.quantity <= 0) return []
+    if (!Number.isSafeInteger(ctx.quantity) || ctx.quantity < 1 || ctx.quantity > 10_000) return []
     return computeRecommendations(markets, ctx)
   }
 }

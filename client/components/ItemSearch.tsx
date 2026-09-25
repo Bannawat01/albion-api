@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -15,7 +15,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { usePathname } from 'next/navigation'
 import PrettySelect from './PrettySelect'
 
-type Metric = { sellMin: number | null; buyMax: number | null; updatedAt: string | null }
+type Metric = { sellMin: number | null; buyMax: number | null; sellUpdatedAt: string | null; buyUpdatedAt: string | null }
 export type CityMap = Record<string, Metric>
 type PriceMap = Record<string, CityMap>
 
@@ -38,14 +38,15 @@ export function cityMap(rows: any[]): CityMap {
     if (!city) continue
     const sell = Number(row.sell_Price_Min)
     const buy = Number(row.buy_Price_max)
-    const current = result[city] ||= { sellMin: null, buyMax: null, updatedAt: null }
-    if (sell > 0) current.sellMin = current.sellMin == null ? sell : Math.min(current.sellMin, sell)
-    if (buy > 0) current.buyMax = current.buyMax == null ? buy : Math.max(current.buyMax, buy)
-    const updatedAt = [row.sell_Price_Min_Date, row.buy_Price_Max_Date]
-      .filter(Boolean)
-      .sort()
-      .at(-1)
-    if (updatedAt && (!current.updatedAt || updatedAt > current.updatedAt)) current.updatedAt = updatedAt
+    const current = result[city] ||= { sellMin: null, buyMax: null, sellUpdatedAt: null, buyUpdatedAt: null }
+    if (sell > 0 && (current.sellMin == null || sell < current.sellMin || (sell === current.sellMin && row.sell_Price_Min_Date > (current.sellUpdatedAt || '')))) {
+      current.sellMin = sell
+      current.sellUpdatedAt = row.sell_Price_Min_Date || null
+    }
+    if (buy > 0 && (current.buyMax == null || buy > current.buyMax || (buy === current.buyMax && row.buy_Price_Max_Date > (current.buyUpdatedAt || '')))) {
+      current.buyMax = buy
+      current.buyUpdatedAt = row.buy_Price_Max_Date || null
+    }
   }
   return result
 }
@@ -59,7 +60,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const [page, setPage] = useState(initialPage)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
   const watchlist = useWatchlist()
-  const { data, isFetching, isError, error } = useSearchItems(search || undefined, page, 12)
+  const { data, isFetching, isError, refetch } = useSearchItems(search || undefined, page, 12)
 
   const items = useMemo(() => data?.data ?? [], [data?.data])
   const pagination = data?.pagination
@@ -172,8 +173,9 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
       </div>
 
-      {isError && <StateCard title={th ? 'โหลดข้อมูลตลาดไม่ได้' : 'Could not load the market'} detail={error instanceof Error ? error.message : (th ? 'โปรดลองใหม่' : 'Please try again.')} />}
+      {isError && <StateCard title={th ? 'โหลดข้อมูลตลาดไม่ได้' : 'Could not load the market'} detail={th ? 'เซิร์ฟเวอร์อาจกำลังเริ่มทำงาน โปรดลองอีกครั้ง' : 'The server may be waking up. Please try again.'} action={<button className="nav-link nav-link-primary" onClick={() => void refetch()}>{th ? 'ลองใหม่' : 'Try again'}</button>} />}
       {slowLoading && <p className='text-sm text-amber-300' role='status'>{th ? 'เซิร์ฟเวอร์กำลังเริ่มทำงาน กรุณารอสักครู่' : 'The free market server is waking up. Please wait a moment.'}</p>}
+      {watchlist.storageError && <p className="text-sm text-amber-300" role="alert">{th ? 'เบราว์เซอร์นี้ไม่อนุญาตให้บันทึกรายการโปรด' : 'This browser could not save your watchlist.'}</p>}
       {isFetching && !items.length && <ItemSkeletons />}
       {!isFetching && !isError && !items.length && <StateCard title={th ? 'ไม่พบสินค้า' : 'No items found'} detail={th ? 'ลองใช้ชื่อที่สั้นลงหรือสะกดใหม่' : 'Try a shorter name or a different spelling.'} />}
 
@@ -195,13 +197,15 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
     const metric = prices?.[city]
     return metric && (metric.sellMin || metric.buyMax) ? [{ city, ...metric }] : []
   })
-  const bestSell = rows.reduce<{ city: string; value: number } | null>((best, row) =>
-    row.sellMin && (!best || row.sellMin < best.value) ? { city: row.city, value: row.sellMin } : best, null)
-  const bestBuy = rows.reduce<{ city: string; value: number } | null>((best, row) =>
-    row.buyMax && (!best || row.buyMax > best.value) ? { city: row.city, value: row.buyMax } : best, null)
-  const latestUpdate = rows.map(row => row.updatedAt).filter(Boolean).sort().at(-1) ?? null
-  const fresh = latestUpdate ? Date.now() - new Date(latestUpdate).getTime() <= 30 * 60 * 1000 : false
-  const confidence = fresh && rows.length >= 4 ? 'medium' : 'low'
+  const bestSell = rows.reduce<{ city: string; value: number; updatedAt: string | null } | null>((best, row) =>
+    row.sellMin && (!best || row.sellMin < best.value) ? { city: row.city, value: row.sellMin, updatedAt: row.sellUpdatedAt } : best, null)
+  const bestBuy = rows.reduce<{ city: string; value: number; updatedAt: string | null } | null>((best, row) =>
+    row.buyMax && (!best || row.buyMax > best.value) ? { city: row.city, value: row.buyMax, updatedAt: row.buyUpdatedAt } : best, null)
+  const isFresh = (value: string | null | undefined) => {
+    const age = value ? Date.now() - new Date(value).getTime() : Infinity
+    return age >= 0 && age <= 30 * 60 * 1000
+  }
+  const confidence = isFresh(bestSell?.updatedAt) && isFresh(bestBuy?.updatedAt) && rows.length >= 4 ? 'medium' : 'low'
 
   return (
     <article className="market-item">
@@ -220,7 +224,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
             </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2"><p className={'text-[10px] font-semibold uppercase tracking-wide ' + (fresh ? 'text-emerald-400' : 'text-amber-300')}>{fresh ? (th ? 'ใหม่ (Fresh)' : 'Fresh') : (th ? 'เก่า (Old)' : 'Old')}{latestUpdate ? ` · ${formatMarketTime(latestUpdate, locale)}` : ` · ${th ? 'ไม่ทราบเวลาอัปเดต' : 'Update time unavailable'}`}</p><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ความน่าเชื่อถือปานกลาง' : 'ความน่าเชื่อถือต่ำ') : `${confidence} confidence`}</span></div>
+          <div className="mt-1 flex flex-wrap items-center gap-2"><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ความน่าเชื่อถือปานกลาง' : 'ความน่าเชื่อถือต่ำ') : `${confidence} confidence`}</span></div>
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
             <PriceSummary label={th ? 'ราคาตั้งขายต่ำสุด' : 'Best sell'} result={bestSell} tone="sell" locale={locale} />
             <PriceSummary label={th ? 'คำสั่งซื้อสูงสุด' : 'Best buy order'} result={bestBuy} tone="buy" locale={locale} />
@@ -490,18 +494,21 @@ function formatMarketTime(value: string, locale: 'th' | 'en') {
   return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'short', timeStyle: 'short', timeZone: locale === 'th' ? 'Asia/Bangkok' : undefined }).format(date)
 }
 
-function PriceSummary({ label, result, tone, locale }: { label: string; result: { city: string; value: number } | null; tone: 'sell' | 'buy'; locale: 'th' | 'en' }) {
+function PriceSummary({ label, result, tone, locale }: { label: string; result: { city: string; value: number; updatedAt: string | null } | null; tone: 'sell' | 'buy'; locale: 'th' | 'en' }) {
+  const age = result?.updatedAt ? Date.now() - new Date(result.updatedAt).getTime() : Infinity
+  const fresh = age >= 0 && age <= 30 * 60 * 1000
   return (
     <div className={'price-summary ' + tone}>
       <p>{label}</p>
       <strong>{result?.value.toLocaleString() ?? '-'}</strong>
       <span>{result?.city ?? (locale === 'th' ? 'ไม่มีข้อมูล' : 'No data')}</span>
+      {result && <span className={fresh ? 'text-emerald-400' : 'text-amber-300'}>{fresh ? (locale === 'th' ? 'ใหม่' : 'Fresh') : (locale === 'th' ? 'เก่า' : 'Old')} · {result.updatedAt ? formatMarketTime(result.updatedAt, locale) : (locale === 'th' ? 'ไม่ทราบเวลา' : 'Time unavailable')}</span>}
     </div>
   )
 }
 
-function StateCard({ title, detail }: { title: string; detail: string }) {
-  return <div className="state-card"><h3>{title}</h3><p>{detail}</p></div>
+function StateCard({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
+  return <div className="state-card"><h3>{title}</h3><p>{detail}</p>{action && <div className="mt-4">{action}</div>}</div>
 }
 
 function ItemSkeletons() {

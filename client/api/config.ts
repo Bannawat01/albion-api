@@ -5,7 +5,7 @@ export const API_PREFIX = "/api"
 
 export const axiosInstance = axios.create({
   baseURL: `${API_BASE_URL}${API_PREFIX}`,
-  timeout: 10000,
+  timeout: 65000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,7 +15,8 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // Add auth token if available
-    const token = localStorage.getItem('auth-token')
+    let token: string | null = null
+    try { token = typeof window === 'undefined' ? null : localStorage.getItem('auth-token') } catch { /* storage may be blocked */ }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }

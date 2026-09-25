@@ -1,32 +1,22 @@
 import Elysia from 'elysia'
 import { PriceAdvisoryService } from '../service/priceAdvisoryService'
-import { assertValidItemId, validateCities } from '../service/validation'
+import { assertValidItemId, validateQuantity, validateSingleCity } from '../service/validation'
 import { albionDataBaseUrl } from '../configs/runtime'
 import { ExternalApiError } from '../middleware/customError'
 import { fetchHistorySummary, summarizeHistory } from '../service/marketHistory'
 import { routeConfidence } from '../service/priceAdvisoryService'
+import { TTLCache, TTL_CONSTANTS } from '../service/timeToLive'
 export { summarizeHistory } from '../service/marketHistory'
 
-// Simple in-memory cache (optional initial) for market snapshots
-interface CacheEntry<T> { data: T; expires: number }
-const marketCache = new Map<string, CacheEntry<any>>()
-const MARKET_TTL_MS = 5 * 60 * 1000 // 5 minutes
-
-function getCached<T>(key: string): T | null {
-  const entry = marketCache.get(key)
-  if (!entry) return null
-  if (Date.now() > entry.expires) { marketCache.delete(key); return null }
-  return entry.data as T
-}
-function setCached<T>(key: string, data: T, ttl = MARKET_TTL_MS) {
-  marketCache.set(key, { data, expires: Date.now() + ttl })
-}
+const marketCache = new TTLCache<any>(500)
+const getCached = <T>(key: string) => marketCache.get(key) as T | null
+const setCached = <T>(key: string, data: T) => marketCache.set(key, data, TTL_CONSTANTS.FIVE_MINUTES)
 
 export const recommendationController = new Elysia({ prefix: '/api' })
   .get('/items/:id/history', async ({ params, query }) => {
     const { id } = params as { id: string }
     assertValidItemId(id)
-    const city = validateCities(query.city) || 'Bridgewatch'
+    const city = validateSingleCity(query.city) || 'Bridgewatch'
     const quality = Math.min(5, Math.max(1, parseInt(query.quality as string) || 1))
     const days = Math.min(30, Math.max(1, parseInt(query.days as string) || 7))
     const cacheKey = `history:${id}:${city}:${quality}:${days}`
@@ -64,7 +54,7 @@ export const recommendationController = new Elysia({ prefix: '/api' })
     const from = (query.from as string) || ''
     const requestedMode = query.mode as string
     const mode = (['profit', 'safe', 'balanced'].includes(requestedMode) ? requestedMode : 'profit') as 'profit' | 'safe' | 'balanced'
-    const qty = Math.max(1, parseInt(query.qty as string) || 1)
+    const qty = validateQuantity(query.qty)
     const weight = Math.max(0.01, parseFloat(query.weight as string) || 1)
     const taxRate = Math.min(0.5, Math.max(0, parseFloat(query.taxRate as string) || 0.065))
     const limit = Math.min(20, Math.max(1, parseInt(query.limit as string) || 5))

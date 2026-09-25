@@ -3,8 +3,16 @@ import { BadRequestError, ExternalApiError } from "../middleware/customError"
 import { HttpClient } from "../service/httpClient"
 import { TTLCache, TTL_CONSTANTS } from '../service/timeToLive'
 import { albionDataBaseUrl } from '../configs/runtime'
+
+export function sanitizeGoldPrices(rows: GoldPrice[], now = Date.now()): GoldPrice[] {
+    return rows.filter(item => {
+        const timestamp = Date.parse(item.timestamp)
+        return Number.isFinite(item.price) && item.price > 0 && Number.isFinite(timestamp) && timestamp <= now
+    }).sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+}
+
 export class GoldRepository {
-    private goldPriceCache = new TTLCache<GoldPrice[]>()
+    private goldPriceCache = new TTLCache<GoldPrice[]>(20)
     private httpClient: HttpClient
 
     constructor() {
@@ -61,7 +69,7 @@ export class GoldRepository {
                 throw new BadRequestError(`Failed to fetch gold prices: ${response.status}`)
             }
 
-            const data: GoldPrice[] = await response.json()
+            const data = sanitizeGoldPrices(await response.json() as GoldPrice[])
 
             if (data.length === 0) {
                 return "Gold price data not available"

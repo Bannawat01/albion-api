@@ -4,6 +4,7 @@ import { TTLCache } from './timeToLive'
 import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './priceAdvisoryService'
 import { summarizeHistory } from '../controller/recommendationController'
 import { isBotUserAgent, validAnalyticsEvent } from '../controller/analyticsController'
+import { sanitizeGoldPrices } from '../repository/goldRepository'
 
 describe('PaginationService', () => {
   it('normalizes unsafe pagination values', () => {
@@ -46,6 +47,15 @@ describe('TTLCache', () => {
     cache.set('expired', 1, 1)
     await Bun.sleep(5)
     expect(cache.get('expired')).toBeNull()
+  })
+
+  it('evicts the oldest entry at its configured limit', () => {
+    const cache = new TTLCache<number>(2)
+    cache.set('one', 1, 1000)
+    cache.set('two', 2, 1000)
+    cache.set('three', 3, 1000)
+    expect(cache.get('one')).toBeNull()
+    expect(cache.size()).toBe(2)
   })
 })
 
@@ -98,6 +108,12 @@ describe('PriceAdvisoryService', () => {
     expect(martlock?.netProfit).toBeCloseTo(68.3)
     expect(martlock?.profitPercent).toBeCloseTo(68.3)
   })
+
+  it('rejects unsafe route quantities at the service boundary', async () => {
+    const base = { fromCity: 'Bridgewatch', itemWeight: 1, taxRate: 0.065, mode: 'profit' as const }
+    expect(await PriceAdvisoryService.getInstance().recommend(markets, { ...base, quantity: NaN })).toEqual([])
+    expect(await PriceAdvisoryService.getInstance().recommend(markets, { ...base, quantity: 10_001 })).toEqual([])
+  })
 })
 
 describe('market history', () => {
@@ -111,6 +127,29 @@ describe('market history', () => {
     expect(result.totalVolume).toBe(50)
     expect(result.averageDailyVolume).toBe(25)
     expect(result.averagePrice).toBe(260)
+  })
+  it('drops invalid, infinite and future observations before sorting', () => {
+    const now = Date.parse('2026-09-23T00:00:00Z')
+    const result = summarizeHistory([
+      { item_count: 1, avg_price: 100, timestamp: '2026-09-22T00:00:00Z' },
+      { item_count: Infinity, avg_price: 100, timestamp: '2026-09-21T00:00:00Z' },
+      { item_count: 1, avg_price: NaN, timestamp: '2026-09-20T00:00:00Z' },
+      { item_count: 1, avg_price: 100, timestamp: 'not-a-date' },
+      { item_count: 1, avg_price: 100, timestamp: '2026-09-24T00:00:00Z' },
+    ], 7, now)
+    expect(result.points.map(point => point.date)).toEqual(['2026-09-22T00:00:00Z'])
+  })
+})
+
+describe('gold history', () => {
+  it('keeps only finite, positive, non-future prices in chronological order', () => {
+    const now = Date.parse('2026-09-23T00:00:00Z')
+    expect(sanitizeGoldPrices([
+      { price: 5000, timestamp: '2026-09-22T00:00:00Z' },
+      { price: Infinity, timestamp: '2026-09-21T00:00:00Z' },
+      { price: 4000, timestamp: '2026-09-20T00:00:00Z' },
+      { price: 6000, timestamp: '2026-09-24T00:00:00Z' },
+    ], now).map(item => item.price)).toEqual([4000, 5000])
   })
 })
 

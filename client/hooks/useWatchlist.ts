@@ -26,8 +26,16 @@ export function parseWatchlist(value: string | null): ItemSummary[] {
 
 export function useWatchlist() {
   const [items, setItems] = useState<ItemSummary[]>([])
+  const [storageError, setStorageError] = useState(false)
 
-  const refresh = useCallback(() => setItems(parseWatchlist(localStorage.getItem(STORAGE_KEY))), [])
+  const refresh = useCallback(() => {
+    try {
+      setItems(parseWatchlist(localStorage.getItem(STORAGE_KEY)))
+      setStorageError(false)
+    } catch {
+      setStorageError(true)
+    }
+  }, [])
 
   useEffect(() => {
     refresh()
@@ -40,13 +48,18 @@ export function useWatchlist() {
   }, [refresh])
 
   const toggle = useCallback((item: ItemSummary) => {
-    const current = parseWatchlist(localStorage.getItem(STORAGE_KEY))
-    const exists = current.some(saved => saved.uniqueName === item.uniqueName)
-    if (!exists) track('watchlist_add')
-    const next = exists ? current.filter(saved => saved.uniqueName !== item.uniqueName) : [item, ...current].slice(0, WATCHLIST_LIMIT)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    window.dispatchEvent(new Event(CHANGE_EVENT))
+    try {
+      const current = parseWatchlist(localStorage.getItem(STORAGE_KEY))
+      const exists = current.some(saved => saved.uniqueName === item.uniqueName)
+      const next = exists ? current.filter(saved => saved.uniqueName !== item.uniqueName) : [item, ...current].slice(0, WATCHLIST_LIMIT)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      if (!exists) track('watchlist_add')
+      setStorageError(false)
+      window.dispatchEvent(new Event(CHANGE_EVENT))
+    } catch {
+      setStorageError(true)
+    }
   }, [])
 
-  return { items, toggle }
+  return { items, toggle, storageError }
 }

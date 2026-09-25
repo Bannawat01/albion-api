@@ -55,5 +55,20 @@ export function validateCities(city: unknown): string | undefined {
     return parts.join(',')
 }
 
+export function validateSingleCity(city: unknown): string | undefined {
+    const value = validateCities(city)
+    if (value?.includes(',')) throw new BadRequestError("Only one city is allowed")
+    return value
+}
+
+export function validateQuantity(value: unknown, fallback = 1): number {
+    if (value === undefined || value === null || value === '') return fallback
+    const quantity = Number(value)
+    if (!Number.isSafeInteger(quantity) || quantity < 1) {
+        throw new BadRequestError("Quantity must be a positive whole number")
+    }
+    return Math.min(quantity, 10_000)
+}
+
 // Upper bound on batch size to keep the batch price endpoint bounded.
 export const MAX_BATCH_IDS = 100

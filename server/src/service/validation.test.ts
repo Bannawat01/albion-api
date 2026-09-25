@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test"
-import { isValidItemId, assertValidItemId, validateCities, MAX_BATCH_IDS } from "./validation"
+import { isValidItemId, assertValidItemId, validateCities, validateSingleCity, validateQuantity, MAX_BATCH_IDS } from "./validation"
 import { BadRequestError } from "../middleware/customError"
 
 describe("isValidItemId", () => {
@@ -46,5 +46,19 @@ describe("MAX_BATCH_IDS", () => {
     it("is a sane positive bound", () => {
         expect(MAX_BATCH_IDS).toBeGreaterThan(0)
         expect(MAX_BATCH_IDS).toBeLessThanOrEqual(500)
+    })
+})
+
+describe("route input bounds", () => {
+    it("accepts one city and rejects city lists", () => {
+        expect(validateSingleCity("Caerleon")).toBe("Caerleon")
+        expect(() => validateSingleCity("Caerleon,Martlock")).toThrow(BadRequestError)
+    })
+    it("defaults, clamps and rejects invalid quantities", () => {
+        expect(validateQuantity(undefined)).toBe(1)
+        expect(validateQuantity("20000")).toBe(10_000)
+        for (const value of ["0", "-1", "NaN", "1.5", String(Number.MAX_SAFE_INTEGER + 1)]) {
+            expect(() => validateQuantity(value)).toThrow(BadRequestError)
+        }
     })
 })

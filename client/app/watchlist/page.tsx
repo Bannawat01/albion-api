@@ -41,6 +41,8 @@ export default function WatchlistPage({ locale = 'en' }: { locale?: 'th' | 'en' 
         <p className="mt-2 text-sm text-muted-foreground">{th ? 'สินค้าที่บันทึกไว้และราคาล่าสุดที่ชุมชนรายงาน' : 'Your saved items and their latest community-uploaded market prices.'}</p>
       </div>
 
+      {watchlist.storageError && <section className="state-card mb-4" role="alert"><h2>{th ? 'บันทึกรายการโปรดไม่ได้' : 'Could not save the watchlist'}</h2><p>{th ? 'เบราว์เซอร์อาจปิดกั้นพื้นที่จัดเก็บหรือพื้นที่เต็ม' : 'Browser storage may be blocked or full.'}</p></section>}
+
       {!watchlist.items.length ? (
         <section className="state-card">
           <Star className="mx-auto h-8 w-8 text-primary" />

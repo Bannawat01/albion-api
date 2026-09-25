@@ -36,7 +36,7 @@ const app = new Elysia()
  .use(cors({
    origin: allowedOrigins, // allowed frontends (override with CORS_ORIGINS env)
    credentials: true,
-   allowedHeaders: ['Content-Type', 'Authorization']
+   allowedHeaders: ['Content-Type', 'Authorization', 'X-Analytics-Key']
  }))
     .get('/', () => ({
         message: 'Albion API Server',
@@ -53,17 +53,34 @@ const app = new Elysia()
     .use(recommendationController)
     .use(analyticsController)
     .use(opportunitiesController)
-    .get('/health/database', async () => {
+    .get('/api/health', () => ({ status: 'ok' }))
+    .get('/health/database', async ({ request, set }) => {
+        if (!Bun.env.ANALYTICS_KEY || request.headers.get('x-analytics-key') !== Bun.env.ANALYTICS_KEY) {
+            set.status = 404
+            return { message: 'Not found' }
+        }
         const healthStatus = await DatabaseManager.getInstance().healthCheck()
         return healthStatus
     })
-    .get('/health/performance', () => {
+    .get('/health/performance', ({ request, set }) => {
+        if (!Bun.env.ANALYTICS_KEY || request.headers.get('x-analytics-key') !== Bun.env.ANALYTICS_KEY) {
+            set.status = 404
+            return { message: 'Not found' }
+        }
         return performanceMonitor.getSystemHealth()
     })
-    .get('/metrics/endpoints', () => {
+    .get('/metrics/endpoints', ({ request, set }) => {
+        if (!Bun.env.ANALYTICS_KEY || request.headers.get('x-analytics-key') !== Bun.env.ANALYTICS_KEY) {
+            set.status = 404
+            return { message: 'Not found' }
+        }
         return performanceMonitor.getEndpointStats()
     })
-    .get('/metrics/connections', () => {
+    .get('/metrics/connections', ({ request, set }) => {
+        if (!Bun.env.ANALYTICS_KEY || request.headers.get('x-analytics-key') !== Bun.env.ANALYTICS_KEY) {
+            set.status = 404
+            return { message: 'Not found' }
+        }
         return connectToDatabase.getConnectionStats()
     })
     .listen({

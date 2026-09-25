@@ -18,13 +18,14 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
     void itemApi.getGoldPrice()
       .then((result) => {
         if (!result.success || !result.data?.length) throw new Error(result.message || (th ? 'ไม่พบข้อมูลราคาทอง' : 'No gold data'))
+        const now = Date.now()
         const valid = result.data
-          .filter((item: GoldPrice) => Number.isFinite(item.price) && item.price > 0 && Number.isFinite(Date.parse(item.timestamp)))
+          .filter((item: GoldPrice) => Number.isFinite(item.price) && item.price > 0 && Number.isFinite(Date.parse(item.timestamp)) && Date.parse(item.timestamp) <= now)
           .sort((a: GoldPrice, b: GoldPrice) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
         if (!valid.length) throw new Error(th ? 'ข้อมูลราคาทองไม่ถูกต้อง' : 'Gold price data is invalid')
         setGoldData(valid)
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : (th ? 'โหลดราคาทองไม่ได้' : 'Unable to load gold prices')))
+      .catch(() => setError(th ? 'เซิร์ฟเวอร์อาจกำลังเริ่มทำงาน โปรดลองอีกครั้ง' : 'The server may be waking up. Please try again.'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -33,9 +34,9 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
 
   const cutoff = Date.now() - days * 86400000
   const visibleData = goldData.filter(item => new Date(item.timestamp).getTime() >= cutoff)
-  const data = visibleData.length ? visibleData : goldData
+  const data = visibleData
   const prices = data.map((item) => item.price)
-  const latest = prices[prices.length - 1]
+  const latest = goldData.at(-1)!
   const chartData = {
     labels: data.map((item) => date.format(new Date(item.timestamp))),
     datasets: [{
@@ -67,22 +68,22 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
       </header>
       <section className="ledger-panel p-5 sm:p-8">
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-          <div><p className="text-sm text-muted-foreground">{th ? 'ราคาล่าสุด' : 'Latest price'}</p><p className="text-3xl font-bold text-primary">{number.format(latest)}</p><p className="mt-1 text-xs text-muted-foreground">{th ? 'อัปเดต' : 'Updated'} {date.format(new Date(data.at(-1)!.timestamp))}</p></div>
+          <div><p className="text-sm text-muted-foreground">{th ? 'ราคาล่าสุด' : 'Latest price'}</p><p className="text-3xl font-bold text-primary">{number.format(latest.price)}</p><p className="mt-1 text-xs text-muted-foreground">{th ? 'อัปเดต' : 'Updated'} {date.format(new Date(latest.timestamp))}</p></div>
           <div className="flex gap-6 text-sm">
-            <Stat label={th ? 'สูงสุด' : 'High'} value={Math.max(...prices)} format={number} />
-            <Stat label={th ? 'ต่ำสุด' : 'Low'} value={Math.min(...prices)} format={number} />
+            <Stat label={th ? 'สูงสุด' : 'High'} value={prices.length ? Math.max(...prices) : null} format={number} />
+            <Stat label={th ? 'ต่ำสุด' : 'Low'} value={prices.length ? Math.min(...prices) : null} format={number} />
             <Stat label={th ? 'จำนวนข้อมูล' : 'Samples'} value={prices.length} format={number} />
           </div>
         </div>
         <div className="mb-5 flex gap-2" aria-label={th ? 'ช่วงเวลาของกราฟ' : 'Chart range'}>{[7, 30, 90].map(value => <button key={value} type="button" onClick={() => setDays(value)} aria-pressed={days === value} className={days === value ? 'nav-link is-active' : 'nav-link'}>{value} {th ? 'วัน' : 'days'}</button>)}</div>
-        <div className="h-[320px] sm:h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div>
+        {data.length ? <div className="h-[320px] sm:h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div> : <div className="state-card"><h3>{th ? `ไม่มีข้อมูลในช่วง ${days} วัน` : `No data in the last ${days} days`}</h3><p>{th ? 'ลองเลือกช่วงเวลาที่ยาวขึ้น' : 'Try a longer time range.'}</p></div>}
       </section>
     </main>
   )
 }
 
-function Stat({ label, value, format }: { label: string; value: number; format: Intl.NumberFormat }) {
-  return <div><p className="text-muted-foreground">{label}</p><p className="font-semibold text-foreground">{format.format(value)}</p></div>
+function Stat({ label, value, format }: { label: string; value: number | null; format: Intl.NumberFormat }) {
+  return <div><p className="text-muted-foreground">{label}</p><p className="font-semibold text-foreground">{value == null ? '—' : format.format(value)}</p></div>
 }
 
 function MarketState({ title, detail, retry = false, locale }: { title: string; detail?: string; retry?: boolean; locale: 'th' | 'en' }) {

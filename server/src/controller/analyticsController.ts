@@ -1,9 +1,11 @@
 import Elysia from 'elysia'
 import { connectToDatabase } from '../configs/database'
+import { TTLCache } from '../service/timeToLive'
 
 const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'donate_click', 'opportunities_view', 'opportunity_filter', 'opportunity_open'])
 const ID_RE = /^[a-f0-9-]{20,64}$/i
 const BOT_RE = /bot|crawler|spider|slurp|google-inspectiontool|lighthouse/i
+const recentEvents = new TTLCache<boolean>(5_000)
 
 export const isBotUserAgent = (userAgent = '') => BOT_RE.test(userAgent)
 
@@ -22,6 +24,12 @@ const saveEvent = async ({ body, request, set }: { body: unknown; request: Reque
       return { success: false }
     }
     const event = body as { event: string; visitorId: string; path?: string }
+    const dedupeKey = `${event.visitorId}:${event.event}:${event.path || '/'}`
+    if (recentEvents.has(dedupeKey)) {
+      set.status = 204
+      return
+    }
+    recentEvents.set(dedupeKey, true, 2_000)
     await connectToDatabase.getDb().collection('analytics_events').insertOne({
       event: event.event,
       visitorId: event.visitorId,

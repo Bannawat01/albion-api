@@ -146,30 +146,6 @@ export const itemController = new Elysia({
         }
     })
 
-    .get("/cache/stats", async () => {
-        try {
-            const stats = itemRepository.getCacheStats()
-            return {
-                success: true,
-                data: stats
-            }
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : "Failed to get cache stats")
-        }
-    })
-
-    .delete("/cache/clear", async () => {
-        try {
-            itemRepository.clearMetadataCache()
-            return {
-                success: true,
-                message: "Cache cleared successfully"
-            }
-        } catch (error) {
-            throw new Error(error instanceof Error ? error.message : "Failed to clear cache")
-        }
-    })
-
     // Pagination endpoints
     .get("/items/paginated", async ({ query }) => {
         try {
@@ -298,9 +274,9 @@ export const itemController = new Elysia({
 
             // Validate ids exist in metadata (cheap cached lookup) and are well-formed
             const metadata = await itemRepository.fetchMetadata()
-            const validIds = ids.filter((id: unknown): id is string =>
+            const validIds = [...new Set(ids.filter((id: unknown): id is string =>
                 typeof id === 'string' && !!metadata.itemsData[id]
-            )
+            ))]
             if (validIds.length === 0) {
                 throw new BadRequestError("No valid item ids provided")
             }
