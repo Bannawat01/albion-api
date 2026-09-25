@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://www.albion-market-ai.online'),
   applicationName: 'Albion Market Ledger',
   title: {
-    default: 'ราคา Albion Online Asia วันนี้ | Albion Market Ledger',
+    default: 'เช็คราคา Albion Online Asia ทุกเมือง | Albion Market Ledger',
     template: '%s | Albion Market Ledger',
   },
-  description: 'เช็กราคา Albion Online Asia ทุกเมือง ดูประวัติราคา ปริมาณซื้อขาย และหาเส้นทางซื้อขายทำกำไร อัปเดตจากข้อมูลผู้เล่น',
+  description: 'เช็คราคา Albion Online Asia ที่ผู้เล่นรายงาน เปรียบเทียบทุกเมือง ดูประวัติราคา และหาเส้นทางซื้อขายทำกำไรหลังหักภาษี',
   keywords: ['Albion Online market', 'Albion Asia price', 'ราคา Albion Online', 'ตลาด Albion', 'Albion trade route'],
   verification: { other: { 'msvalidate.01': '7E2B98BB58F4B63AE79EC39D08F4D4D6' } },
   openGraph: {

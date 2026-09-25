@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
@@ -54,6 +54,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const storedLanguage = useLanguage()
   const th = locale ? locale === 'th' : storedLanguage.th
   const [query, setQuery] = useState(initialQuery)
+  const userChangedQuery = useRef(false)
   const search = useDebounce(query.trim(), 250)
   const [page, setPage] = useState(initialPage)
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
@@ -66,7 +67,10 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
 
   useEffect(() => setPage(1), [search])
   useEffect(() => {
-    if (search.length >= 2) track('search')
+    if (userChangedQuery.current && search.length >= 2) {
+      track('search')
+      userChangedQuery.current = false
+    }
   }, [search])
 
   const itemIds = useMemo(() => items.map((item) => item.uniqueName), [items])
@@ -118,7 +122,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         <Search className="h-5 w-5 text-primary" aria-hidden="true" />
         <input
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => { setQuery(event.target.value); userChangedQuery.current = true }}
           placeholder={th ? 'ค้นหา: ดาบ กระเป๋า โพชัน...' : 'Search: sword, bag, potion...'}
           aria-label={th ? 'ค้นหาไอเทม Albion' : 'Search Albion items'}
           autoComplete="off"

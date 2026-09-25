@@ -3,13 +3,20 @@ import { connectToDatabase } from '../configs/database'
 
 const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'donate_click', 'opportunities_view', 'opportunity_filter', 'opportunity_open'])
 const ID_RE = /^[a-f0-9-]{20,64}$/i
+const BOT_RE = /bot|crawler|spider|slurp|google-inspectiontool|lighthouse/i
+
+export const isBotUserAgent = (userAgent = '') => BOT_RE.test(userAgent)
 
 export function validAnalyticsEvent(body: unknown): body is { event: string; visitorId: string; path?: string } {
   const value = body as Record<string, unknown>
   return !!value && EVENTS.has(String(value.event)) && ID_RE.test(String(value.visitorId)) && String(value.path || '').length <= 200
 }
 
-const saveEvent = async ({ body, set }: { body: unknown; set: { status?: number | string } }) => {
+const saveEvent = async ({ body, request, set }: { body: unknown; request: Request; set: { status?: number | string } }) => {
+    if (isBotUserAgent(request.headers.get('user-agent') || '')) {
+      set.status = 204
+      return
+    }
     if (!validAnalyticsEvent(body)) {
       set.status = 400
       return { success: false }

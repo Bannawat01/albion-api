@@ -3,7 +3,7 @@ import { PaginationService } from './paginationService'
 import { TTLCache } from './timeToLive'
 import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './priceAdvisoryService'
 import { summarizeHistory } from '../controller/recommendationController'
-import { validAnalyticsEvent } from '../controller/analyticsController'
+import { isBotUserAgent, validAnalyticsEvent } from '../controller/analyticsController'
 
 describe('PaginationService', () => {
   it('normalizes unsafe pagination values', () => {
@@ -118,5 +118,7 @@ describe('analytics privacy boundary', () => {
   it('accepts only known events with anonymous browser ids', () => {
     expect(validAnalyticsEvent({ event: 'search', visitorId: '12345678-1234-1234-1234-123456789abc', path: '/' })).toBe(true)
     expect(validAnalyticsEvent({ event: 'email', visitorId: 'me@example.com' })).toBe(false)
+    expect(isBotUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1)')).toBe(true)
+    expect(isBotUserAgent('Mozilla/5.0 Chrome/140 Safari/537.36')).toBe(false)
   })
 })
