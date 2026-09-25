@@ -20,6 +20,17 @@ describe('opportunity ranking', () => {
   test('drops missing, over-age and over-budget routes', () => {
     expect(rankOpportunityCandidates({ T4_BAG: [price('Bridgewatch', 1000, 0, 31), price('Martlock', 1300, 1500, 5)] }, filters, now)).toHaveLength(0)
     expect(rankOpportunityCandidates({ T4_BAG: [price('Bridgewatch', 20_000, 0, 5), price('Martlock', 0, 30_000, 5)] }, filters, now)).toHaveLength(0)
+    expect(rankOpportunityCandidates({ T4_BAG: [price('Bridgewatch', 1000, 0, 5), price('Martlock', 0, 1500, 5)] }, { ...filters, budget: 0 }, now)).toHaveLength(0)
+  })
+  test('falls back to fresh cities when the cheapest or highest price is stale', () => {
+    const rows = rankOpportunityCandidates({ T4_BAG: [
+      price('Bridgewatch', 500, 0, 31),
+      price('Lymhurst', 1000, 0, 5),
+      price('Martlock', 0, 2000, 31),
+      price('Thetford', 0, 1500, 5),
+    ] }, filters, now)
+    expect(rows[0].sourceCity).toBe('Lymhurst')
+    expect(rows[0].targetCity).toBe('Thetford')
   })
   test('confidence uses freshness, coverage and volume', () => {
     const fresh = new Date(now - 5 * 60_000).toISOString()

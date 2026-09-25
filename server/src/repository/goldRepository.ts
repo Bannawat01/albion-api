@@ -41,7 +41,7 @@ export class GoldRepository {
 
     async fetchGoldPrices(options: GoldPriceOptions = {}): Promise<GoldPrice[] | string> {
         try {
-            const { count = 10 } = options
+            const count = Math.min(500, Math.max(1, Math.trunc(Number(options.count) || 10)))
             const cacheKey = `gold_prices_${count}`
 
             const cacheData = this.goldPriceCache.get(cacheKey)

@@ -18,7 +18,11 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
     void itemApi.getGoldPrice()
       .then((result) => {
         if (!result.success || !result.data?.length) throw new Error(result.message || (th ? 'ไม่พบข้อมูลราคาทอง' : 'No gold data'))
-        setGoldData(result.data)
+        const valid = result.data
+          .filter((item: GoldPrice) => Number.isFinite(item.price) && item.price > 0 && Number.isFinite(Date.parse(item.timestamp)))
+          .sort((a: GoldPrice, b: GoldPrice) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+        if (!valid.length) throw new Error(th ? 'ข้อมูลราคาทองไม่ถูกต้อง' : 'Gold price data is invalid')
+        setGoldData(valid)
       })
       .catch((reason) => setError(reason instanceof Error ? reason.message : (th ? 'โหลดราคาทองไม่ได้' : 'Unable to load gold prices')))
       .finally(() => setLoading(false))

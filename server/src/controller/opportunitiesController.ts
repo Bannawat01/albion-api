@@ -26,23 +26,25 @@ type Filters = { origin?: string; budget: number; minProfit: number; minVolume: 
 
 export function rankOpportunityCandidates(prices: Record<string, Price[]>, filters: Filters, now = Date.now()): Opportunity[] {
   const rows: Opportunity[] = []
+  const isFreshEnough = (value: string) => {
+    const age = now - new Date(value).getTime()
+    return Number.isFinite(age) && age >= 0 && age <= MAX_ROUTE_AGE_MS && age <= filters.maxAgeMinutes * 60_000
+  }
   for (const [itemId, itemPrices] of Object.entries(prices)) {
     const quality = itemPrices.filter(price => Number(price.quantity) === 1)
     const coverage = new Set(quality.map(price => price.city)).size
-    const sources = quality.filter(price => price.sell_Price_Min > 0 && (!filters.origin || price.city === filters.origin))
+    const sources = quality.filter(price => price.sell_Price_Min > 0 && isFreshEnough(price.sell_Price_Min_Date) && (!filters.origin || price.city === filters.origin))
     const source = sources.sort((a, b) => a.sell_Price_Min - b.sell_Price_Min)[0]
     if (!source) continue
     const targets = quality.filter(price => price.city !== source.city).map(price => ({
       row: price,
       value: filters.strategy === 'quick' ? price.buy_Price_max : price.sell_Price_Min,
       updatedAt: filters.strategy === 'quick' ? price.buy_Price_Max_Date : price.sell_Price_Min_Date,
-    })).filter(target => target.value > 0).sort((a, b) => b.value - a.value)
+    })).filter(target => target.value > 0 && isFreshEnough(target.updatedAt)).sort((a, b) => b.value - a.value)
     const target = targets[0]
     if (!target) continue
     const sourceUpdatedAt = source.sell_Price_Min_Date
-    const ages = [sourceUpdatedAt, target.updatedAt].map(value => now - new Date(value).getTime())
-    if (ages.some(age => !Number.isFinite(age) || age < 0 || age > MAX_ROUTE_AGE_MS || age > filters.maxAgeMinutes * 60_000)) continue
-    const quantity = filters.budget > 0 ? Math.min(10_000, Math.floor(filters.budget / source.sell_Price_Min)) : 1
+    const quantity = Math.min(10_000, Math.floor(filters.budget / source.sell_Price_Min))
     if (quantity < 1) continue
     const investment = source.sell_Price_Min * quantity
     const tax = target.value * quantity * 0.065
