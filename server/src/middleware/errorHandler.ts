@@ -1,6 +1,12 @@
 import { NotFoundError, BadRequestError, UnauthorizedError, ForbiddenError, ValidationError, ExternalApiError, ConnectionError } from "./customError"
 
-export const errorHandler = ({ error }: { error: any }) => {
+export const errorHandler = ({ error, code }: { error: any; code?: unknown }) => {
+    if (code === 'NOT_FOUND') {
+        return new Response(JSON.stringify({ error: 'Not Found', message: 'Not found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+        })
+    }
     if (error instanceof BadRequestError) {
         return new Response(JSON.stringify({
             error: 'Bad Request',

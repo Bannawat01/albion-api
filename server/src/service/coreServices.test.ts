@@ -5,6 +5,7 @@ import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './pri
 import { summarizeHistory } from '../controller/recommendationController'
 import { isBotUserAgent, validAnalyticsEvent } from '../controller/analyticsController'
 import { sanitizeGoldPrices } from '../repository/goldRepository'
+import { errorHandler } from '../middleware/errorHandler'
 
 describe('PaginationService', () => {
   it('normalizes unsafe pagination values', () => {
@@ -159,5 +160,12 @@ describe('analytics privacy boundary', () => {
     expect(validAnalyticsEvent({ event: 'email', visitorId: 'me@example.com' })).toBe(false)
     expect(isBotUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1)')).toBe(true)
     expect(isBotUserAgent('Mozilla/5.0 Chrome/140 Safari/537.36')).toBe(false)
+  })
+})
+
+describe('HTTP error boundary', () => {
+  it('preserves framework 404 responses', () => {
+    const response = errorHandler({ code: 'NOT_FOUND', error: new Error('NOT_FOUND') })
+    expect(response.status).toBe(404)
   })
 })
