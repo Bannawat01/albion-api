@@ -108,10 +108,10 @@ function computeRecommendations(markets: CityMarketStat[], ctx: TransportContext
     const riskScore = CITY_RISK[m.city] ?? 0.5
     const costBasisTotal = costBasisPerUnit * qty
     const net = grossRevenue - tax - costBasisTotal
-    const sourceUpdatedAt = from.sellUpdatedAt || from.lastUpdated
+    const sourceUpdatedAt = from.sellUpdatedAt || ''
     const targetUpdatedAt = strategy === 'quick'
-      ? (m.buyUpdatedAt || m.lastUpdated)
-      : (m.sellUpdatedAt || m.lastUpdated)
+      ? (m.buyUpdatedAt || '')
+      : (m.sellUpdatedAt || '')
     const trust = routeConfidence(sourceUpdatedAt, targetUpdatedAt, markets.length, null)
     if (trust.tooOld) continue
     maxNet = Math.max(maxNet, net)

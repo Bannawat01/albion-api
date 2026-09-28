@@ -6,16 +6,20 @@ type HistoryPoint = { item_count: number; avg_price: number; timestamp: string }
 const cache = new TTLCache<ReturnType<typeof summarizeHistory>>(500)
 
 export function summarizeHistory(points: HistoryPoint[], days: number, now = Date.now()) {
+  const windowDays = Math.max(1, Math.min(days, 365))
+  const start = new Date(now)
+  start.setUTCHours(0, 0, 0, 0)
+  start.setUTCDate(start.getUTCDate() - windowDays + 1)
   const data = points.filter(point => {
     const timestamp = Date.parse(point.timestamp)
     return Number.isFinite(point.item_count) && point.item_count >= 0
       && Number.isFinite(point.avg_price) && point.avg_price >= 0
-      && Number.isFinite(timestamp) && timestamp <= now
-  }).sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)).slice(-Math.max(1, Math.min(days, 365)))
+      && Number.isFinite(timestamp) && timestamp >= start.getTime() && timestamp <= now
+  }).sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
     .map(point => ({ date: point.timestamp, volume: point.item_count, averagePrice: point.avg_price }))
   const totalVolume = data.reduce((sum, point) => sum + point.volume, 0)
   const pricedVolume = data.reduce((sum, point) => sum + point.averagePrice * point.volume, 0)
-  return { points: data, totalVolume, averageDailyVolume: data.length ? Math.round(totalVolume / data.length) : 0, averagePrice: totalVolume ? Math.round(pricedVolume / totalVolume) : 0 }
+  return { points: data, totalVolume, averageDailyVolume: Math.round(totalVolume / windowDays * 10) / 10, averagePrice: totalVolume ? Math.round(pricedVolume / totalVolume) : 0 }
 }
 
 export async function fetchHistorySummary(itemId: string, city: string, quality = 1, days = 7) {

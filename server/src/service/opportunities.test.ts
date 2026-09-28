@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { rankOpportunityCandidates } from '../controller/opportunitiesController'
+import { opportunitiesController } from '../controller/opportunitiesController'
+import { ItemRepository } from '../repository/itemRepository'
 import { routeConfidence } from './priceAdvisoryService'
 
 const now = Date.parse('2026-09-23T10:00:00Z')
@@ -46,4 +48,21 @@ describe('opportunity ranking', () => {
     expect(routeConfidence(fresh, fresh, 2, null, now).confidence).toBe('medium')
     expect(routeConfidence('', fresh, 5, 20, now).tooOld).toBe(true)
   })
+})
+
+test('partial empty opportunity results are not cached as a confirmed empty market', async () => {
+  const repository = ItemRepository.getInstance()
+  const original = repository.fetchItemsPricesBatchWithStatus
+  let calls = 0
+  repository.fetchItemsPricesBatchWithStatus = async () => ({ data: {}, partial: ++calls === 1 })
+  try {
+    const url = 'http://localhost/api/opportunities?budget=77123&maxAgeMinutes=119'
+    const first = await (await opportunitiesController.handle(new Request(url))).json()
+    const second = await (await opportunitiesController.handle(new Request(url))).json()
+    expect(first.partial).toBe(true)
+    expect(second.partial).toBe(false)
+    expect(calls).toBe(2)
+  } finally {
+    repository.fetchItemsPricesBatchWithStatus = original
+  }
 })

@@ -98,8 +98,9 @@ export const recommendationController = new Elysia({ prefix: '/api' })
     const enriched = await Promise.all(visible.map(async route => {
       try {
         const history = await fetchHistorySummary(id, route.city, quality, 7)
-        const trust = routeConfidence(route.sourceUpdatedAt, route.targetUpdatedAt, route.coverage, history.averageDailyVolume)
-        return { ...route, dailyVolume: history.averageDailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
+        const dailyVolume = history.points.length ? history.averageDailyVolume : null
+        const trust = routeConfidence(route.sourceUpdatedAt, route.targetUpdatedAt, route.coverage, dailyVolume)
+        return { ...route, dailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
       } catch { return route }
     }))
     return {

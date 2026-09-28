@@ -81,8 +81,9 @@ export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/oppo
   const enriched = await Promise.all(candidates.map(async opportunity => {
     try {
       const history = await fetchHistorySummary(opportunity.itemId, opportunity.targetCity, 1, 7)
-      const trust = routeConfidence(opportunity.sourceUpdatedAt, opportunity.targetUpdatedAt, opportunity.coverage, history.averageDailyVolume)
-      return { ...opportunity, dailyVolume: history.averageDailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
+      const dailyVolume = history.points.length ? history.averageDailyVolume : null
+      const trust = routeConfidence(opportunity.sourceUpdatedAt, opportunity.targetUpdatedAt, opportunity.coverage, dailyVolume)
+      return { ...opportunity, dailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
     } catch { partial = true; return opportunity }
   }))
   const seen = new Set<string>()
@@ -92,6 +93,6 @@ export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/oppo
     return true
   }).slice(0, filters.limit)
   const value = { generatedAt: new Date().toISOString(), partial, filters, items }
-  cache.set(cacheKey, value, TTL_CONSTANTS.FIVE_MINUTES)
+  if (!partial) cache.set(cacheKey, value, TTL_CONSTANTS.FIVE_MINUTES)
   return value
 })

@@ -3,6 +3,7 @@ import { ItemRepository, rankByPopularity } from './itemRepository'
 
 const realFetch = globalThis.fetch
 let priceCalls = 0
+let failNextPriceCall = false
 
 beforeAll(async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -16,6 +17,10 @@ beforeAll(async () => {
     if (url.includes('world.json')) return Response.json({})
     if (url.includes('/stats/prices/')) {
       priceCalls++
+      if (failNextPriceCall) {
+        failNextPriceCall = false
+        return new Response('unavailable', { status: 503 })
+      }
       return Response.json([
         {
           item_id: 'T4_BAG', city: 'Bridgewatch', quality: 1,
@@ -53,6 +58,19 @@ describe('ItemRepository batch prices', () => {
     expect(first.T4_BAG[0]?.sell_Price_Min).toBe(100)
     expect(first.T4_CAPE[0]?.sell_Price_Min).toBe(200)
     expect(second).toEqual(first)
+  })
+
+  it('reports upstream failure as partial and retries instead of caching an empty market', async () => {
+    const repository = ItemRepository.getInstance()
+    failNextPriceCall = true
+    priceCalls = 0
+    const first = await repository.fetchItemsPricesBatchWithStatus(['T4_BAG'], 'Martlock')
+    const second = await repository.fetchItemsPricesBatchWithStatus(['T4_BAG'], 'Martlock')
+    expect(first.partial).toBe(true)
+    expect(first.data.T4_BAG).toEqual([])
+    expect(second.partial).toBe(false)
+    expect(second.data.T4_BAG[0]?.sell_Price_Min).toBe(100)
+    expect(priceCalls).toBe(2)
   })
 })
 

@@ -56,7 +56,12 @@ export class ItemRepository {
         })
         if (!missing.length) return { data: results, partial }
 
-        const metadata = await this.fetchMetadata()
+        let metadata: Awaited<ReturnType<ItemRepository['fetchMetadata']>>
+        try {
+            metadata = await this.fetchMetadata()
+        } catch {
+            return { data: results, partial: true }
+        }
         // ponytail: chunks only protect URL length; the normal 12-card page is one request.
         for (let offset = 0; offset < missing.length; offset += 40) {
             const chunk = missing.slice(offset, offset + 40)
@@ -87,7 +92,6 @@ export class ItemRepository {
                 console.warn('batch price request failed:', error)
                 for (const id of chunk) {
                     results[id] = []
-                    this.priceCache.set(`price_${id}_${cityKey}`, [], TTL_CONSTANTS.ONE_MINUTE)
                 }
             }
         }

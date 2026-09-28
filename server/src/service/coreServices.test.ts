@@ -3,7 +3,7 @@ import { PaginationService } from './paginationService'
 import { TTLCache } from './timeToLive'
 import { PriceAdvisoryService, distanceFactor, type CityMarketStat } from './priceAdvisoryService'
 import { summarizeHistory } from '../controller/recommendationController'
-import { isBotUserAgent, validAnalyticsEvent } from '../controller/analyticsController'
+import { analyticsController, isBotUserAgent, validAnalyticsEvent } from '../controller/analyticsController'
 import { sanitizeGoldPrices } from '../repository/goldRepository'
 import { errorHandler } from '../middleware/errorHandler'
 
@@ -115,6 +115,31 @@ describe('PriceAdvisoryService', () => {
     expect(await PriceAdvisoryService.getInstance().recommend(markets, { ...base, quantity: NaN })).toEqual([])
     expect(await PriceAdvisoryService.getInstance().recommend(markets, { ...base, quantity: 10_001 })).toEqual([])
   })
+
+  it('uses only the timestamp for the price side used by each strategy', async () => {
+    const fresh = new Date().toISOString()
+    const old = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
+    const source = { ...markets[0], sellUpdatedAt: fresh, buyUpdatedAt: old }
+    const target = { ...markets[1], sellUpdatedAt: '', buyUpdatedAt: fresh, lastUpdated: fresh }
+    const base = { fromCity: 'Bridgewatch', itemWeight: 1, quantity: 1, taxRate: 0.065, mode: 'profit' as const, scenario: 'arbitrage' as const }
+    expect(await PriceAdvisoryService.getInstance().recommend([source, target], { ...base, strategy: 'list' })).toEqual([])
+    expect((await PriceAdvisoryService.getInstance().recommend([source, target], { ...base, strategy: 'quick' }))[0]?.targetUpdatedAt).toBe(fresh)
+    expect(await PriceAdvisoryService.getInstance().recommend([{ ...source, sellUpdatedAt: '' }, target], { ...base, strategy: 'quick' })).toEqual([])
+    expect(await PriceAdvisoryService.getInstance().recommend([{ ...source, sellUpdatedAt: old }, target], { ...base, strategy: 'quick' })).toEqual([])
+    expect(await PriceAdvisoryService.getInstance().recommend([{ ...source, sellUpdatedAt: 'bad' }, target], { ...base, strategy: 'quick' })).toEqual([])
+    expect(await PriceAdvisoryService.getInstance().recommend([{ ...source, sellUpdatedAt: new Date(Date.now() + 60_000).toISOString() }, target], { ...base, strategy: 'quick' })).toEqual([])
+  })
+
+  it('calculates list and quick-sale profit from the correct target price', async () => {
+    const base = { fromCity: 'Bridgewatch', itemWeight: 1, quantity: 2, taxRate: 0.065, mode: 'profit' as const, scenario: 'arbitrage' as const }
+    const list = (await PriceAdvisoryService.getInstance().recommend(markets.slice(0, 2), { ...base, strategy: 'list' }))[0]
+    const quick = (await PriceAdvisoryService.getInstance().recommend(markets.slice(0, 2), { ...base, strategy: 'quick' }))[0]
+    expect(list?.tax).toBeCloseTo(23.4)
+    expect(list?.netProfit).toBeCloseTo(136.6)
+    expect(quick?.tax).toBeCloseTo(20.8)
+    expect(quick?.netProfit).toBeCloseTo(99.2)
+    expect(await PriceAdvisoryService.getInstance().recommend([markets[0], { ...markets[1], sellPrice: 0, buyPrice: 0 }], { ...base, strategy: 'list' })).toEqual([])
+  })
 })
 
 describe('market history', () => {
@@ -123,11 +148,21 @@ describe('market history', () => {
       { item_count: 10, avg_price: 100, timestamp: '2026-09-20T00:00:00' },
       { item_count: 20, avg_price: 200, timestamp: '2026-09-21T00:00:00' },
       { item_count: 30, avg_price: 300, timestamp: '2026-09-22T00:00:00' },
-    ], 2)
+    ], 2, Date.parse('2026-09-22T12:00:00Z'))
     expect(result.points.map(point => point.date)).toEqual(['2026-09-21T00:00:00', '2026-09-22T00:00:00'])
     expect(result.totalVolume).toBe(50)
     expect(result.averageDailyVolume).toBe(25)
     expect(result.averagePrice).toBe(260)
+  })
+  it('counts missing calendar days as zero instead of inflating daily volume', () => {
+    const now = Date.parse('2026-09-23T12:00:00Z')
+    const point = (day: number) => ({ item_count: 7, avg_price: 100, timestamp: `2026-09-${day}T08:00:00Z` })
+    expect(summarizeHistory([point(23)], 7, now).averageDailyVolume).toBe(1)
+    expect(summarizeHistory([point(21), point(22), point(23)], 7, now).averageDailyVolume).toBe(3)
+    expect(summarizeHistory([17, 18, 19, 20, 21, 22, 23].map(point), 7, now).averageDailyVolume).toBe(7)
+    expect(summarizeHistory([], 7, now).points).toEqual([])
+    expect(summarizeHistory([point(16), point(23)], 7, now).totalVolume).toBe(7)
+    expect(summarizeHistory([{ ...point(23), item_count: 1 }], 7, now).averageDailyVolume).toBe(0.1)
   })
   it('drops invalid, infinite and future observations before sorting', () => {
     const now = Date.parse('2026-09-23T00:00:00Z')
@@ -160,6 +195,14 @@ describe('analytics privacy boundary', () => {
     expect(validAnalyticsEvent({ event: 'email', visitorId: 'me@example.com' })).toBe(false)
     expect(isBotUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1)')).toBe(true)
     expect(isBotUserAgent('Mozilla/5.0 Chrome/140 Safari/537.36')).toBe(false)
+  })
+  it('ignores crawler events before attempting to save them', async () => {
+    const response = await analyticsController.handle(new Request('http://localhost/api/events', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'user-agent': 'Googlebot/2.1' },
+      body: JSON.stringify({ event: 'search', visitorId: '12345678-1234-1234-1234-123456789abc' }),
+    }))
+    expect(response.status).toBe(204)
   })
 })
 
