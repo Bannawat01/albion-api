@@ -107,10 +107,6 @@ export class ItemRepository {
         cacheMisses: [] // เวลาที่ใช้เมื่อ miss cache
     }
 
-    public constructor() {
-        this.initializePreloading()
-    }
-
     public static getInstance(): ItemRepository { // Singleton pattern
         if (!ItemRepository.instance) {
             ItemRepository.instance = new ItemRepository()
@@ -151,26 +147,6 @@ export class ItemRepository {
             }
         }
     }
-
-    private async initializePreloading(): Promise<void> {
-
-        try {
-            await this.preloadMetadata()
-
-        } catch (error) {
-            throw new ExternalApiError("Unable to preload game metadata")
-        }
-    }
-
-
-    private async preloadMetadata(): Promise<void> {
-        try {
-            await this.fetchMetadata()
-        } catch (error) {
-            throw new ExternalApiError("Unable to preload game metadata")
-        }
-    }
-
 
     async fetchMetadata(): Promise<{ items: any[], locations: string[], itemsData: any }> {
         const cacheKey = 'metadata'

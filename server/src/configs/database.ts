@@ -63,7 +63,7 @@ export const connectToDatabase = {
         try {
             const dbName = Bun.env.MONGO_DB || 'albion_dev'
             const attempt = async (uri: string, label: string) => {
-                console.log(`[db] Attempting connection (${label}): ${uri}`)
+                console.log(`[db] Attempting connection (${label})`)
                 await mongoose.connect(uri)
                 await mongoClient.connect()
                 database = mongoClient.db(dbName)
@@ -74,7 +74,7 @@ export const connectToDatabase = {
                 await attempt(resolvedUrl, 'primary')
             } catch (err: any) {
                 const msg = err?.message || ''
-                console.error('[db] Primary connection failed:', msg)
+                console.error('[db] Primary connection failed:', err?.name || 'ConnectionError')
 
                 // Conditions for attempting localhost fallback:
                 // 1. DNS errors (ENOTFOUND / EAI_AGAIN) AND the primary URI host is literally 'mongo'
@@ -86,7 +86,6 @@ export const connectToDatabase = {
                 const needLocalFallback = (dnsError && isDockerHostMongo) || (!directUri && !username && genericAuthOrConn)
 
                 if (needLocalFallback) {
-                    const original = resolvedUrl
                     try {
                         console.warn('[db] Falling back to localhost MongoDB (detected host environment).')
                         // Ensure previous (failed) connections are fully closed before new attempt
@@ -95,8 +94,7 @@ export const connectToDatabase = {
                         mongoClient = new MongoClient(fallbackLocal, baseMongoOptions)
                         await attempt(fallbackLocal, 'localhost-fallback')
                     } catch (e2) {
-                        console.error('[db] Localhost fallback failed:', (e2 as any).message)
-                        console.error('[db] Original URI was:', original)
+                        console.error('[db] Localhost fallback failed:', (e2 as any)?.name || 'ConnectionError')
                         throw err
                     }
                 } else {
@@ -109,7 +107,7 @@ export const connectToDatabase = {
             itemRepo = new ItemRepository()
 
         } catch (error) {
-            console.error("Error connecting to MongoDB:", error)
+            console.error("Error connecting to MongoDB:", (error as Error)?.name || 'ConnectionError')
             throw error
         } finally {
             isConnecting = false
@@ -140,7 +138,7 @@ export const connectToDatabase = {
             await mongoClient?.close()
             console.log("Disconnected from MongoDB")
         } catch (error) {
-            console.error("Error disconnecting from MongoDB:", error)
+            console.error("Error disconnecting from MongoDB:", (error as Error)?.name || 'ConnectionError')
         }
     }
 }

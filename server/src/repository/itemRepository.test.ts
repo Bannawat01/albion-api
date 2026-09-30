@@ -4,11 +4,16 @@ import { ItemRepository, rankByPopularity } from './itemRepository'
 const realFetch = globalThis.fetch
 let priceCalls = 0
 let failNextPriceCall = false
+let failNextMetadataCall = false
 
 beforeAll(async () => {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input)
     if (url.includes('items.json')) {
+      if (failNextMetadataCall) {
+        failNextMetadataCall = false
+        return new Response('unavailable', { status: 503 })
+      }
       return Response.json([
         { UniqueName: 'T4_BAG', LocalizedNames: { 'EN-US': "Adept's Bag" } },
         { UniqueName: 'T4_CAPE', LocalizedNames: { 'EN-US': "Adept's Cape" } },
@@ -48,6 +53,13 @@ afterAll(() => {
 })
 
 describe('ItemRepository batch prices', () => {
+  it('starts without upstream metadata and retries after a temporary failure', async () => {
+    const repository = new ItemRepository()
+    failNextMetadataCall = true
+    await expect(repository.fetchMetadata()).rejects.toThrow('Unable to fetch game metadata')
+    expect((await repository.fetchMetadata()).items).toContain('T4_BAG')
+  })
+
   it('fetches multiple item IDs once and reuses the item cache', async () => {
     const repository = ItemRepository.getInstance()
     priceCalls = 0
