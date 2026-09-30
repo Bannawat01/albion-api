@@ -24,8 +24,13 @@ export interface Opportunity {
 }
 
 type Filters = { origin?: string; budget: number; minProfit: number; minVolume: number; maxAgeMinutes: number; strategy: 'list' | 'quick'; limit: number }
+export type OpportunityDiagnostics = {
+  candidateItems: number; itemsWithPrice: number; itemsWithFreshSource: number; itemsWithFreshPair: number
+  itemsWithinBudget: number; profitableItems: number; historyChecked: number; historyUnavailable: number; returnedItems: number
+}
+export type EmptyReason = 'partial_upstream' | 'no_fresh_source' | 'no_fresh_pair' | 'over_budget' | 'no_profit' | 'volume_filter' | null
 
-export function rankOpportunityCandidates(prices: Record<string, Price[]>, filters: Filters, now = Date.now()): Opportunity[] {
+export function rankOpportunityCandidates(prices: Record<string, Price[]>, filters: Filters, now = Date.now(), diagnostics?: OpportunityDiagnostics): Opportunity[] {
   const rows: Opportunity[] = []
   const isFreshEnough = (value: string) => {
     const age = now - new Date(value).getTime()
@@ -33,8 +38,10 @@ export function rankOpportunityCandidates(prices: Record<string, Price[]>, filte
   }
   for (const [itemId, itemPrices] of Object.entries(prices)) {
     const quality = itemPrices.filter(price => Number(price.quantity) === 1)
+    if (quality.some(price => price.sell_Price_Min > 0 || price.buy_Price_max > 0)) diagnostics && diagnostics.itemsWithPrice++
     const coverage = new Set(quality.map(price => price.city)).size
     const sources = quality.filter(price => price.sell_Price_Min > 0 && isFreshEnough(price.sell_Price_Min_Date) && (!filters.origin || price.city === filters.origin))
+    if (sources.length) diagnostics && diagnostics.itemsWithFreshSource++
     const source = sources.sort((a, b) => a.sell_Price_Min - b.sell_Price_Min)[0]
     if (!source) continue
     const targets = quality.filter(price => price.city !== source.city).map(price => ({
@@ -42,9 +49,12 @@ export function rankOpportunityCandidates(prices: Record<string, Price[]>, filte
       value: filters.strategy === 'quick' ? price.buy_Price_max : price.sell_Price_Min,
       updatedAt: filters.strategy === 'quick' ? price.buy_Price_Max_Date : price.sell_Price_Min_Date,
     })).filter(target => target.value > 0 && isFreshEnough(target.updatedAt)).sort((a, b) => b.value - a.value)
+    if (targets.length) diagnostics && diagnostics.itemsWithFreshPair++
     const sourceUpdatedAt = source.sell_Price_Min_Date
     const quantity = Math.min(10_000, Math.floor(filters.budget / source.sell_Price_Min))
     if (quantity < 1) continue
+    if (targets.length) diagnostics && diagnostics.itemsWithinBudget++
+    const rowCount = rows.length
     for (const target of targets.slice(0, filters.minVolume > 0 ? 3 : 1)) {
       const investment = source.sell_Price_Min * quantity
       const tax = target.value * quantity * 0.065
@@ -53,8 +63,19 @@ export function rankOpportunityCandidates(prices: Record<string, Price[]>, filte
       const trust = routeConfidence(sourceUpdatedAt, target.updatedAt, coverage, null, now)
       rows.push({ itemId, itemName: String(source.itemName || itemId), sourceCity: String(source.city), targetCity: String(target.row.city), quantity, buyPrice: source.sell_Price_Min, sellPrice: target.value, investment, tax, netProfit, margin: investment ? netProfit / investment * 100 : 0, dailyVolume: null, sourceUpdatedAt, targetUpdatedAt: target.updatedAt, coverage, confidence: trust.confidence, staleReasons: trust.staleReasons })
     }
+    if (rows.length > rowCount) diagnostics && diagnostics.profitableItems++
   }
   return rows.sort((a, b) => b.netProfit - a.netProfit)
+}
+
+export function opportunityEmptyReason(diagnostics: OpportunityDiagnostics, partial: boolean): EmptyReason {
+  if (diagnostics.returnedItems) return null
+  if (partial) return 'partial_upstream'
+  if (!diagnostics.itemsWithFreshSource) return 'no_fresh_source'
+  if (!diagnostics.itemsWithFreshPair) return 'no_fresh_pair'
+  if (!diagnostics.itemsWithinBudget) return 'over_budget'
+  if (!diagnostics.profitableItems) return 'no_profit'
+  return 'volume_filter'
 }
 
 const cache = new TTLCache<unknown>(200)
@@ -75,16 +96,19 @@ export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/oppo
   const batch = await ItemRepository.getInstance().fetchItemsPricesBatchWithStatus([...OPPORTUNITY_ITEMS])
   let partial = batch.partial
   const prices = batch.data
-  const ranked = rankOpportunityCandidates(prices, filters)
+  const diagnostics: OpportunityDiagnostics = { candidateItems: OPPORTUNITY_ITEMS.length, itemsWithPrice: 0, itemsWithFreshSource: 0, itemsWithFreshPair: 0, itemsWithinBudget: 0, profitableItems: 0, historyChecked: 0, historyUnavailable: 0, returnedItems: 0 }
+  const ranked = rankOpportunityCandidates(prices, filters, Date.now(), diagnostics)
   const primaryIds = [...new Set(ranked.map(item => item.itemId))].slice(0, filters.minVolume > 0 ? 5 : 10)
   const candidates = ranked.filter(item => primaryIds.includes(item.itemId)).slice(0, 10)
+  diagnostics.historyChecked = candidates.length
   const enriched = await Promise.all(candidates.map(async opportunity => {
     try {
       const history = await fetchHistorySummary(opportunity.itemId, opportunity.targetCity, 1, 7)
+      if (!history.points.length) diagnostics.historyUnavailable++
       const dailyVolume = history.points.length ? history.averageDailyVolume : null
       const trust = routeConfidence(opportunity.sourceUpdatedAt, opportunity.targetUpdatedAt, opportunity.coverage, dailyVolume)
       return { ...opportunity, dailyVolume, confidence: trust.confidence, staleReasons: trust.staleReasons }
-    } catch { partial = true; return opportunity }
+    } catch { partial = true; diagnostics.historyUnavailable++; return opportunity }
   }))
   const seen = new Set<string>()
   const items = enriched.filter(item => {
@@ -92,7 +116,8 @@ export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/oppo
     seen.add(item.itemId)
     return true
   }).slice(0, filters.limit)
-  const value = { generatedAt: new Date().toISOString(), partial, filters, items }
+  diagnostics.returnedItems = items.length
+  const value = { generatedAt: new Date().toISOString(), partial, filters, items, diagnostics, emptyReason: opportunityEmptyReason(diagnostics, partial) }
   if (!partial) cache.set(cacheKey, value, TTL_CONSTANTS.FIVE_MINUTES)
   return value
 })

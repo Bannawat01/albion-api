@@ -68,7 +68,7 @@ export type Opportunity = {
   confidence: 'high' | 'medium' | 'low'; staleReasons: string[]
 }
 export type OpportunityFilters = { origin?: string; budget?: number; minProfit?: number; minVolume?: number; maxAgeMinutes?: number; strategy?: 'list' | 'quick'; limit?: number }
-export type OpportunityResponse = { generatedAt: string; partial: boolean; filters: Required<Omit<OpportunityFilters, 'origin'>> & { origin?: string }; items: Opportunity[] }
+export type OpportunityResponse = { generatedAt: string; partial: boolean; filters: Required<Omit<OpportunityFilters, 'origin'>> & { origin?: string }; items: Opportunity[]; diagnostics: { candidateItems: number; itemsWithPrice: number; itemsWithFreshSource: number; itemsWithFreshPair: number; itemsWithinBudget: number; profitableItems: number; historyChecked: number; historyUnavailable: number; returnedItems: number }; emptyReason: 'partial_upstream' | 'no_fresh_source' | 'no_fresh_pair' | 'over_budget' | 'no_profit' | 'volume_filter' | null }
 
 export type TradeRecommendationResponse = {
   itemId: string
