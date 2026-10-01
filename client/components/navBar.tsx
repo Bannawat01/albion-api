@@ -22,7 +22,7 @@ export default function NavBar() {
     <>
       <header className="ledger-nav">
         <Link href={`/${locale}`} className="flex items-center gap-2.5 group shrink-0" aria-label="Albion Market Ledger home">
-          <img src="/images/market-ledger-logo.png" alt="" width="44" height="44" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
+          <img src="/images/market-ledger-logo.png" alt="Albion Market Ledger" width="44" height="44" className="h-10 w-10 object-contain transition-transform group-hover:scale-105" />
           <span className="font-ledger hidden sm:block text-lg font-semibold text-gold">Market Ledger</span>
         </Link>
         <span className="server-seal"><span /> Asia</span>
