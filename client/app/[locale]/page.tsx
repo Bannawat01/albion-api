@@ -6,11 +6,12 @@ import ItemSearch from '@/components/ItemSearch'
 import { alternateLanguages, COPY, GUIDE_SLUGS, isLocale, type Locale } from '@/lib/seo'
 import { guides } from '@/lib/guides'
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ page?: string; q?: string }> }): Promise<Metadata> {
   const { locale } = await params
   if (!isLocale(locale)) return {}
+  const query = await searchParams
   const c = COPY[locale]
-  return { title: c.title, description: c.description, alternates: { canonical: `/${locale}`, languages: alternateLanguages() }, openGraph: { title: c.title, description: c.description, url: `/${locale}`, locale: locale === 'th' ? 'th_TH' : 'en_US' } }
+  return { title: c.title, description: c.description, robots: query.q?.trim() || Number(query.page) > 1 ? { index: false, follow: true } : undefined, alternates: { canonical: `/${locale}`, languages: alternateLanguages() }, openGraph: { title: c.title, description: c.description, url: `/${locale}`, locale: locale === 'th' ? 'th_TH' : 'en_US' } }
 }
 
 export default async function LocalizedHome({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ page?: string; q?: string }> }) {

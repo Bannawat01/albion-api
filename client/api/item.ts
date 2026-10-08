@@ -185,7 +185,7 @@ const itemApi = {
     return data
   },
   getGoldPrice: async () => {
-    const { data } = await axiosInstance.get('/gold?count=50')
+    const { data } = await axiosInstance.get('/gold?count=200')
     return data
   },
   getOpportunities: async (filters: OpportunityFilters, signal?: AbortSignal): Promise<OpportunityResponse> => {

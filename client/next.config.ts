@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
     ],
   },
   turbopack: {},
+  async rewrites() {
+    return process.env.LOCAL_API_PROXY_TARGET
+      ? [{ source: '/api/:path*', destination: `${process.env.LOCAL_API_PROXY_TARGET}/api/:path*` }]
+      : []
+  },
 }
 
 export default withBundleAnalyzer({

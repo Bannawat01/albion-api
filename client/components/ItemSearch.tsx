@@ -244,7 +244,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
   ].filter(Boolean).join(' · ')
 
   return (
-    <article className="market-item flex min-h-[27rem] flex-col">
+    <article className="market-item flex min-h-72 flex-col">
       <div className="flex items-start gap-4">
         <ItemImage item={item} priority={imagePriority} locale={locale} />
         <div className="min-w-0 flex-1">
@@ -260,15 +260,16 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
             </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
-          {(!loading || prices) && <div className="mt-1 flex flex-wrap items-center gap-2"><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ข้อมูลราคาพอใช้' : 'ข้อมูลราคาจำกัด') : (confidence === 'medium' ? 'Usable price data' : 'Limited price data')}</span>{reasons && <span className="text-xs text-muted-foreground">{reasons}</span>}</div>}
+          {(!loading || prices) && <div className="mt-1"><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ข้อมูลราคาพอใช้' : 'ข้อมูลราคาจำกัด') : (confidence === 'medium' ? 'Usable price data' : 'Limited price data')}</span></div>}
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
             <PriceSummary label={th ? 'ราคาตั้งขายต่ำสุด' : 'Best sell'} result={bestSell} tone="sell" locale={locale} />
             <PriceSummary label={th ? 'คำสั่งซื้อสูงสุด' : 'Best buy order'} result={bestBuy} tone="buy" locale={locale} />
           </div>
         </div>
       </div>
-      <details className="market-details">
-        <summary><span>{loading && !prices ? (th ? 'กำลังโหลดราคาแต่ละเมือง...' : 'Loading city prices...') : (th ? `ราคา ${rows.length} เมือง` : `${rows.length} city ${rows.length === 1 ? 'price' : 'prices'}`)}</span><ChevronDown className="h-4 w-4" /></summary>
+      <details className="market-details mt-auto">
+        <summary><span>{th ? `รายละเอียด · ราคา ${rows.length} เมือง` : `Details · ${rows.length} ${rows.length === 1 ? 'city' : 'cities'}`}</span><ChevronDown className="h-4 w-4" /></summary>
+        {reasons && <p className="pt-3 text-xs leading-5 text-muted-foreground">{reasons}</p>}
         <div className="grid gap-2 pt-3 sm:grid-cols-2">
           {rows.length ? rows.map((row) => (
             <div key={row.city} className="price-row">
@@ -279,9 +280,9 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
             </div>
           )) : <p className="text-sm text-muted-foreground">{th ? 'ไม่มีราคาล่าสุดในเมืองที่เลือก' : 'No recent prices in selected markets.'}</p>}
         </div>
+        <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} locale={locale} />
+        <TradeFinder item={item} />
       </details>
-      <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} locale={locale} />
-      <div className="mt-auto"><TradeFinder item={item} /></div>
     </article>
   )
 }

@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import type { GoldPrice } from '@server/interface/goldInterface'
 import { itemApi } from '@/api/item'
+import { goldCost, goldDayChange, goldTime } from '@/lib/gold'
 import GoldLineChart from './GoldLineChart'
 
 export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' }) {
   const th = locale === 'th'
   const number = new Intl.NumberFormat(th ? 'th-TH' : 'en-US')
-  const date = new Intl.DateTimeFormat(th ? 'th-TH' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', timeZone: th ? 'Asia/Bangkok' : undefined })
-  const [days, setDays] = useState(30)
+  const date = new Intl.DateTimeFormat(th ? 'th-TH' : 'en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: th ? 'Asia/Bangkok' : undefined })
+  const [range, setRange] = useState<'day' | 'week' | 'all'>('day')
+  const [amount, setAmount] = useState('100')
   const [goldData, setGoldData] = useState<GoldPrice[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -20,8 +22,8 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
         if (!result.success || !result.data?.length) throw new Error(result.message || (th ? 'ไม่พบข้อมูลราคาทอง' : 'No gold data'))
         const now = Date.now()
         const valid = result.data
-          .filter((item: GoldPrice) => Number.isFinite(item.price) && item.price > 0 && Number.isFinite(Date.parse(item.timestamp)) && Date.parse(item.timestamp) <= now)
-          .sort((a: GoldPrice, b: GoldPrice) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+          .filter((item: GoldPrice) => Number.isFinite(item.price) && item.price > 0 && Number.isFinite(goldTime(item.timestamp)) && goldTime(item.timestamp) <= now)
+          .sort((a: GoldPrice, b: GoldPrice) => goldTime(a.timestamp) - goldTime(b.timestamp))
         if (!valid.length) throw new Error(th ? 'ข้อมูลราคาทองไม่ถูกต้อง' : 'Gold price data is invalid')
         setGoldData(valid)
       })
@@ -32,13 +34,16 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
   if (loading) return <MarketState title={th ? 'กำลังโหลดราคาทอง...' : 'Loading the gold ledger...'} locale={locale} />
   if (error) return <MarketState title={th ? 'ราคาทองยังไม่พร้อมใช้งาน' : 'Gold prices are unavailable'} detail={error} retry locale={locale} />
 
-  const cutoff = Date.now() - days * 86400000
-  const visibleData = goldData.filter(item => new Date(item.timestamp).getTime() >= cutoff)
-  const data = visibleData
+  const cutoff = range === 'all' ? -Infinity : Date.now() - (range === 'day' ? 1 : 7) * 86400000
+  const data = goldData.filter(item => goldTime(item.timestamp) >= cutoff)
   const prices = data.map((item) => item.price)
   const latest = goldData.at(-1)!
+  const change = goldDayChange(goldData)
+  const cost = goldCost(amount, latest.price)
+  const ageMinutes = Math.max(0, Math.floor((Date.now() - goldTime(latest.timestamp)) / 60_000))
+  const age = ageMinutes < 60 ? `${ageMinutes} ${th ? 'นาที' : 'min'}` : ageMinutes < 1440 ? `${Math.floor(ageMinutes / 60)} ${th ? 'ชม.' : 'h'}` : `${Math.floor(ageMinutes / 1440)} ${th ? 'วัน' : 'd'}`
   const chartData = {
-    labels: data.map((item) => date.format(new Date(item.timestamp))),
+    labels: data.map((item) => date.format(goldTime(item.timestamp))),
     datasets: [{
       label: th ? 'ราคาทอง' : 'Gold price',
       data: prices,
@@ -62,16 +67,41 @@ export default function GoldChartPage({ locale = 'en' }: { locale?: 'th' | 'en' 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-8">
       <section className="ledger-panel p-5 sm:p-8">
-        <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-          <div><p className="text-sm text-muted-foreground">{th ? 'ราคาล่าสุด' : 'Latest price'}</p><p className="text-3xl font-bold text-primary">{number.format(latest.price)}</p><p className="mt-1 text-xs text-muted-foreground">{th ? 'อัปเดต' : 'Updated'} {date.format(new Date(latest.timestamp))}</p></div>
-          <div className="flex gap-6 text-sm">
-            <Stat label={th ? 'สูงสุด' : 'High'} value={prices.length ? Math.max(...prices) : null} format={number} />
-            <Stat label={th ? 'ต่ำสุด' : 'Low'} value={prices.length ? Math.min(...prices) : null} format={number} />
-            <Stat label={th ? 'จำนวนข้อมูล' : 'Samples'} value={prices.length} format={number} />
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="min-w-0 border-b border-border pb-5 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
+            <p className="text-xs uppercase tracking-[0.2em] text-primary">{th ? 'ราคาที่รายงานล่าสุด' : 'Latest reported price'}</p>
+            <p className="mt-2 text-4xl font-bold text-primary">{number.format(latest.price)} <span className="text-base font-normal text-muted-foreground">Silver / Gold</span></p>
+            <p className="mt-2 text-sm text-muted-foreground">{date.format(goldTime(latest.timestamp))} · {age} {th ? 'ก่อน' : 'ago'}</p>
+            {ageMinutes >= 1440 && <p className="mt-2 text-xs text-amber-300">{th ? 'รายงานเกิน 24 ชั่วโมงแล้ว โปรดตรวจราคาในเกม' : 'Report is over 24 hours old. Check the in-game price.'}</p>}
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground">{th ? 'เทียบกับรายงานใกล้ 24 ชม.ก่อนราคาล่าสุด' : 'Versus a report near 24h before the latest'}</p>
+              <p className={`mt-1 text-lg font-semibold ${change ? change.amount > 0 ? 'text-emerald-400' : change.amount < 0 ? 'text-rose-400' : 'text-foreground' : 'text-muted-foreground'}`}>{change ? `${change.amount > 0 ? '+' : ''}${number.format(change.amount)} (${change.percent > 0 ? '+' : ''}${change.percent.toFixed(1)}%)` : (th ? 'เปรียบเทียบไม่ได้' : 'Comparison unavailable')}</p>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-ledger text-xl font-semibold">{th ? 'เตรียม Silver ซื้อ Gold' : 'Estimate Silver for Gold'}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{th ? 'ลองใส่จำนวน Gold ที่ต้องการ' : 'Enter the Gold amount you want.'}</p>
+            <label className="mt-4 block text-sm" htmlFor="gold-amount">{th ? 'จำนวน Gold' : 'Gold amount'}</label>
+            <input id="gold-amount" className="trade-control mt-1 w-full" type="text" inputMode="numeric" pattern="[0-9]*" value={amount} onChange={event => setAmount(event.target.value)} aria-invalid={cost === null} />
+            <p className="mt-4 text-xs text-muted-foreground">{th ? 'Silver ที่ต้องเตรียมโดยประมาณ' : 'Estimated Silver needed'}</p>
+            <output htmlFor="gold-amount" className="mt-1 block text-2xl font-bold text-primary">{cost === null ? '—' : number.format(cost)} <span className="text-sm font-normal text-muted-foreground">Silver</span></output>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">{cost === null ? (th ? 'กรอกจำนวนเต็มตั้งแต่ 1 ถึง 1,000,000' : 'Enter a whole number from 1 to 1,000,000') : `${number.format(Number(amount))} Gold × ${number.format(latest.price)} Silver`}</p>
+            <p className="mt-3 text-xs leading-5 text-amber-300">{th ? 'เป็นเพียงราคาอ้างอิงจากผู้เล่น ไม่รวมค่าธรรมเนียมหรือราคา Premium ตรวจราคาในเกมก่อนซื้อ' : 'Player-reported reference only. Excludes fees and Premium cost. Check the in-game price before buying.'}</p>
           </div>
         </div>
-        <div className="mb-5 flex gap-2" aria-label={th ? 'ช่วงเวลาของกราฟ' : 'Chart range'}>{[7, 30, 90].map(value => <button key={value} type="button" onClick={() => setDays(value)} aria-pressed={days === value} className={days === value ? 'nav-link is-active' : 'nav-link'}>{value} {th ? 'วัน' : 'days'}</button>)}</div>
-        {data.length ? <div className="h-[320px] sm:h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div> : <div className="state-card"><h3>{th ? `ไม่มีข้อมูลในช่วง ${days} วัน` : `No data in the last ${days} days`}</h3><p>{th ? 'ลองเลือกช่วงเวลาที่ยาวขึ้น' : 'Try a longer time range.'}</p></div>}
+        <div className="mt-8 border-t border-border pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-ledger text-xl font-semibold">{th ? 'แนวโน้มราคาทอง' : 'Gold price trend'}</h2>
+            <div className="flex flex-wrap gap-2" aria-label={th ? 'ช่วงเวลาของกราฟ' : 'Chart range'}>{(['day', 'week', 'all'] as const).map(value => <button key={value} type="button" onClick={() => setRange(value)} aria-pressed={range === value} className={range === value ? 'nav-link is-active' : 'nav-link'}>{value === 'day' ? (th ? '24 ชั่วโมง' : '24 hours') : value === 'week' ? (th ? '7 วัน' : '7 days') : (th ? 'ทั้งหมดที่โหลดมา' : 'All loaded data')}</button>)}</div>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">{data.length ? `${th ? 'ข้อมูลจริง' : 'Observed'} ${date.format(goldTime(data[0].timestamp))} – ${date.format(goldTime(data.at(-1)!.timestamp))}` : (th ? 'ไม่มีข้อมูลในช่วงที่เลือก' : 'No observations in this range')}</p>
+          <div className="mt-4 flex flex-wrap gap-6 text-sm">
+            <Stat label={th ? 'สูงสุดในช่วง' : 'Range high'} value={prices.length ? Math.max(...prices) : null} format={number} />
+            <Stat label={th ? 'ต่ำสุดในช่วง' : 'Range low'} value={prices.length ? Math.min(...prices) : null} format={number} />
+            <Stat label={th ? 'จำนวนรายงาน' : 'Reports'} value={prices.length} format={number} />
+          </div>
+          {data.length ? <div className="mt-5 h-[320px] sm:h-[420px]"><GoldLineChart data={chartData} options={chartOptions} /></div> : <div className="state-card mt-5"><h3>{th ? 'ไม่มีข้อมูลในช่วงนี้' : 'No data in this range'}</h3><p>{th ? 'ลองเลือกช่วงเวลาที่ยาวขึ้น' : 'Try a longer time range.'}</p></div>}
+        </div>
       </section>
     </div>
   )

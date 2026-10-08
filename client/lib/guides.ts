@@ -1,7 +1,7 @@
 import type { Locale } from './seo'
 
 type Guide = { title: string; description: string; intro: string; sections: { title: string; body: string }[]; faq: { q: string; a: string }[]; cta: string; href: string }
-export const LAST_CHECKED = '2026-09-25'
+export const LAST_CHECKED = '2026-10-09'
 
 export const guides: Record<Locale, Record<string, Guide>> = {
   th: {
@@ -13,6 +13,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'อ่าน Best Sell กับ Best Buy Order', body: 'Best Sell คือราคาตั้งขายต่ำสุดที่รายงาน เหมาะสำหรับดูต้นทุนเมื่อจะซื้อ ส่วน Best Buy Order คือคำสั่งซื้อสูงสุดที่รายงาน เหมาะสำหรับดูราคาที่อาจขายทันทีได้ แต่คำสั่งซื้ออาจเปลี่ยนก่อนคุณเข้าเกม' },
         { title: 'ตัวอย่างการอ่านราคา', body: 'สมมติกระเป๋า Best Sell 10,000 Silver ที่ Bridgewatch และ Best Buy Order 12,000 ที่ Martlock ส่วนต่าง 2,000 ยังไม่ใช่กำไรสุทธิ ต้องตรวจเวลาอัปเดตทั้งสองฝั่ง หักภาษี และดูว่าคำสั่งซื้อยังอยู่ในเกม' },
         { title: 'Fresh, Old และปริมาณขาย', body: 'Fresh หมายถึงรายงานไม่เกิน 30 นาที; Old คือเก่ากว่านั้นหรือไม่มีเวลาอัปเดต เวลาของราคาตั้งขายกับคำสั่งซื้อแยกกัน ประวัติยอดขาย 7 วันช่วยประเมินว่ามีการซื้อขาย แต่ไม่รับประกันว่าจะขายสินค้าของคุณได้ครบ' },
+        { title: 'ลองเช็ก Steel Bar ด้วยตัวเอง', body: 'ค้นหา Steel Bar แล้วดูราคาในเมืองที่คุณเล่นก่อน เปรียบเทียบราคาตั้งขายกับคำสั่งซื้อของอีกเมืองโดยอ่านเวลาแยกกัน หากฝั่งใดไม่มีราคา หรือรายงานเกิน 30 นาที ให้บันทึกสินค้าไว้ในรายการโปรดและกลับมาตรวจใหม่ แทนการเดาราคาที่หายไป' },
       ],
       faq: [
         { q: 'ทำไมบางเมืองไม่มีราคา?', a: 'อาจยังไม่มีผู้ใช้ AODP Client รายงานราคาที่ใช้ได้ของสินค้านั้นในเมืองดังกล่าว' },
@@ -29,6 +30,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'เริ่มจากหน้าโอกาสวันนี้', body: 'หากยังไม่รู้จะซื้ออะไร ให้เปิดหน้าโอกาสวันนี้ เลือกเงินทุน 50K, 100K, 500K หรือกำหนดเอง และเมืองต้นทาง ระบบตรวจสินค้าที่คัดไว้ 50 รายการ ตัวกรองขั้นสูงกำหนดกำไรขั้นต่ำ ยอดขายต่อวัน อายุข้อมูล และวิธีขายได้' },
         { title: 'ตัวอย่างกำไรหลังหักภาษี', body: 'ซื้อ 10 ชิ้น ชิ้นละ 5,000 ใช้ทุน 50,000 Silver ขายชิ้นละ 6,000 ได้รายรับ 60,000 ก่อนหักภาษี หากใช้สมมติฐานภาษี 6.5% จะเหลือ 56,100 และกำไรประมาณ 6,100 ก่อนค่าเดินทาง การตั้งขายซ้ำ และสินค้าที่ขายไม่หมด' },
         { title: 'เช็กก่อนออกเดินทาง', body: 'ดูเวลาต้นทางกับปลายทางแยกกัน เทียบจำนวนสินค้าที่จะขนกับปริมาณขายย้อนหลัง และตรวจราคาในเกมจริง หากข้อมูล 2 ชั่วโมงไม่มีผล คุณเลือกดูข้อมูลได้ถึง 24 ชั่วโมง แต่ข้อมูลเก่าควรใช้สำรวจเท่านั้น' },
+        { title: 'ตัดสินใจจากตัวอย่างอย่างไร', body: 'ในตัวอย่างกำไร 6,100 Silver ให้ทดลองเพียง 1 ชิ้นก่อน แล้วตรวจว่าราคาซื้อและ Buy Order ยังอยู่จริง ปริมาณขายย้อนหลังไม่ได้บอกว่าตอนนี้มีผู้รับซื้อกี่ชิ้น และค่าเดินทางหรือความเสี่ยงอาจทำให้เส้นทางไม่คุ้ม' },
       ],
       faq: [
         { q: 'ทำไมกำไรจริงต่างจากเว็บ?', a: 'ราคาอาจเปลี่ยน สินค้าอาจขายไม่หมด และค่าธรรมเนียมจริงขึ้นกับ Premium และวิธีขาย' },
@@ -44,6 +46,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'หาไอเทมที่อาจขายได้', body: 'ค้นหาอุปกรณ์ที่สนใจ ดูราคาตั้งขายต่ำสุดในเมืองต้นทาง และดู Best Buy Order ของ Black Market จากนั้นเปิด Route Planner เลือกเมืองต้นทางและ “ขายทันที” เพื่อเทียบกับคำสั่งซื้อ ไม่ใช้ราคาตั้งขายแทนราคา Buy Order' },
         { title: 'ตัวอย่างการประเมิน', body: 'สมมติซื้อเกราะ 20,000 Silver แล้ว Black Market มี Buy Order 27,000 ส่วนต่าง 7,000 ยังไม่ได้หักค่าใช้จ่ายหรือความเสี่ยง ตรวจเวลาของสองราคาและคำสั่งซื้อในเกมก่อนขน อย่าคิดว่าหลายชิ้นจะขายได้ราคาเดียวกัน' },
         { title: 'ปริมาณขายและความเสี่ยง', body: 'เปิดประวัติราคาเพื่อดูปริมาณที่รายงาน แล้วเปรียบเทียบกับจำนวนที่ต้องการขาย เส้นทางเข้า Caerleon อาจผ่านพื้นที่อันตราย เครื่องมือไม่ได้คิดมูลค่าความเสี่ยงของสินค้าที่อาจสูญเสีย' },
+        { title: 'คำนวณตัวอย่างหนึ่งชิ้น', body: 'ซื้อ 20,000 และขายเข้า Buy Order 27,000 Silver หากสมมติหัก 6.5% จากยอดขาย จะเหลือ 25,245 และส่วนต่างประมาณ 5,245 Silver ก่อนค่าเดินทางหรือการสูญเสีย ตัวเลขนี้ใช้ฝึกคิดเท่านั้น ไม่ยืนยันว่าคำสั่งซื้อยังอยู่หรือภาษีจริงเท่ากัน' },
       ],
       faq: [
         { q: 'Black Market อยู่ที่ไหน?', a: 'อยู่ใน Caerleon และทำงานต่างจากตลาดผู้เล่นทั่วไป' },
@@ -54,9 +57,10 @@ export const guides: Record<Locale, Record<string, Guide>> = {
     },
     'gold-premium-asia': {
       title: 'ราคาทองและค่า Premium Albion Online Asia', description: 'วิธีอ่านราคาทอง Albion Online Asia จากกราฟ พร้อมเวลาอัปเดต ช่วงสูงต่ำ และความเกี่ยวข้องกับค่า Premium',
-      intro: 'กราฟทองแสดงข้อมูลที่ชุมชนรายงานบน Asia Server ไม่ใช่ราคาสดจากเกม ราคาทองมีผลต่อ Silver ที่ต้องใช้ซื้อ Premium แต่เว็บยังไม่ได้คำนวณราคา Premium จริง',
+      intro: 'ราคาทองเป็นข้อมูลที่ชุมชนรายงานบน Asia Server ไม่ใช่ราคาสดจากเกม เครื่องคิดช่วยประมาณ Silver สำหรับจำนวน Gold ที่กรอก แต่ไม่ได้คำนวณราคา Premium จริง',
       sections: [
-        { title: 'ดูกราฟราคาทอง Asia', body: 'เปิดหน้าตลาดทอง เลือกช่วง 7, 30 หรือ 90 วัน แล้วดูราคาล่าสุด เวลาอัปเดต ค่าสูงสุด ค่าต่ำสุด และจำนวนตัวอย่างในช่วงที่เลือก หากช่วงนั้นไม่มีข้อมูล เว็บจะแจ้งตามจริง ไม่ใช้ราคาจากช่วงอื่นแทน' },
+        { title: 'ดูกราฟราคาทอง Asia', body: 'เปิดหน้าตลาดทอง เลือกช่วง 24 ชั่วโมง 7 วัน หรือข้อมูลทั้งหมดที่โหลดมา แล้วดูวันที่ที่มีรายงานจริง เวลาอัปเดต ค่าสูงสุด ค่าต่ำสุด และจำนวนตัวอย่าง หากช่วงนั้นไม่มีข้อมูล เว็บจะแจ้งตามจริง' },
+        { title: 'ลองคิด Silver ที่ต้องเตรียม', body: 'กรอกจำนวน Gold ที่ต้องการ เช่น 100 Gold หากราคาที่รายงานอยู่ที่ 14,000 Silver ต่อ Gold เครื่องคิดจะแสดงประมาณ 1,400,000 Silver ก่อนค่าธรรมเนียม ตัวอย่างนี้ไม่ใช่ราคาปัจจุบันหรือราคา Premium' },
         { title: 'Gold เกี่ยวกับค่า Premium อย่างไร', body: 'หาก Premium ใช้ Gold จำนวนเท่าเดิม แต่ Gold หนึ่งหน่วยแพงขึ้น จำนวน Silver ที่ต้องเตรียมก็อาจเพิ่มขึ้น ตรวจราคา Premium จริงในเกมเสมอ เพราะกราฟนี้ไม่ได้บอกจำนวน Gold ที่ต้องใช้ในขณะนั้น' },
         { title: 'ทำไมราคาจึงเปลี่ยน', body: 'ความต้องการ Premium ปริมาณ Gold ในตลาด กิจกรรมและการอัปเดตเกมอาจกระทบราคา กราฟย้อนหลังช่วยให้เห็นสิ่งที่เกิดขึ้นแล้ว แต่ไม่สามารถทำนายการซื้อขายครั้งต่อไปได้' },
       ],
@@ -76,6 +80,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'Search and compare cities', body: 'Open the item search and type a name such as Bag, Sword, or Potion, or enter an item ID. Choose the matching item and compare city cards. Best Sell is the lowest reported listing you could buy from; Best Buy Order is the highest reported order you could sell into immediately.' },
         { title: 'Example: a bag between two cities', body: 'Suppose a bag shows Best Sell at 10,000 silver in Bridgewatch and Best Buy Order at 12,000 in Martlock. The 2,000-silver spread is not net profit. Check the update time for both prices, then account for tax, transport, and whether the buy order still exists in game.' },
         { title: 'Freshness and sales volume', body: 'Fresh means a price observation is no more than 30 minutes old. Old means it is older or its timestamp is missing. Sell and Buy Order timestamps are separate. Seven-day reported volume can suggest demand, but it does not guarantee your quantity will sell.' },
+        { title: 'Try Steel Bar yourself', body: 'Search for Steel Bar, choose a city you use, and compare its reported listing with another city’s buy order. Read both timestamps separately. If either side is missing or over 30 minutes old, save the item to your watchlist and check again instead of guessing the missing price.' },
       ],
       faq: [
         { q: 'Why does a city have no price?', a: 'No contributor may have reported a usable price for that item and city.' },
@@ -92,6 +97,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'Start with Opportunities', body: 'For a broader search, open Daily Asia Opportunities. Choose a budget and origin city; the tool screens 50 selected items. Use advanced filters for minimum profit, daily volume, data age, and sell method. If two-hour data is empty, you may explicitly inspect reports up to 24 hours old.' },
         { title: 'Example: calculate a route', body: 'Buying ten items for 5,000 silver each costs 50,000. Selling ten at 6,000 returns 60,000 before charges. With the displayed 6.5% tax assumption, estimated proceeds are 56,100 and estimated profit is 6,100 silver before transport, relisting, and unsold stock.' },
         { title: 'Before travelling', body: 'Check source and target timestamps separately, compare your quantity with reported volume, and confirm both prices in game. Start small when demand is uncertain. A listing price does not guarantee a sale.' },
+        { title: 'Use the example to decide', body: 'For the 6,100-silver example, test one item first and verify the listing and buy order in game. Historical sales volume does not reveal how many current buy orders remain; transport costs and risk may erase the estimated gain.' },
       ],
       faq: [
         { q: 'Why can actual profit differ?', a: 'Prices and orders can move; stock may not sell, and your actual fees depend on Premium and the sell method.' },
@@ -107,6 +113,7 @@ export const guides: Record<Locale, Record<string, Guide>> = {
         { title: 'Find a candidate item', body: 'Search for a piece of equipment. Compare its lowest reported listing in a source city with the Black Market Best Buy Order. Open the Route Planner, select the source city, and choose Quick sell to compare buy orders rather than ordinary listings.' },
         { title: 'Example: check net proceeds', body: 'If a piece of armor costs 20,000 silver and the Black Market buy order is 27,000, the 7,000 spread is before charges and travel risk. Check both timestamps and the actual order in game; do not assume you can sell multiple pieces at that price.' },
         { title: 'Volume and transport risk', body: 'Review reported sales volume and the quantity you plan to carry. Routes to Caerleon can pass through dangerous areas. The calculator cannot price the risk of losing your cargo, and historical volume cannot guarantee an immediate sale.' },
+        { title: 'Calculate one-item proceeds', body: 'Buy for 20,000 and sell into a 27,000-silver buy order. Assuming 6.5% is deducted from the sale gives 25,245 and an estimated 5,245-silver spread before transport or losses. This teaches the calculation; it does not confirm the order still exists or that your actual fee matches the assumption.' },
       ],
       faq: [
         { q: 'Where is the Black Market?', a: 'It is in Caerleon and operates differently from a regular player market.' },
@@ -117,9 +124,10 @@ export const guides: Record<Locale, Record<string, Guide>> = {
     },
     'gold-premium-asia': {
       title: 'Albion Online Asia Gold Prices and Premium Costs', description: 'Read the Albion Online Asia gold price chart, update time, sample count, and factors affecting Premium costs.',
-      intro: 'The gold chart shows community-reported observations for Asia, not a direct live quote. Gold prices can affect the silver needed for Premium, but this site does not calculate the current in-game Premium price.',
+      intro: 'Gold prices are community-reported observations for Asia, not a live in-game quote. The calculator estimates Silver for the Gold amount you enter; it does not calculate the current Premium price.',
       sections: [
-        { title: 'Read the Asia gold chart', body: 'Open the gold page and choose a 7, 30, or 90-day range. Compare the latest reported price and update time with the high, low, and number of samples in the selected period. If a range has no observations, the chart says so.' },
+        { title: 'Read the Asia gold chart', body: 'Choose 24 hours, 7 days, or all loaded reports. Compare the latest reported price and time with the actual observed dates, high, low, and report count. If a range has no observations, the chart says so.' },
+        { title: 'Estimate the Silver needed', body: 'Enter a Gold amount such as 100. At an illustrative reported price of 14,000 Silver per Gold, the estimate is 1,400,000 Silver before fees. This example is not the current price or a Premium quote.' },
         { title: 'How Gold relates to Premium', body: 'When more silver is needed per Gold, a Gold-denominated Premium purchase can require more silver, assuming the Gold amount stays the same. Check the actual Premium price in game: the chart alone does not give a final cost.' },
         { title: 'Why prices change', body: 'Player demand for Premium, gold supply, game events, and updates can move prices. A historical trend describes previous observations; it does not predict the next trade.' },
       ],

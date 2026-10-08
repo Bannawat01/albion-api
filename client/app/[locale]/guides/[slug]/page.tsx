@@ -18,6 +18,7 @@ export default async function GuidePage({ params }: { params: Promise<{ locale: 
   return <article className="container mx-auto max-w-3xl px-4 py-10" lang={locale}>
     <p className="text-xs uppercase tracking-[.2em] text-primary">Albion Market Guide · Asia Server</p><h1 className="font-ledger mt-3 text-3xl font-bold text-gold-gradient sm:text-4xl">{g.title}</h1><p className="mt-4 text-lg leading-8 text-muted-foreground">{g.intro}</p>
     <p className="mt-4 text-xs text-muted-foreground">{locale === 'th' ? 'ตรวจข้อมูลล่าสุด' : 'Last checked'}: {LAST_CHECKED}</p>
+    <p className="mt-2 text-xs text-muted-foreground">{locale === 'th' ? 'แหล่งข้อมูลราคา:' : 'Price data source:'} <a className="text-primary underline underline-offset-2" href="https://pow.albion-online-data.com/api" target="_blank" rel="noopener noreferrer">Albion Online Data Project API</a></p>
     {g.sections.map(section => <section key={section.title} className="ledger-panel mt-7 p-5"><h2 className="font-ledger text-xl font-semibold">{section.title}</h2><p className="mt-3 leading-7 text-muted-foreground">{section.body}</p></section>)}
     <section className="mt-8"><h2 className="font-ledger text-2xl font-semibold">FAQ</h2>{g.faq.map(item => <details key={item.q} className="market-details mt-3"><summary>{item.q}</summary><p className="pb-4 text-muted-foreground">{item.a}</p></details>)}</section>
     <Link href={g.href} className="nav-link nav-link-primary mt-8 inline-flex">{g.cta}</Link>
