@@ -142,12 +142,6 @@
 }
 
 @layer utilities {
-  @media (hover: hover) and (pointer: fine) and (forced-colors: none) {
-    html, body { cursor: url('/images/cursor-market.svg') 2 2, auto; }
-    :is(a, button:not(:disabled), summary, select:not(:disabled), [role="button"]) { cursor: url('/images/cursor-market-active.svg') 2 2, pointer; }
-    input, textarea, [contenteditable="true"] { cursor: text; }
-  }
-
   .bg-grid-white\/\[0\.02\] {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   }

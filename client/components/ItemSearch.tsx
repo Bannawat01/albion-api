@@ -202,10 +202,16 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
   const bestBuy = rows.reduce<{ city: string; value: number; updatedAt: string | null } | null>((best, row) =>
     row.buyMax && (!best || row.buyMax > best.value) ? { city: row.city, value: row.buyMax, updatedAt: row.buyUpdatedAt } : best, null)
   const isFresh = (value: string | null | undefined) => {
-    const age = value ? Date.now() - new Date(value).getTime() : Infinity
+    const age = value ? Date.now() - marketTime(value).getTime() : Infinity
     return age >= 0 && age <= 30 * 60 * 1000
   }
   const confidence = isFresh(bestSell?.updatedAt) && isFresh(bestBuy?.updatedAt) && rows.length >= 4 ? 'medium' : 'low'
+  const reasons = [
+    !bestSell || !bestBuy ? (th ? 'ราคาไม่ครบทั้งสองฝั่ง' : 'Missing sell or buy price') : null,
+    bestSell && !isFresh(bestSell.updatedAt) ? (th ? 'เวลาราคาตั้งขายเก่าหรือไม่ทราบ' : 'Sell price old or undated') : null,
+    bestBuy && !isFresh(bestBuy.updatedAt) ? (th ? 'เวลาคำสั่งซื้อเก่าหรือไม่ทราบ' : 'Buy order old or undated') : null,
+    rows.length < 4 ? (th ? `มีข้อมูลเพียง ${rows.length} เมือง` : `Prices in only ${rows.length} cities`) : null,
+  ].filter(Boolean).join(' · ')
 
   return (
     <article className="market-item">
@@ -224,7 +230,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
             </button>
           </div>
           <p className="truncate font-mono text-xs text-muted-foreground">{item.uniqueName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-2"><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ความน่าเชื่อถือปานกลาง' : 'ความน่าเชื่อถือต่ำ') : `${confidence} confidence`}</span></div>
+          {(!loading || prices) && <div className="mt-1 flex flex-wrap items-center gap-2"><span className={`confidence-badge confidence-${confidence}`}>{th ? (confidence === 'medium' ? 'ข้อมูลราคาพอใช้' : 'ข้อมูลราคาจำกัด') : (confidence === 'medium' ? 'Usable price data' : 'Limited price data')}</span>{reasons && <span className="text-xs text-muted-foreground">{reasons}</span>}</div>}
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-2">
             <PriceSummary label={th ? 'ราคาตั้งขายต่ำสุด' : 'Best sell'} result={bestSell} tone="sell" locale={locale} />
             <PriceSummary label={th ? 'คำสั่งซื้อสูงสุด' : 'Best buy order'} result={bestBuy} tone="buy" locale={locale} />
@@ -488,14 +494,19 @@ function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation;
   )
 }
 
+function marketTime(value: string) {
+  // AODP price timestamps omit an offset; treat them as UTC on every visitor's device.
+  return new Date(/(?:Z|[+-]\d\d:\d\d)$/.test(value) ? value : `${value}Z`)
+}
+
 function formatMarketTime(value: string, locale: 'th' | 'en') {
-  const date = new Date(value)
+  const date = marketTime(value)
   if (!Number.isFinite(date.getTime())) return locale === 'th' ? 'ไม่ทราบเวลา' : 'Time unavailable'
   return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'short', timeStyle: 'short', timeZone: locale === 'th' ? 'Asia/Bangkok' : undefined }).format(date)
 }
 
 function PriceSummary({ label, result, tone, locale }: { label: string; result: { city: string; value: number; updatedAt: string | null } | null; tone: 'sell' | 'buy'; locale: 'th' | 'en' }) {
-  const age = result?.updatedAt ? Date.now() - new Date(result.updatedAt).getTime() : Infinity
+  const age = result?.updatedAt ? Date.now() - marketTime(result.updatedAt).getTime() : Infinity
   const fresh = age >= 0 && age <= 30 * 60 * 1000
   return (
     <div className={'price-summary ' + tone}>
