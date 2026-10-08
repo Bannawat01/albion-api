@@ -58,6 +58,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const [query, setQuery] = useState(initialQuery)
   const userChangedQuery = useRef(false)
   const search = useDebounce(query.trim(), 250)
+  const previousSearch = useRef(search)
   const [page, setPage] = useState(initialPage)
   const [sort, setSort] = useState<'recommended' | 'coverage' | 'price' | 'name'>('recommended')
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
@@ -68,7 +69,13 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const pagination = data?.pagination
   const totalPages = pagination?.totalPages ?? 1
 
-  useEffect(() => setPage(1), [search])
+  useEffect(() => {
+    if (previousSearch.current !== search) {
+      previousSearch.current = search
+      setPage(1)
+    }
+  }, [search])
+  useEffect(() => setPage(initialPage), [initialPage])
   useEffect(() => {
     if (userChangedQuery.current && search.length >= 2) {
       track('search')
@@ -127,7 +134,6 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const changePage = (next: number) => {
     if (next === page || next < 1 || next > totalPages) return
     setPage(next)
-    document.getElementById('market-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
@@ -182,10 +188,10 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-primary">{th ? 'ผลการค้นหา' : 'Market results'}</p>
           <h2 className="mt-1 text-xl font-semibold">{search ? (th ? `ผลลัพธ์สำหรับ “${search}”` : `Matches for "${search}"`) : (th ? 'เลือกดูสินค้าทั้งหมด' : 'Browse all items')}</h2>
+          {pagination && <p className="mt-1 text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} · {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
           {!search && <p className="mt-1 text-xs text-muted-foreground">{th ? 'สินค้าตัวอย่างที่มีข้อมูลราคาซื้อ–ขายล่าสุดจะขึ้นก่อน หากหาไม่เจอให้พิมพ์ชื่อด้านบน' : 'Sample items with recent buy and sell prices appear first. Search above for other items.'}</p>}
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
+        <div>
           <label className="flex items-center gap-2 text-xs text-muted-foreground">{th ? 'เรียงในหน้านี้' : 'Sort this page'}
             <select className="trade-control !h-10 !w-auto" value={sort} onChange={event => setSort(event.target.value as typeof sort)}>
               <option value="recommended">{th ? 'แนะนำ' : 'Recommended'}</option>
@@ -363,7 +369,11 @@ export function ItemImage({ item, priority, locale }: { item: ItemSummary; prior
         priority={priority}
         decoding="async"
         onLoad={() => setStatus('loaded')}
-        onError={() => setStatus('error')}
+        unoptimized
+        onError={() => {
+          if (attempt === 0) setAttempt(1)
+          else setStatus('error')
+        }}
         className={status === 'loaded' ? 'is-loaded' : ''}
       />
     </div>

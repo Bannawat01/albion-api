@@ -244,6 +244,7 @@
   .discover-tool { @apply min-h-40; }
   .discover-tool b { @apply text-xl; font-family: var(--font-ledger), Georgia, serif; }
   .discover-guide { @apply min-h-32; }
+  .discover-grid > :last-child:nth-child(odd) { @apply sm:col-span-2; }
 
   .opportunity-filters { @apply grid min-w-0 grid-cols-1 gap-3 border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3; }
   .opportunity-filters > * { min-width: 0; }
