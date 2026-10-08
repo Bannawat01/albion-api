@@ -14,6 +14,7 @@ import { track } from '@/lib/analytics'
 import { useLanguage } from '@/hooks/useLanguage'
 import { usePathname } from 'next/navigation'
 import PrettySelect from './PrettySelect'
+import { staleReasonLabel } from '@/lib/staleReasonLabel'
 
 type Metric = { sellMin: number | null; buyMax: number | null; sellUpdatedAt: string | null; buyUpdatedAt: string | null }
 export type CityMap = Record<string, Metric>
@@ -58,6 +59,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
   const userChangedQuery = useRef(false)
   const search = useDebounce(query.trim(), 250)
   const [page, setPage] = useState(initialPage)
+  const [sort, setSort] = useState<'recommended' | 'coverage' | 'price' | 'name'>('recommended')
   const [selectedCities, setSelectedCities] = useState<Set<string>>(() => new Set(CITIES))
   const watchlist = useWatchlist()
   const { data, isFetching, isError, refetch } = useSearchItems(search || undefined, page, 12)
@@ -82,6 +84,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
     staleTime: 2 * 60 * 1000,
     retry: 1,
   })
+  const visibleCities = useMemo(() => CITIES.filter((city) => selectedCities.has(city)), [selectedCities])
   const prices = useMemo<PriceMap>(() => {
     const next: PriceMap = {}
     for (const item of items) {
@@ -89,6 +92,18 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
     }
     return next
   }, [items, priceQuery.data])
+  const sortedItems = useMemo(() => {
+    if (sort === 'recommended') return items
+    const coverage = (item: ItemSummary) => visibleCities.filter(city => {
+      const price = prices[item.uniqueName]?.[city]
+      return price?.sellMin && price.buyMax && [price.sellUpdatedAt, price.buyUpdatedAt].every(time => {
+        const age = time ? Date.now() - marketTime(time).getTime() : Infinity
+        return age >= 0 && age <= 24 * 60 * 60 * 1000
+      })
+    }).length
+    const lowestPrice = (item: ItemSummary) => Math.min(...visibleCities.map(city => prices[item.uniqueName]?.[city]?.sellMin || Infinity))
+    return [...items].sort((a, b) => sort === 'coverage' ? coverage(b) - coverage(a) : sort === 'price' ? lowestPrice(a) - lowestPrice(b) : a.name.localeCompare(b.name))
+  }, [items, prices, sort, visibleCities])
   const pricesLoading = priceQuery.isFetching
   const [slowLoading, setSlowLoading] = useState(false)
 
@@ -100,8 +115,6 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
     const timer = window.setTimeout(() => setSlowLoading(true), 2000)
     return () => window.clearTimeout(timer)
   }, [isFetching, pricesLoading])
-
-  const visibleCities = useMemo(() => CITIES.filter((city) => selectedCities.has(city)), [selectedCities])
 
   const toggleCity = (city: string) => {
     setSelectedCities((current) => {
@@ -124,7 +137,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         <input
           value={query}
           onChange={(event) => { setQuery(event.target.value); userChangedQuery.current = true }}
-          placeholder={th ? 'ค้นหา: ดาบ กระเป๋า โพชัน...' : 'Search: sword, bag, potion...'}
+          placeholder={th ? 'เช่น Steel Bar, Adept’s Bag' : 'e.g. Steel Bar, Adept’s Bag'}
           aria-label={th ? 'ค้นหาไอเทม Albion' : 'Search Albion items'}
           autoComplete="off"
         />
@@ -136,7 +149,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         <span className="hidden sm:block text-xs text-muted-foreground">{isFetching ? (th ? 'กำลังค้นหา...' : 'Searching...') : (th ? 'ผลลัพธ์ล่าสุด' : 'Latest results')}</span>
       </div>
 
-      <details className="city-filter" open>
+      <details className="city-filter">
         <summary id="city-filter-title" className="flex cursor-pointer list-none items-center gap-2 text-sm font-semibold">
           <SlidersHorizontal className="h-4 w-4 text-primary" /> {th ? 'เมืองที่ต้องการดู' : 'Markets'} <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground" />
         </summary>
@@ -171,7 +184,17 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
           <h2 className="mt-1 text-xl font-semibold">{search ? (th ? `ผลลัพธ์สำหรับ “${search}”` : `Matches for "${search}"`) : (th ? 'เลือกดูสินค้าทั้งหมด' : 'Browse all items')}</h2>
           {!search && <p className="mt-1 text-xs text-muted-foreground">{th ? 'สินค้าตัวอย่างที่มีข้อมูลราคาซื้อ–ขายล่าสุดจะขึ้นก่อน หากหาไม่เจอให้พิมพ์ชื่อด้านบน' : 'Sample items with recent buy and sell prices appear first. Search above for other items.'}</p>}
         </div>
-        {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
+        <div className="flex flex-wrap items-end gap-3">
+          {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">{th ? 'เรียงในหน้านี้' : 'Sort this page'}
+            <select className="trade-control !h-10 !w-auto" value={sort} onChange={event => setSort(event.target.value as typeof sort)}>
+              <option value="recommended">{th ? 'แนะนำ' : 'Recommended'}</option>
+              <option value="coverage">{th ? 'ข้อมูลสดหลายเมือง' : 'Fresh city coverage'}</option>
+              <option value="price">{th ? 'ราคาตั้งขายต่ำสุด' : 'Lowest sell price'}</option>
+              <option value="name">{th ? 'ชื่อ A–Z' : 'Name A–Z'}</option>
+            </select>
+          </label>
+        </div>
       </div>
 
       {isError && <StateCard title={th ? 'โหลดข้อมูลตลาดไม่ได้' : 'Could not load the market'} detail={th ? 'เซิร์ฟเวอร์อาจกำลังเริ่มทำงาน โปรดลองอีกครั้ง' : 'The server may be waking up. Please try again.'} action={<button className="nav-link nav-link-primary" onClick={() => void refetch()}>{th ? 'ลองใหม่' : 'Try again'}</button>} />}
@@ -182,7 +205,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
 
       {!!items.length && (
         <div className="grid gap-4 lg:grid-cols-2" aria-busy={pricesLoading}>
-          {items.map((item, index) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} imagePriority={index < 2} watched={watchlist.items.some(saved => saved.uniqueName === item.uniqueName)} onToggleWatchlist={watchlist.toggle} />)}
+          {sortedItems.map((item, index) => <ItemCard key={item.id} item={item} prices={prices[item.uniqueName]} cities={visibleCities} loading={pricesLoading} imagePriority={index < 2} watched={watchlist.items.some(saved => saved.uniqueName === item.uniqueName)} onToggleWatchlist={watchlist.toggle} />)}
         </div>
       )}
 
@@ -217,10 +240,10 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
   return (
     <article className="market-item">
       <div className="flex items-start gap-4">
-        <ItemImage item={item} priority={imagePriority} />
+        <ItemImage item={item} priority={imagePriority} locale={locale} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-2">
-            <h3 className="min-w-0 flex-1 truncate text-lg font-semibold"><Link href={`/${locale}/item/${encodeURIComponent(item.uniqueName)}`} className="hover:text-primary">{item.name}</Link></h3>
+            <h3 className="min-w-0 flex-1 text-base font-semibold leading-snug sm:text-lg"><Link href={`/${locale}/item/${encodeURIComponent(item.uniqueName)}`} className="hover:text-primary">{item.name}</Link></h3>
             {onToggleWatchlist && (
               <button type="button" onClick={() => onToggleWatchlist(item)} className={'watchlist-button' + (watched ? ' is-active' : '')} aria-label={watched ? (th ? `นำ ${item.name} ออกจากรายการโปรด` : `Remove ${item.name} from watchlist`) : (th ? `เพิ่ม ${item.name} ในรายการโปรด` : `Add ${item.name} to watchlist`)} aria-pressed={watched}>
                 <Star className="h-4 w-4" fill={watched ? 'currentColor' : 'none'} />
@@ -305,7 +328,7 @@ function MarketHistory({ item, city, locale }: { item: ItemSummary; city: string
   )
 }
 
-function ItemImage({ item, priority }: { item: ItemSummary; priority: boolean }) {
+export function ItemImage({ item, priority, locale }: { item: ItemSummary; priority: boolean; locale: 'th' | 'en' }) {
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
   const source = itemApi.getItemImageUrl(item.id, 1, 96) + (attempt ? '&retry=' + attempt : '')
@@ -320,14 +343,14 @@ function ItemImage({ item, priority }: { item: ItemSummary; priority: boolean })
       {status === 'loading' && (
         <div className="item-image-loading" role="status">
           <span className="item-image-spinner" />
-          <span className="sr-only">Loading image for {item.name}</span>
+          <span className="sr-only">{locale === 'th' ? `กำลังโหลดรูป ${item.name}` : `Loading image for ${item.name}`}</span>
         </div>
       )}
       {status === 'error' && (
         <div className="item-image-error">
           <ImageOff className="h-6 w-6" aria-hidden="true" />
-          <button type="button" onClick={retry} aria-label={'Retry image for ' + item.name}>
-            <RefreshCw className="h-3 w-3" aria-hidden="true" /> Retry
+          <button type="button" onClick={retry} aria-label={locale === 'th' ? `ลองโหลดรูป ${item.name} อีกครั้ง` : `Retry image for ${item.name}`}>
+            <RefreshCw className="h-3 w-3" aria-hidden="true" /> {locale === 'th' ? 'ลองใหม่' : 'Retry'}
           </button>
         </div>
       )}
@@ -392,8 +415,8 @@ function TradeFinder({ item }: { item: ItemSummary }) {
       </button>
 
       {open && (
-        <div className='mt-3 space-y-3 rounded-lg bg-background/45 p-3'>
-          <div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+        <div className='mt-3 min-w-0 space-y-4 border border-border bg-background/40 p-3'>
+          <div className='grid grid-cols-2 gap-3'>
             <TradeField label={th ? 'เมืองต้นทาง' : 'Origin city'}>
               <PrettySelect label={th ? 'เมืองต้นทาง' : 'Origin city'} value={selectedFrom} onChange={setFrom} disabled={!sourceCities.length} options={sourceCities.map(city => ({ value: city, label: city }))} />
             </TradeField>
@@ -490,7 +513,7 @@ function TradeRoute({ route, rank, from, locale }: { route: TradeRecommendation;
         <span>{route.dailyVolume == null ? (th ? 'ไม่มีข้อมูลยอดขาย' : 'volume unavailable') : `${route.dailyVolume.toLocaleString()} ${th ? 'ชิ้น/วัน' : 'sold/day'}`}</span>
       </div>
       <p className="mt-2 text-[11px] text-muted-foreground">{formatMarketTime(route.sourceUpdatedAt, locale)} → {formatMarketTime(route.targetUpdatedAt, locale)}</p>
-      {route.staleReasons.length > 0 && <p className='mt-1 text-xs text-amber-300'>{route.staleReasons.join(' · ')}</p>}
+      {route.staleReasons.length > 0 && <p className='mt-1 text-xs text-amber-300'>{route.staleReasons.map(reason => staleReasonLabel(reason, locale)).join(' · ')}</p>}
     </div>
   )
 }

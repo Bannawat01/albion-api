@@ -65,7 +65,16 @@ export function rankOpportunityCandidates(prices: Record<string, Price[]>, filte
     }
     if (rows.length > rowCount) diagnostics && diagnostics.profitableItems++
   }
-  return rows.sort((a, b) => b.netProfit - a.netProfit)
+  return rows.sort((a, b) => b.netProfit / b.quantity - a.netProfit / a.quantity)
+}
+
+export function rankCredibleOpportunities(items: Opportunity[]): Opportunity[] {
+  const score = (item: Opportunity) => {
+    const unitProfit = item.netProfit / item.quantity
+    return item.dailyVolume == null ? unitProfit : unitProfit * Math.min(item.quantity, item.dailyVolume)
+  }
+  const confidence = { high: 2, medium: 1, low: 0 }
+  return [...items].sort((a, b) => confidence[b.confidence] - confidence[a.confidence] || score(b) - score(a))
 }
 
 export function opportunityEmptyReason(diagnostics: OpportunityDiagnostics, partial: boolean): EmptyReason {
@@ -111,11 +120,11 @@ export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/oppo
     } catch { partial = true; diagnostics.historyUnavailable++; return opportunity }
   }))
   const seen = new Set<string>()
-  const items = enriched.filter(item => {
+  const items = rankCredibleOpportunities(enriched.filter(item => {
     if ((item.dailyVolume ?? 0) < filters.minVolume || seen.has(item.itemId)) return false
     seen.add(item.itemId)
     return true
-  }).slice(0, filters.limit)
+  })).slice(0, filters.limit)
   diagnostics.returnedItems = items.length
   const value = { generatedAt: new Date().toISOString(), partial, filters, items, diagnostics, emptyReason: opportunityEmptyReason(diagnostics, partial) }
   if (!partial) cache.set(cacheKey, value, TTL_CONSTANTS.FIVE_MINUTES)

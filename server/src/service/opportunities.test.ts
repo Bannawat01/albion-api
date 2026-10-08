@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { opportunityEmptyReason, opportunitiesController, rankOpportunityCandidates, type OpportunityDiagnostics } from '../controller/opportunitiesController'
+import { opportunityEmptyReason, opportunitiesController, rankCredibleOpportunities, rankOpportunityCandidates, type OpportunityDiagnostics } from '../controller/opportunitiesController'
 import { ItemRepository } from '../repository/itemRepository'
 import { routeConfidence } from './priceAdvisoryService'
 
@@ -12,6 +12,12 @@ const price = (city: string, sell: number, buy: number, minutesOld: number) => (
 const filters = { budget: 10_000, minProfit: 0, minVolume: 0, maxAgeMinutes: 30, strategy: 'quick' as const, limit: 10 }
 
 describe('opportunity ranking', () => {
+  test('prioritizes confidence and reported turnover instead of hypothetical budget profit', () => {
+    const base = rankOpportunityCandidates({ T4_BAG: [price('Bridgewatch', 1000, 0, 5), price('Martlock', 0, 1500, 5)] }, filters, now)[0]
+    const unknown = { ...base, itemId: 'UNKNOWN', netProfit: 100_000, dailyVolume: null, confidence: 'low' as const }
+    const traded = { ...base, itemId: 'TRADED', netProfit: 1000, dailyVolume: 5, confidence: 'high' as const }
+    expect(rankCredibleOpportunities([unknown, traded]).map(row => row.itemId)).toEqual(['TRADED', 'UNKNOWN'])
+  })
   test('calculates quantity, tax and profit after budget', () => {
     const rows = rankOpportunityCandidates({ T4_BAG: [price('Bridgewatch', 1000, 0, 5), price('Martlock', 1300, 1500, 5)] }, filters, now)
     expect(rows[0].quantity).toBe(10)
