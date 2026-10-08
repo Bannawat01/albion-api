@@ -15,6 +15,45 @@ export function rankByPopularity(items: string[], counts: Map<string, number>): 
         .map(item => item.id)
 }
 
+const FEATURED_ITEMS = [
+    'T4_BAG', 'T5_BAG', 'T6_BAG', 'T7_BAG', 'T4_CAPE', 'T5_CAPE', 'T6_CAPE',
+    'T4_METALBAR', 'T5_METALBAR', 'T6_METALBAR', 'T4_PLANKS', 'T5_PLANKS',
+    'T6_CLOTH', 'T6_LEATHER', 'T6_STONEBLOCK', 'T4_POTION_HEAL', 'T5_POTION_HEAL',
+    'T4_FOOD_SOUP', 'T5_FOOD_SOUP', 'T7_CORN'
+]
+const FEATURED_CITIES = 'Brecilien,Caerleon,Thetford,Fort Sterling,Lymhurst,Bridgewatch,Martlock,Black Market'
+
+export function rankFeaturedItems(ids: string[], prices: Record<string, Price[]>, now = Date.now()): string[] {
+    const score = (id: string) => (prices[id] || []).filter(row => {
+        if (row.quantity !== 1 || row.sell_Price_Min <= 0 || row.buy_Price_max <= 0) return false
+        const age = (value: string) => now - Date.parse(/(?:Z|[+-]\d\d:\d\d)$/.test(value) ? value : `${value}Z`)
+        return [row.sell_Price_Min_Date, row.buy_Price_Max_Date].every(value => {
+            const minutes = age(value) / 60_000
+            return Number.isFinite(minutes) && minutes >= 0 && minutes <= 24 * 60
+        })
+    }).reduce((total, row) => {
+        const fresh = [row.sell_Price_Min_Date, row.buy_Price_Max_Date].every(value =>
+            now - Date.parse(/(?:Z|[+-]\d\d:\d\d)$/.test(value) ? value : `${value}Z`) <= 30 * 60_000)
+        return total + (fresh ? 10 : 1)
+    }, 0)
+    return ids.map((id, index) => ({ id, index, score: score(id) }))
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map(item => item.id)
+}
+
+export function rankSearchItems(items: string[], query: string, names: Record<string, string>, counts: Map<string, number>): string[] {
+    const q = query.toLowerCase()
+    const relevance = (id: string) => {
+        const name = (names[id] || id).toLowerCase()
+        const code = id.toLowerCase()
+        return name === q || code === q ? 0 : name.startsWith(q) || code.startsWith(q) ? 1 : 2
+    }
+    return items.map((id, index) => ({ id, index, relevance: relevance(id) }))
+        .sort((a, b) => a.relevance - b.relevance || (counts.get(b.id) || 0) - (counts.get(a.id) || 0) || a.index - b.index)
+        .map(item => item.id)
+}
+
 // Upstream fetch timeout (ms). Prevents a hung remote from stalling requests.
 const UPSTREAM_TIMEOUT_MS = 10000
 
@@ -28,6 +67,7 @@ export class ItemRepository {
     private prefixMap = new Map<string, Set<string>>() // prefix -> set of ids
     private pageCache = new TTLCache<PaginatedResponse<{ id: string; name: string; uniqueName: string; searchCount?: number }>>()
     private priceCache = new TTLCache<Price[]>()
+    private featuredCache = new TTLCache<string[]>(1)
     private popularItems = new Map<string, number>()
 
     private cacheStats = {
@@ -358,8 +398,20 @@ export class ItemRepository {
                 for (const itemId of items) this.popularItems.set(itemId, this.getItemSearchCount(itemId) + 1)
                 this.pageCache.clear()
             }
-            // ponytail: popularity is process-local; move counts to Mongo only when restarts measurably distort rankings.
-            items = rankByPopularity(items, this.popularItems)
+            if (searchTerm?.trim()) {
+                const names = Object.fromEntries(items.map(id => [id, metadata.itemsData[id]?.LocalizedNames?.['EN-US'] || id]))
+                items = rankSearchItems(items, searchTerm.trim(), names, this.popularItems)
+            } else {
+                let featured = this.featuredCache.get('homepage')
+                if (!featured) {
+                    const candidates = FEATURED_ITEMS.filter(id => metadata.itemsData[id])
+                    const result = await this.fetchItemsPricesBatchWithStatus(candidates, FEATURED_CITIES)
+                    featured = result.partial ? [] : rankFeaturedItems(candidates, result.data)
+                    if (!result.partial) this.featuredCache.set('homepage', featured, TTL_CONSTANTS.TEN_MINUTES)
+                }
+                const featuredSet = new Set(featured)
+                items = [...featured, ...rankByPopularity(items.filter(id => !featuredSet.has(id)), this.popularItems)]
+            }
             // คำนวณ total items
             const totalItems = items.length
 

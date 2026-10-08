@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
-import { ItemRepository, rankByPopularity } from './itemRepository'
+import { ItemRepository, rankByPopularity, rankFeaturedItems, rankSearchItems } from './itemRepository'
 
 const realFetch = globalThis.fetch
 let priceCalls = 0
@@ -88,4 +88,24 @@ describe('ItemRepository batch prices', () => {
 
 it('ranks popular items first without changing ties', () => {
   expect(rankByPopularity(['A', 'B', 'C'], new Map([['B', 3]]))).toEqual(['B', 'A', 'C'])
+})
+
+it('puts current, two-sided market data ahead of stale or missing prices', () => {
+  const now = Date.parse('2026-10-08T15:00:00Z')
+  const row = (city: string, time: string) => ({
+    city, quantity: 1, sell_Price_Min: 100, buy_Price_max: 90,
+    sell_Price_Min_Date: time, buy_Price_Max_Date: time
+  })
+  expect(rankFeaturedItems(['STALE', 'SOME', 'BEST', 'NONE'], {
+    STALE: [row('A', '2026-10-07T12:00:00')],
+    SOME: [row('A', '2026-10-08T14:00:00')],
+    BEST: [row('A', '2026-10-08T14:50:00'), row('B', '2026-10-08T14:45:00')],
+    NONE: [{ ...row('A', '2026-10-08T14:50:00'), buy_Price_max: 0 }]
+  } as any, now)).toEqual(['BEST', 'SOME'])
+})
+
+it('keeps exact and prefix search matches ahead of popularity', () => {
+  expect(rankSearchItems(['B', 'C', 'A'], 'bag', {
+    A: 'Bag', B: 'Small Bag', C: 'Baggins'
+  }, new Map([['B', 99]]))).toEqual(['A', 'C', 'B'])
 })

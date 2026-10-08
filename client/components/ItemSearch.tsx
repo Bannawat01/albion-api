@@ -169,6 +169,7 @@ export default function ItemSearch({ initialQuery = '', initialPage = 1, locale 
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-primary">{th ? 'ผลการค้นหา' : 'Market results'}</p>
           <h2 className="mt-1 text-xl font-semibold">{search ? (th ? `ผลลัพธ์สำหรับ “${search}”` : `Matches for "${search}"`) : (th ? 'เลือกดูสินค้าทั้งหมด' : 'Browse all items')}</h2>
+          {!search && <p className="mt-1 text-xs text-muted-foreground">{th ? 'สินค้าตัวอย่างที่มีข้อมูลราคาซื้อ–ขายล่าสุดจะขึ้นก่อน หากหาไม่เจอให้พิมพ์ชื่อด้านบน' : 'Sample items with recent buy and sell prices appear first. Search above for other items.'}</p>}
         </div>
         {pagination && <p className="text-sm text-muted-foreground">{pagination.totalItems.toLocaleString(th ? 'th-TH' : 'en-US')} {th ? 'รายการ' : 'items'} | {th ? `หน้า ${page} จาก ${totalPages}` : `Page ${page} of ${totalPages}`}</p>}
       </div>
