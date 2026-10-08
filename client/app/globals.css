@@ -138,9 +138,16 @@
   }
 
   ::selection { background: rgba(211, 168, 79, 0.3); color: #fff6dc; }
+
 }
 
 @layer utilities {
+  @media (hover: hover) and (pointer: fine) and (forced-colors: none) {
+    html, body { cursor: url('/images/cursor-market.svg') 2 2, auto; }
+    :is(a, button:not(:disabled), summary, select:not(:disabled), [role="button"]) { cursor: url('/images/cursor-market-active.svg') 2 2, pointer; }
+    input, textarea, [contenteditable="true"] { cursor: text; }
+  }
+
   .bg-grid-white\/\[0\.02\] {
     background-image: radial-gradient(circle, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   }
@@ -240,7 +247,7 @@
   @media (max-width: 639px) { .ledger-hero { background-image: linear-gradient(180deg, rgba(9,8,6,.9), rgba(9,8,6,.96)), url('/images/albion-market-hero.webp'); } }
   .hero-proof { @apply inline-flex items-center gap-1.5; }
   .hero-proof svg { @apply h-3.5 w-3.5 text-primary; }
-  .ledger-panel { @apply rounded-2xl border border-primary/20 bg-card/90 shadow-2xl shadow-black/35; background-image: linear-gradient(145deg, rgba(211,168,79,.04), transparent 36%); }
+  .ledger-panel { @apply rounded-2xl border border-primary/25 bg-card/90 shadow-2xl shadow-black/35; background-image: linear-gradient(145deg, rgba(219,171,91,.1), transparent 40%); box-shadow: inset 0 1px 0 rgba(255,224,159,.12), 0 18px 35px rgba(0,0,0,.35); }
   .ledger-icon { @apply flex h-9 w-9 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary; }
 
   .google-sign-in {
@@ -300,8 +307,9 @@
   .city-black-market { @apply bg-zinc-800 text-white ring-1 ring-red-500/35; }
 
   .market-item {
-    @apply min-w-0 rounded-xl border border-primary/15 bg-card/90 p-4 shadow-lg shadow-black/20 transition duration-200 hover:border-primary/35 hover:shadow-xl hover:shadow-black/30;
-    background-image: linear-gradient(145deg, rgba(211,168,79,.035), transparent 45%);
+    @apply min-w-0 rounded-xl border border-primary/20 bg-card/90 p-4 shadow-lg shadow-black/20 transition duration-200 hover:border-primary/40 hover:shadow-xl hover:shadow-black/30;
+    background-image: linear-gradient(145deg, rgba(221,174,94,.08), transparent 45%);
+    box-shadow: inset 0 1px 0 rgba(255,224,159,.08), 0 8px 18px rgba(0,0,0,.2);
   }
 
   .watchlist-button {

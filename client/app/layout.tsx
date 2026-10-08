@@ -67,7 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className={`dark ${sans.variable} ${serif.variable}`}>
       <head><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(applicationData) }} /></head>
-      <body className="bg-background text-foreground flex min-h-screen flex-col pb-16 font-sans antialiased md:pb-0">
+      <body className="bg-background text-foreground flex min-h-screen flex-col pb-16 font-sans antialiased lg:pb-0">
         <ErrorBoundary>
           <QueryProvider>
               <NavBar />
