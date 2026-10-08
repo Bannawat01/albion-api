@@ -2,7 +2,7 @@ import Elysia from 'elysia'
 import { connectToDatabase } from '../configs/database'
 import { TTLCache } from '../service/timeToLive'
 
-const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'donate_click', 'opportunities_view', 'opportunity_filter', 'opportunity_open'])
+const EVENTS = new Set(['page_view', 'search', 'history_open', 'route_open', 'watchlist_add', 'share', 'aodp_click', 'client_official_click', 'client_afm_click', 'donate_click', 'opportunities_view', 'opportunity_filter', 'opportunity_open'])
 const ID_RE = /^[a-f0-9-]{20,64}$/i
 const BOT_RE = /bot|crawler|spider|slurp|google-inspectiontool|lighthouse/i
 const recentEvents = new TTLCache<boolean>(5_000)

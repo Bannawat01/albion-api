@@ -8,6 +8,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/${locale}/opportunities`, changeFrequency: 'daily' as const, priority: .9 },
     { url: `${SITE_URL}/${locale}/refining`, changeFrequency: 'monthly' as const, priority: .7 },
     { url: `${SITE_URL}/${locale}/about`, changeFrequency: 'monthly' as const, priority: .6 },
+    { url: `${SITE_URL}/${locale}/contribute`, changeFrequency: 'monthly' as const, priority: .7 },
     ...GUIDE_SLUGS.map(slug => ({ url: `${SITE_URL}/${locale}/guides/${slug}`, changeFrequency: 'monthly' as const, priority: .7 })),
     ...POPULAR_ITEM_IDS.map(id => ({ url: `${SITE_URL}/${locale}/item/${id}`, changeFrequency: 'daily' as const, priority: .65 })),
   ])
