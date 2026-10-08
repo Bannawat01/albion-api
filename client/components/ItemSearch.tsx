@@ -244,7 +244,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
   ].filter(Boolean).join(' · ')
 
   return (
-    <article className="market-item">
+    <article className="market-item flex min-h-[27rem] flex-col">
       <div className="flex items-start gap-4">
         <ItemImage item={item} priority={imagePriority} locale={locale} />
         <div className="min-w-0 flex-1">
@@ -281,7 +281,7 @@ export function ItemCard({ item, prices, cities, loading, imagePriority, watched
         </div>
       </details>
       <MarketHistory item={item} city={bestSell?.city ?? rows[0]?.city ?? 'Bridgewatch'} locale={locale} />
-      <TradeFinder item={item} />
+      <div className="mt-auto"><TradeFinder item={item} /></div>
     </article>
   )
 }
