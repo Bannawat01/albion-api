@@ -26,7 +26,7 @@ export default function NavBar() {
           <span className="font-ledger hidden sm:block text-lg font-semibold text-gold">Market Ledger</span>
         </Link>
         <span className="server-seal"><span /> Asia</span>
-        <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main navigation">
+        <nav className="ml-auto hidden items-center gap-1 lg:flex" aria-label="Main navigation">
           {links.map(({ path, en, th, icon: Icon }) => {
             const href = `/${locale}${path}`
             return <Link key={path} href={href} className={'nav-link ' + (pathname === href ? 'is-active' : '')} aria-current={pathname === href ? 'page' : undefined}>

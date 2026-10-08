@@ -201,7 +201,7 @@
   .server-seal span { @apply h-1.5 w-1.5 rounded-full bg-emerald-400; }
 
   .mobile-nav {
-    @apply fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-primary/25 backdrop-blur-xl md:hidden;
+    @apply fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-primary/25 backdrop-blur-xl lg:hidden;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     background: rgba(14, 12, 9, 0.96);
   }
