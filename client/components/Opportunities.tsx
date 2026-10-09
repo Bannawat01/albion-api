@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, ArrowRight, ChevronDown, Clock3, RefreshCw, SlidersHorizontal, TrendingUp } from 'lucide-react'
 import { CITIES, ItemImage } from './ItemSearch'
 import PrettySelect from './PrettySelect'
-import { itemApi, type OpportunityFilters } from '@/api'
+import { itemApi, type Opportunity, type OpportunityFilters } from '@/api'
 import { track } from '@/lib/analytics'
 import { staleReasonLabel } from '@/lib/staleReasonLabel'
 
@@ -31,6 +31,10 @@ export default function Opportunities({ locale }: { locale: 'th' | 'en' }) {
     <header className="mb-6"><p className="text-xs font-semibold uppercase tracking-[.2em] text-primary">Asia Server · Player-reported data</p><h1 className="font-ledger mt-2 text-3xl font-bold text-gold-gradient sm:text-4xl">{th ? 'โอกาสซื้อขายวันนี้' : 'Daily Asia Opportunities'}</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">{th ? 'คัดจากสินค้า 50 รายการยอดนิยม เรียงความน่าเชื่อถือก่อนกำไรต่อชิ้น ราคาเป็นข้อมูลผู้เล่นรายงาน ภาษี 6.5% เป็นสมมติฐาน และไม่มีข้อมูลจำนวนออร์เดอร์ที่ขายอยู่จริง' : 'Screened from 50 popular items, prioritizing confidence over per-unit profit. Prices are player-reported, 6.5% tax is assumed, and live order depth is unknown.'}</p></header>
     <form onSubmit={apply} className="ledger-panel p-4 sm:p-5" aria-label={th ? 'ตัวกรองโอกาสซื้อขาย' : 'Opportunity filters'}>
       <div className="flex items-center gap-2 border-b border-primary/10 pb-3"><SlidersHorizontal className="h-4 w-4 text-primary" /><strong>{th ? 'เริ่มค้นหาแบบง่าย' : 'Quick search'}</strong><span className="ml-auto hidden text-[11px] text-muted-foreground sm:block">{th ? 'เลือกเพียง 2 อย่าง' : 'Only 2 choices'}</span></div>
+      <div className="mt-4 grid grid-cols-2 gap-2" role="group" aria-label={th ? 'โหมดตลาด' : 'Market mode'}>
+        {([undefined, 'black'] as const).map(mode => { const active = draft.market === mode; return <button key={mode ?? 'standard'} type="button" aria-pressed={active} onClick={() => { const next = { ...draft, market: mode }; setDraft(next); setFilters(next); track('opportunity_filter') }} className={`min-h-11 border px-2 text-sm font-semibold transition ${active ? 'border-primary bg-primary/20 text-primary' : 'border-border bg-background/40 text-muted-foreground hover:border-primary/40'}`}>{mode === 'black' ? (th ? 'ขายเข้า Black Market (อุปกรณ์)' : 'Black Market (gear)') : (th ? 'ตลาดทั่วไป (วัตถุดิบ/กระเป๋า)' : 'Standard (resources/bags)')}</button> })}
+      </div>
+      {draft.market === 'black' && <p className="mt-2 text-xs leading-5 text-muted-foreground">{th ? 'สแกนอาวุธและชุดเกราะ T4-T6 จากทุกเมือง ไปขายเข้า Buy Order ของ Black Market ใน Caerleon (ขายทันทีเท่านั้น) เส้นทางเข้า Caerleon อาจเสี่ยงถูกฆ่า และไม่ได้คิดมูลค่าความเสี่ยงให้' : 'Scans T4-T6 weapons and armor from every city into Black Market buy orders in Caerleon (quick sell only). The route into Caerleon can be deadly and risk of loss is not priced in.'}</p>}
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <Field label={th ? '1. เงินทุนที่ต้องการใช้' : '1. Your budget'}>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -68,7 +72,7 @@ export default function Opportunities({ locale }: { locale: 'th' | 'en' }) {
         <dl className="opportunity-stats"><Stat label={th ? 'ราคาซื้อต่อชิ้น' : 'Buy/item'} value={item.buyPrice.toLocaleString()} /><Stat label={th ? 'ราคาขายต่อชิ้น' : 'Sell/item'} value={item.sellPrice.toLocaleString()} /><Stat label={th ? 'ขายย้อนหลัง/วัน' : 'Historical sales/day'} value={item.dailyVolume?.toLocaleString() ?? '—'} /><Stat label={th ? 'เมืองที่มีข้อมูล' : 'Coverage'} value={`${item.coverage}/8`} /></dl>
         <p className="mt-3 text-xs leading-5 text-muted-foreground">{th ? `ทุนที่กรอกซื้อได้สูงสุด ${item.quantity.toLocaleString()} ชิ้นตามราคาอ้างอิง แต่ไม่ทราบจำนวนที่มีขายจริง${item.dailyVolume == null ? ' และไม่มีข้อมูลยอดขายย้อนหลัง' : ''}` : `Your budget could cover up to ${item.quantity.toLocaleString()} items at the reported price, but actual stock is unknown${item.dailyVolume == null ? ' and historical sales are unavailable' : ''}.`}</p>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground"><span className="inline-flex items-center gap-1"><Clock3 className="h-3.5 w-3.5" />{th ? 'ราคาซื้อ' : 'Buy price'} {formatAge(item.sourceUpdatedAt, locale)}</span><span>{th ? 'ราคาขาย' : 'Sell price'} {formatAge(item.targetUpdatedAt, locale)}</span></div>
-        <Link href={`/${locale}/item/${encodeURIComponent(item.itemId)}`} onClick={() => track('opportunity_open')} className="nav-link mt-4 w-full justify-center border-primary/20">{th ? 'เปิดรายละเอียดสินค้า' : 'Open item details'}</Link>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row"><Link href={`/${locale}/item/${encodeURIComponent(item.itemId)}`} onClick={() => track('opportunity_open')} className="nav-link w-full justify-center border-primary/20">{th ? 'เปิดรายละเอียดสินค้า' : 'Open item details'}</Link><ShareButton item={item} locale={locale} /></div>
       </article>
     })}</section>}
     {query.data && <p className="mt-5 text-center text-xs text-muted-foreground">{th ? 'คำนวณเมื่อ' : 'Calculated'} {formatTime(query.data.generatedAt, locale)} · {th ? 'ราคาตั้งขายไม่รับประกันว่าจะขายได้' : 'A listing price does not guarantee a sale.'}</p>}
@@ -77,6 +81,24 @@ export default function Opportunities({ locale }: { locale: 'th' | 'en' }) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <div className="min-w-0 space-y-1 text-xs text-muted-foreground"><span>{label}</span>{children}</div> }
 function Stat({ label, value }: { label: string; value: string }) { return <div><dt>{label}</dt><dd>{value}</dd></div> }
+function ShareButton({ item, locale }: { item: Opportunity; locale: 'th' | 'en' }) {
+  const th = locale === 'th'
+  const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle')
+  const perItem = Math.round(item.netProfit / item.quantity)
+  const text = [
+    `🔥 [Albion Asia] ${item.itemName} (${item.itemId})`,
+    `📍 ${th ? 'ซื้อ' : 'Buy'}: ${item.sourceCity} (${item.buyPrice.toLocaleString()}) ➔ ${th ? 'ขาย' : 'Sell'}: ${item.targetCity} (${item.sellPrice.toLocaleString()})`,
+    `💰 ${th ? 'กำไรหลังภาษี 6.5%' : 'After 6.5% tax'}: +${perItem.toLocaleString()} ${th ? 'ซิลเวอร์/ชิ้น' : 'silver/item'} (${item.margin.toFixed(1)}%)`,
+    `🕒 ${th ? 'ราคาซื้อ' : 'Buy'} ${formatAge(item.sourceUpdatedAt, locale)} · ${th ? 'ราคาขาย' : 'Sell'} ${formatAge(item.targetUpdatedAt, locale)}`,
+    `⚠️ ${th ? 'ข้อมูลจากผู้เล่น ตรวจราคาในเกมก่อนขนของ' : 'Player-reported data; verify in game before hauling.'}`,
+    `🔗 ${typeof window === 'undefined' ? '' : window.location.origin}/${locale}/item/${encodeURIComponent(item.itemId)}`,
+  ].join('\n')
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(text); setState('copied'); track('share') } catch { setState('failed') }
+    setTimeout(() => setState('idle'), 2500)
+  }
+  return <button type="button" onClick={copy} className="nav-link w-full justify-center border-primary/20 sm:w-auto sm:whitespace-nowrap" aria-live="polite">{state === 'copied' ? (th ? 'คัดลอกแล้ว ✓' : 'Copied ✓') : state === 'failed' ? (th ? 'คัดลอกไม่ได้' : 'Copy failed') : (th ? 'คัดลอกส่ง Discord' : 'Copy for Discord')}</button>
+}
 function formatTime(value: string, locale: 'th' | 'en') { return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: locale === 'th' ? 'Asia/Bangkok' : undefined }).format(new Date(value)) }
 function formatAge(value: string, locale: 'th' | 'en') { const utc = /(?:Z|[+-]\d\d:\d\d)$/.test(value) ? value : `${value}Z`; const minutes = Math.max(0, Math.round((Date.now() - new Date(utc).getTime()) / 60_000)); return locale === 'th' ? `${minutes < 60 ? minutes : Math.round(minutes / 60)} ${minutes < 60 ? 'นาที' : 'ชม.'}ก่อน` : `${minutes < 60 ? minutes + 'm' : Math.round(minutes / 60) + 'h'} ago` }
 function emptyCopy(reason: string | null, partial: boolean, th: boolean) {

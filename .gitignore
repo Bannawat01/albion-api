@@ -5,6 +5,13 @@
 # Obsidian Local Second Brain (Private knowledge base for AI & user)
 obsidian/
 
+# Local-only helper that runs the API without MongoDB
+server/local-preview.preload.ts
+
+# Auto-generated Next.js rules
+client/AGENTS.md
+client/CLAUDE.md
+
 # Environment files
 .env
 .env.local

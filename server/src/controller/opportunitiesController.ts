@@ -15,6 +15,11 @@ export const OPPORTUNITY_ITEMS = [
   'T4_CAPE','T5_CAPE','T6_CAPE','T7_CAPE','T8_CAPE',
 ] as const
 
+// Black Market (Caerleon) only posts buy orders for equipment, so it gets its own gear-focused candidate pool.
+const BLACK_MARKET_BASES = ['MAIN_SWORD', '2H_CLAYMORE', 'MAIN_CURSEDSTAFF', '2H_BOW', 'ARMOR_LEATHER_SET1', 'ARMOR_CLOTH_SET1', 'ARMOR_PLATE_SET1', 'HEAD_LEATHER_SET1', 'HEAD_CLOTH_SET1', 'HEAD_PLATE_SET1', 'SHOES_LEATHER_SET1', 'SHOES_CLOTH_SET1', 'SHOES_PLATE_SET1']
+export const BLACK_MARKET_ITEMS: readonly string[] = ['T4', 'T5', 'T6'].flatMap(tier => BLACK_MARKET_BASES.map(base => `${tier}_${base}`))
+export const BLACK_MARKET_CITY = 'Black Market'
+
 export type Confidence = 'high' | 'medium' | 'low'
 export interface Opportunity {
   itemId: string; itemName: string; sourceCity: string; targetCity: string; quantity: number
@@ -23,7 +28,7 @@ export interface Opportunity {
   confidence: Confidence; staleReasons: string[]
 }
 
-type Filters = { origin?: string; budget: number; minProfit: number; minVolume: number; maxAgeMinutes: number; strategy: 'list' | 'quick'; limit: number }
+type Filters = { origin?: string; targetCity?: string; budget: number; minProfit: number; minVolume: number; maxAgeMinutes: number; strategy: 'list' | 'quick'; limit: number }
 export type OpportunityDiagnostics = {
   candidateItems: number; itemsWithPrice: number; itemsWithFreshSource: number; itemsWithFreshPair: number
   itemsWithinBudget: number; profitableItems: number; historyChecked: number; historyUnavailable: number; returnedItems: number
@@ -40,11 +45,11 @@ export function rankOpportunityCandidates(prices: Record<string, Price[]>, filte
     const quality = itemPrices.filter(price => Number(price.quantity) === 1)
     if (quality.some(price => price.sell_Price_Min > 0 || price.buy_Price_max > 0)) diagnostics && diagnostics.itemsWithPrice++
     const coverage = new Set(quality.map(price => price.city)).size
-    const sources = quality.filter(price => price.sell_Price_Min > 0 && isFreshEnough(price.sell_Price_Min_Date) && (!filters.origin || price.city === filters.origin))
+    const sources = quality.filter(price => price.sell_Price_Min > 0 && isFreshEnough(price.sell_Price_Min_Date) && (!filters.origin || price.city === filters.origin) && price.city !== filters.targetCity)
     if (sources.length) diagnostics && diagnostics.itemsWithFreshSource++
     const source = sources.sort((a, b) => a.sell_Price_Min - b.sell_Price_Min)[0]
     if (!source) continue
-    const targets = quality.filter(price => price.city !== source.city).map(price => ({
+    const targets = quality.filter(price => price.city !== source.city && (!filters.targetCity || price.city === filters.targetCity)).map(price => ({
       row: price,
       value: filters.strategy === 'quick' ? price.buy_Price_max : price.sell_Price_Min,
       updatedAt: filters.strategy === 'quick' ? price.buy_Price_Max_Date : price.sell_Price_Min_Date,
@@ -90,22 +95,25 @@ export function opportunityEmptyReason(diagnostics: OpportunityDiagnostics, part
 const cache = new TTLCache<unknown>(200)
 export const opportunitiesController = new Elysia({ prefix: '/api' }).get('/opportunities', async ({ query }) => {
   const origin = validateCities(query.origin)
+  const blackMarket = query.market === 'black'
   const filters: Filters = {
     origin,
+    targetCity: blackMarket ? BLACK_MARKET_CITY : undefined,
     budget: Math.min(1_000_000_000, Math.max(0, Number(query.budget) || 0)),
     minProfit: Math.min(1_000_000_000, Math.max(0, Number(query.minProfit) || 0)),
     minVolume: Math.min(1_000_000, Math.max(0, Number(query.minVolume) || 0)),
     maxAgeMinutes: Math.min(1440, Math.max(1, Number(query.maxAgeMinutes) || 30)),
-    strategy: query.strategy === 'quick' ? 'quick' : 'list',
+    strategy: blackMarket || query.strategy === 'quick' ? 'quick' : 'list',
     limit: Math.min(20, Math.max(1, Number(query.limit) || 10)),
   }
   const cacheKey = JSON.stringify(filters)
   const hit = cache.get(cacheKey)
   if (hit) return hit
-  const batch = await ItemRepository.getInstance().fetchItemsPricesBatchWithStatus([...OPPORTUNITY_ITEMS])
+  const pool: readonly string[] = blackMarket ? BLACK_MARKET_ITEMS : OPPORTUNITY_ITEMS
+  const batch = await ItemRepository.getInstance().fetchItemsPricesBatchWithStatus([...pool])
   let partial = batch.partial
   const prices = batch.data
-  const diagnostics: OpportunityDiagnostics = { candidateItems: OPPORTUNITY_ITEMS.length, itemsWithPrice: 0, itemsWithFreshSource: 0, itemsWithFreshPair: 0, itemsWithinBudget: 0, profitableItems: 0, historyChecked: 0, historyUnavailable: 0, returnedItems: 0 }
+  const diagnostics: OpportunityDiagnostics = { candidateItems: pool.length, itemsWithPrice: 0, itemsWithFreshSource: 0, itemsWithFreshPair: 0, itemsWithinBudget: 0, profitableItems: 0, historyChecked: 0, historyUnavailable: 0, returnedItems: 0 }
   const ranked = rankOpportunityCandidates(prices, filters, Date.now(), diagnostics)
   const primaryIds = [...new Set(ranked.map(item => item.itemId))].slice(0, filters.minVolume > 0 ? 5 : 10)
   const candidates = ranked.filter(item => primaryIds.includes(item.itemId)).slice(0, 10)

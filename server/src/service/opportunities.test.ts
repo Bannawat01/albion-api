@@ -97,3 +97,33 @@ test('partial empty opportunity results are not cached as a confirmed empty mark
     repository.fetchItemsPricesBatchWithStatus = original
   }
 })
+
+describe('black market mode', () => {
+  test('only routes into the Black Market, never out of it, using buy orders', () => {
+    const rows = rankOpportunityCandidates({ T4_BAG: [
+      price('Bridgewatch', 1000, 0, 5),
+      price('Martlock', 0, 2500, 5),
+      price('Black Market', 900, 1800, 5),
+    ] }, { ...filters, targetCity: 'Black Market' }, now)
+    expect(rows).toHaveLength(1)
+    expect(rows[0].sourceCity).toBe('Bridgewatch')
+    expect(rows[0].targetCity).toBe('Black Market')
+    expect(rows[0].sellPrice).toBe(1800)
+  })
+  test('market=black screens the gear pool and reports its size', async () => {
+    const repository = ItemRepository.getInstance()
+    const original = repository.fetchItemsPricesBatchWithStatus
+    let requested: string[] = []
+    repository.fetchItemsPricesBatchWithStatus = async (ids: string[]) => { requested = ids; return { data: {}, partial: false } }
+    try {
+      const body = await (await opportunitiesController.handle(new Request('http://localhost/api/opportunities?market=black&budget=88123&maxAgeMinutes=118'))).json()
+      expect(body.diagnostics.candidateItems).toBe(requested.length)
+      expect(requested.length).toBe(39)
+      expect(requested.every(id => /^T[456]_(MAIN|2H|ARMOR|HEAD|SHOES)_/.test(id))).toBe(true)
+      expect(body.filters.targetCity).toBe('Black Market')
+      expect(body.filters.strategy).toBe('quick')
+    } finally {
+      repository.fetchItemsPricesBatchWithStatus = original
+    }
+  })
+})

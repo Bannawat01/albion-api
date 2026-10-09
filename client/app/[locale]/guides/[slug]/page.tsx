@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { GUIDE_SLUGS, alternateLanguages, isLocale } from '@/lib/seo'
+import { GUIDE_SLUGS, alternateLanguages, breadcrumbJsonLd, faqJsonLd, isLocale, jsonLdScript } from '@/lib/seo'
 import { guides, LAST_CHECKED } from '@/lib/guides'
 
 export function generateStaticParams() { return ['th', 'en'].flatMap(locale => GUIDE_SLUGS.map(slug => ({ locale, slug }))) }
@@ -15,7 +15,9 @@ export default async function GuidePage({ params }: { params: Promise<{ locale: 
   const { locale, slug } = await params
   if (!isLocale(locale) || !guides[locale][slug]) notFound()
   const g = guides[locale][slug]
+  const schemas = [faqJsonLd(g.faq), breadcrumbJsonLd([{ name: 'Albion Market Ledger', path: `/${locale}` }, { name: locale === 'th' ? 'คู่มือ' : 'Guides', path: `/${locale}` }, { name: g.title, path: `/${locale}/guides/${slug}` }])]
   return <article className="container mx-auto max-w-3xl px-4 py-10" lang={locale}>
+    {schemas.map((schema, index) => <script key={index} type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(schema) }} />)}
     <p className="text-xs uppercase tracking-[.2em] text-primary">Albion Market Guide · Asia Server</p><h1 className="font-ledger mt-3 text-3xl font-bold text-gold-gradient sm:text-4xl">{g.title}</h1><p className="mt-4 text-lg leading-8 text-muted-foreground">{g.intro}</p>
     <p className="mt-4 text-xs text-muted-foreground">{locale === 'th' ? 'ตรวจข้อมูลล่าสุด' : 'Last checked'}: {LAST_CHECKED}</p>
     <p className="mt-2 text-xs text-muted-foreground">{locale === 'th' ? 'แหล่งข้อมูลราคา:' : 'Price data source:'} <a className="text-primary underline underline-offset-2" href="https://pow.albion-online-data.com/api" target="_blank" rel="noopener noreferrer">Albion Online Data Project API</a></p>

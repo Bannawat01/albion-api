@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { axiosInstance } from './config'
 import type { AxiosRequestConfig } from 'axios'
 
@@ -67,8 +67,8 @@ export type Opportunity = {
   dailyVolume: number | null; sourceUpdatedAt: string; targetUpdatedAt: string; coverage: number
   confidence: 'high' | 'medium' | 'low'; staleReasons: string[]
 }
-export type OpportunityFilters = { origin?: string; budget?: number; minProfit?: number; minVolume?: number; maxAgeMinutes?: number; strategy?: 'list' | 'quick'; limit?: number }
-export type OpportunityResponse = { generatedAt: string; partial: boolean; filters: Required<Omit<OpportunityFilters, 'origin'>> & { origin?: string }; items: Opportunity[]; diagnostics: { candidateItems: number; itemsWithPrice: number; itemsWithFreshSource: number; itemsWithFreshPair: number; itemsWithinBudget: number; profitableItems: number; historyChecked: number; historyUnavailable: number; returnedItems: number }; emptyReason: 'partial_upstream' | 'no_fresh_source' | 'no_fresh_pair' | 'over_budget' | 'no_profit' | 'volume_filter' | null }
+export type OpportunityFilters = { origin?: string; market?: 'black'; budget?: number; minProfit?: number; minVolume?: number; maxAgeMinutes?: number; strategy?: 'list' | 'quick'; limit?: number }
+export type OpportunityResponse = { generatedAt: string; partial: boolean; filters: Required<Omit<OpportunityFilters, 'origin' | 'market'>> & { origin?: string; market?: 'black' }; items: Opportunity[]; diagnostics: { candidateItems: number; itemsWithPrice: number; itemsWithFreshSource: number; itemsWithFreshPair: number; itemsWithinBudget: number; profitableItems: number; historyChecked: number; historyUnavailable: number; returnedItems: number }; emptyReason: 'partial_upstream' | 'no_fresh_source' | 'no_fresh_pair' | 'over_budget' | 'no_profit' | 'volume_filter' | null }
 
 export type TradeRecommendationResponse = {
   itemId: string
@@ -230,22 +230,6 @@ export const useItemPrices = (itemId: string, city?: string) => {
     queryFn: () => itemApi.getItemPrices(itemId, city),
     enabled: !!itemId,
     refetchInterval: 30 * 1000, // Refetch every 30 seconds for live prices
-  })
-}
-
-// Mutations for creating/updating data
-export const useCreateItem = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-        mutationFn: async (payload: { id: string; name: string }) => {
-      const { data } = await axiosInstance.put(`/items/${payload.id}`, payload)
-      return data
-    },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['items'] })
-      queryClient.invalidateQueries({ queryKey: ['item', variables.id] })
-    },
   })
 }
 

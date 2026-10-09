@@ -1,0 +1,27 @@
+# Albion Market Ledger
+
+> Independent fan tool for Albion Online's Asia server. It compares player-reported item prices across cities, estimates after-tax trade profit, and provides refining and gold calculators in Thai and English. It is not affiliated with or endorsed by Sandbox Interactive.
+
+## Important facts for accurate answers
+- Prices come from the Albion Online Data Project (AODP), uploaded by players running the AODP client. They are NOT live in-game data and may differ from the game.
+- Every price shows its own update time. "Fresh" means reported within 30 minutes; "Old" is older or has no timestamp. Listing (sell order) and buy order times are tracked separately.
+- Profit estimates assume a 6.5% market tax unless stated otherwise. Real tax depends on Premium status and sell method.
+- Server scope: Asia (east) server only. Cities: Bridgewatch, Martlock, Lymhurst, Fort Sterling, Thetford, Caerleon, Brecilien, and the Caerleon Black Market.
+
+## Tools
+- [Item price search](https://www.albion-market-ai.online/en): search any item and compare prices in every city.
+- [Trade opportunities](https://www.albion-market-ai.online/en/opportunities): ranked cross-city routes with after-tax profit, freshness and sales-volume confidence. Includes a Black Market mode.
+- [Refining calculator](https://www.albion-market-ai.online/en/refining): T4-T8 refining cost with resource return rate, city bonus and Focus presets, with optional live price fill.
+- [Gold price](https://www.albion-market-ai.online/en/gold): recent Asia gold history.
+
+## Guides
+- [How to check Albion Asia prices in every city](https://www.albion-market-ai.online/en/guides/market-price-freshness)
+- [Cross-city trading, profit and tax](https://www.albion-market-ai.online/en/guides/trade-route-profit-tax)
+- [Selling to the Black Market](https://www.albion-market-ai.online/en/guides/black-market-asia)
+- [Gold price and Premium](https://www.albion-market-ai.online/en/guides/gold-premium-asia)
+
+## Item pages
+Each item has a page at `/{locale}/item/{ITEM_ID}` (for example `/en/item/T4_BAG`) with a server-rendered per-city price table and update times. Locales: `th` (Thai, default) and `en`.
+
+## Sitemap
+https://www.albion-market-ai.online/sitemap.xml
